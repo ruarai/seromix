@@ -1,6 +1,3 @@
-
-
-
 function titre_component(
     mu, omega,
     t

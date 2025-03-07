@@ -1,6 +1,5 @@
 
 
-
 @model function waning_model(
     t_obs, 
     

@@ -1,5 +1,3 @@
-
-
 using Pkg
 
 if dirname(Base.active_project()) != pwd()
