@@ -4,38 +4,85 @@ include("dependencies.jl")
 
 t_steps = 0:1:30
 
-t_infected = [5, 20]
 
-mu = 5.0
-omega = 0.03
-
-y = waning_curve(mu, omega, t_infected, t_steps)
-y_noisy = y .+ rand(Normal(0.0, 0.5), length(y))
-
-ix_obs = [10, 15, 20, 25]
-ix_obs = 1:25
-t_obs = t_steps[ix_obs]
-titer_obs = y_noisy[ix_obs]
-
-plot(t_steps, y)
-scatter!(t_obs, titer_obs)
+n_strain = 10
 
 
+mu_long = 3.0
+mu_short = 5.0
+omega = 0.05
+sigma_long = 0.2
+sigma_short = 0.2
+tau = 0.4
+
+dist_matrix = [abs(i - j) for i in 1:n_strain, j in 1:n_strain]
+
+infections = [(1.0, 1), (10.0, 3), (15.0, 5)]
+
+y = waning_curve(
+    mu_long,
+    mu_short, omega,
+    sigma_long, sigma_short,
+    tau,
 
 
-model = waning_model(t_obs, t_infected, titer_obs)
+    dist_matrix,
+    infections, n_strain, 
+    t_steps
+)
+
+plot(y[:, 10])
+plot!(y[:, 15])
+plot!(y[:, 20])
+plot!(y[:, 25])
+
+obs_df = DataFrame(t = Float64[], ix_strain = Int[], titre = Float64[])
+
+for ix_t in 1:5:30
+    for ix_strain in 1:10
+        titre = y[ix_strain, ix_t] + rand(Normal(0, 0.5))
+        push!(obs_df, (t = t_steps[ix_t], ix_strain = ix_strain, titre = titre))
+    end
+end
+
+obs_df.ix_t = coalesce.(indexin(obs_df.t, unique(obs_df.t)), -1)
+
+write_parquet("data/obs.parquet", obs_df)
+
+model = waning_model(
+    dist_matrix,
+    infections,
+    n_strain,
+    
+    obs_df, obs_df.titre
+)
 
 sampler = NUTS(1000, 0.65)
-chain = sample(model, sampler, 1000)
 
+
+chain = sample(model, sampler, 1000)
 save_draws(chain, "data/chain.parquet")
 
+plot(chain)
+
+ppd_obs = DataFrame(ix_t = Int[], t = Float64[], ix_strain = Int[])
+
+for ix_t in eachindex(t_steps), ix_strain in 1:n_strain
+    push!(ppd_obs, (ix_t = ix_t, t = t_steps[ix_t], ix_strain = ix_strain))
+end
 
 # Posterior predictive
-pred_model = waning_model(t_steps, t_infected, missing)
+pred_model = waning_model(
+    dist_matrix,
+    infections,
+    n_strain,
+    
+    ppd_obs, missing
+)
 
-chain_thin = sample(1:length(chain), 100)
-ppd = StatsBase.predict(pred_model, chain[chain_thin])
-save_draws(ppd, "data/ppd_df.parquet")
+chain_thinning = sample(1:length(chain), 100)
+ppd = StatsBase.predict(pred_model, chain[chain_thinning])
+save_draws(ppd, "data/ppd.parquet")
+write_parquet("data/ppd_obs.parquet", ppd_obs)
 
 
