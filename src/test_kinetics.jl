@@ -1,11 +1,10 @@
 include("dependencies.jl")
 
 
-
 t_steps = 0:1:30
 
 
-n_strain = 10
+n_strain = 5
 
 
 mu_long = 3.0
@@ -13,7 +12,7 @@ mu_short = 5.0
 omega = 0.05
 sigma_long = 0.2
 sigma_short = 0.2
-tau = 0.4
+tau = 0.3
 
 dist_matrix = [abs(i - j) for i in 1:n_strain, j in 1:n_strain]
 
@@ -38,8 +37,8 @@ plot!(y[:, 25])
 
 obs_df = DataFrame(t = Float64[], ix_strain = Int[], titre = Float64[])
 
-for ix_t in 1:5:30
-    for ix_strain in 1:10
+for ix_t in 1:1:30
+    for ix_strain in 1:n_strain
         titre = y[ix_strain, ix_t] + rand(Normal(0, 0.5))
         push!(obs_df, (t = t_steps[ix_t], ix_strain = ix_strain, titre = titre))
     end
@@ -57,10 +56,16 @@ model = waning_model(
     obs_df, obs_df.titre
 )
 
-sampler = NUTS(1000, 0.65)
+s = rand(model)
+logjoint(model, s)
 
 
-chain = sample(model, sampler, 1000)
+logjoint(
+    model,
+    (mu_long = 3.0, mu_short = 5.0, omega = 0.05, sigma_long = 0.2, sigma_short = 0.2, tau = 0.3)
+)
+
+chain = sample(model, NUTS(1000, 0.65), 1000)
 save_draws(chain, "data/chain.parquet")
 
 plot(chain)

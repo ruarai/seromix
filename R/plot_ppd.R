@@ -7,7 +7,7 @@ obs_df <- read_parquet("data/obs.parquet")
 
 chain_df <- read_draws("data/chain.parquet")
 
-parnames <- colnames(chain_df)[4:8]
+parnames <- colnames(chain_df)[4:9]
 
 bayesplot::mcmc_hist(chain_df, parnames)
 
