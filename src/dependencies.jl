@@ -28,4 +28,4 @@ using LogDensityProblems
 include("antibody_kinetics.jl")
 include("inference_model.jl")
 include("data_interface.jl")
-include("function_proposal.jl")
+# include("function_proposal.jl")

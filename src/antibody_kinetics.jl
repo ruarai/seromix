@@ -40,7 +40,7 @@ function waning_curve(
 
     for ix_inf in eachindex(infections), ix_cross_strain in 1:n_strain
 
-        t_inf, strain_inf = infections[ix_inf]
+        t_inf, strain_inf = Tuple(infections[ix_inf])
         dist = dist_matrix[strain_inf, ix_cross_strain]
 
         for ix_t in eachindex(t_steps)

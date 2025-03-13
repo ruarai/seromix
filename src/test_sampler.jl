@@ -1,8 +1,6 @@
 
 include("dependencies.jl")
 
-# using LogDensityProblemsAD
-
 @model function test_model(y_obs)
     y ~ filldist(Bernoulli(0.2), length(y_obs))
 
@@ -24,19 +22,6 @@ model = test_model(y_obs)
 
 
 function prop_fn(rng, x)
-    # rand_ix = sample(rng, 1:length(x), 2, replace = false)
-
-    # x_prime = copy(x)
-
-    # if rand(rng) < 0.5
-    #     x_prime[rand_ix[1]] = !x_prime[rand_ix[1]]
-    # else
-    #     x_prime[rand_ix[1]] = x[rand_ix[2]]
-    #     x_prime[rand_ix[2]] = x[rand_ix[1]]
-    # end
-
-    # return x_prime
-
     return rand(rng, Bernoulli(0.5), length(x))
 end
 

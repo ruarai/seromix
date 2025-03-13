@@ -1,11 +1,10 @@
 include("dependencies.jl")
 
 
-t_steps = 1:1:50
+t_steps = 0:1:30
 
 
-n_strain = 2
-n_t_steps = length(t_steps)
+n_strain = 5
 
 
 mu_long = 3.0
@@ -17,11 +16,7 @@ tau = 0.3
 
 dist_matrix = [abs(i - j) for i in 1:n_strain, j in 1:n_strain]
 
-infections = zeros(Bool, n_t_steps, n_strain)
-infections[3, 1] = true
-infections[30, 2] = true
-
-inf_vector = findall(infections)
+infections = [(1.0, 1), (10.0, 3), (15.0, 5)]
 
 y = waning_curve(
     mu_long,
@@ -31,11 +26,9 @@ y = waning_curve(
 
 
     dist_matrix,
-    inf_vector, n_strain, 
+    infections, n_strain, 
     t_steps
 )
-
-plot(y')
 
 plot(y[:, 10])
 plot!(y[:, 15])
@@ -44,9 +37,11 @@ plot!(y[:, 25])
 
 obs_df = DataFrame(t = Float64[], ix_strain = Int[], titre = Float64[])
 
-for ix_t in 1:3:50, ix_strain in 1:n_strain
-    titre = y[ix_strain, ix_t] + rand(Normal(0, 0.3))
-    push!(obs_df, (t = t_steps[ix_t], ix_strain = ix_strain, titre = titre))
+for ix_t in 1:1:30
+    for ix_strain in 1:n_strain
+        titre = y[ix_strain, ix_t] + rand(Normal(0, 0.5))
+        push!(obs_df, (t = t_steps[ix_t], ix_strain = ix_strain, titre = titre))
+    end
 end
 
 obs_df.ix_t = coalesce.(indexin(obs_df.t, unique(obs_df.t)), -1)
@@ -55,30 +50,17 @@ write_parquet("data/obs.parquet", obs_df)
 
 model = waning_model(
     dist_matrix,
-    n_strain, n_t_steps,
+    infections,
+    n_strain,
     
     obs_df, obs_df.titre
 )
 
-symbols = DynamicPPL.syms(DynamicPPL.VarInfo(model))
-symbols = symbols[findall(symbols .!= :infections)]
 
+chain = sample(model, NUTS(1000, 0.65), 1000)
+save_draws(chain, "data/chain.parquet")
 
-mh_sampler = externalsampler(MHInfectionSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
-
-sampler = Gibbs(
-    :infections => RepeatSampler(mh_sampler, 10),
-    symbols => HMC(0.05, 10)
-)
-
-
-chain = sample(model, sampler, MCMCThreads(), 4000, 4)
-save_draws(chain[2000:end], "data/chain.parquet")
-
-plot(chain[:mu_long])
-plot(chain[:mu_short])
-
-# plot(chain)
+plot(chain)
 
 ppd_obs = DataFrame(ix_t = Int[], t = Float64[], ix_strain = Int[])
 
@@ -89,12 +71,13 @@ end
 # Posterior predictive
 pred_model = waning_model(
     dist_matrix,
-    n_strain, n_t_steps,
+    infections,
+    n_strain,
     
     ppd_obs, missing
 )
 
-chain_thinning = sample(2000:length(chain), 1000)
+chain_thinning = sample(1:length(chain), 100)
 ppd = StatsBase.predict(pred_model, chain[chain_thinning])
 save_draws(ppd, "data/ppd.parquet")
 write_parquet("data/ppd_obs.parquet", ppd_obs)
