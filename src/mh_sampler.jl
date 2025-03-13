@@ -66,7 +66,7 @@ end
 function propose_theta(rng, theta, model)
 
     # How to get this info here?
-    n_strain = 2
+    n_strain = 3
     n_t_steps = 50
 
     theta_mat = reshape(theta, n_t_steps, n_strain)

@@ -4,7 +4,7 @@ include("dependencies.jl")
 t_steps = 1:1:50
 
 
-n_strain = 2
+n_strain = 3
 n_t_steps = length(t_steps)
 
 
@@ -19,6 +19,7 @@ dist_matrix = [abs(i - j) for i in 1:n_strain, j in 1:n_strain]
 
 infections = zeros(Bool, n_t_steps, n_strain)
 infections[3, 1] = true
+infections[15, 3] = true
 infections[30, 2] = true
 
 inf_vector = findall(infections)
@@ -67,12 +68,12 @@ symbols = symbols[findall(symbols .!= :infections)]
 mh_sampler = externalsampler(MHInfectionSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
 
 sampler = Gibbs(
-    :infections => RepeatSampler(mh_sampler, 10),
-    symbols => HMC(0.05, 10)
+    :infections => RepeatSampler(mh_sampler, 2),
+    symbols => HMC(0.01, 10)
 )
 
 
-chain = sample(model, sampler, MCMCThreads(), 4000, 4)
+chain = sample(model, sampler, MCMCThreads(), 6000, 4)
 save_draws(chain[2000:end], "data/chain.parquet")
 
 plot(chain[:mu_long])

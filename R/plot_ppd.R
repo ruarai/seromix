@@ -15,12 +15,12 @@ bayesplot::mcmc_hist(chain_df, parnames)
 
 
 chain_df %>%
-  filter(.iteration > 4000) %>% 
   spread_draws(infections[t, ix_strain]) %>%
-  group_by(t, ix_strain) %>%
+  group_by(t, ix_strain, .chain) %>%
   summarise(p = 1 - sum(infections == 0) / n()) %>%
   ggplot() +
-  geom_line(aes(x = t, y = p, group = ix_strain))
+  geom_line(aes(x = t, y = p, group = .chain, colour = factor(.chain))) +
+  facet_wrap(~ix_strain)
 
 
 ppd_df <- read_draws("data/ppd.parquet")
