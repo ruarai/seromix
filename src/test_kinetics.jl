@@ -1,65 +1,53 @@
 include("dependencies.jl")
 
-
-t_steps = 1:1:50
-
-
-n_strain = 3
+t_steps = 1:4
 n_t_steps = length(t_steps)
-
+n_ind = 500
 
 mu_long = 3.0
 mu_short = 5.0
 omega = 0.05
 sigma_long = 0.2
 sigma_short = 0.2
+
 tau = 0.3
 
-dist_matrix = [abs(i - j) for i in 1:n_strain, j in 1:n_strain]
+dist_matrix = [abs(i - j) for i in 1:n_t_steps, j in 1:n_t_steps]
 
-infections = zeros(Bool, n_t_steps, n_strain)
-infections[3, 1] = true
-infections[15, 3] = true
-infections[30, 2] = true
+infections = zeros(Bool, n_t_steps, n_ind)
 
-inf_vector = findall(infections)
+infections = rand(Bernoulli(0.2), (n_t_steps, n_ind))
 
-y = waning_curve(
-    mu_long,
-    mu_short, omega,
-    sigma_long, sigma_short,
-    tau,
+infections_df = DataFrame(stack([[i[1], i[2]] for i in findall(infections)])', :auto)
+write_parquet("data/infections_df.parquet", infections_df)
 
+complete_obs = expand_grid(t = 1:n_t_steps, s = 1:n_t_steps, i = 1:n_ind)
+complete_obs.y = waning_curve(
+    mu_long, mu_short, omega,
+    sigma_long, sigma_short, tau,
 
     dist_matrix,
-    inf_vector, n_strain, 
-    t_steps
+    infections,
+    obs_df_to_matrix(complete_obs)
 )
 
-plot(y')
+write_parquet("data/complete_obs.parquet", complete_obs)
 
-plot(y[:, 10])
-plot!(y[:, 15])
-plot!(y[:, 20])
-plot!(y[:, 25])
 
-obs_df = DataFrame(t = Float64[], ix_strain = Int[], titre = Float64[])
-
-for ix_t in 1:3:50, ix_strain in 1:n_strain
-    titre = y[ix_strain, ix_t] + rand(Normal(0, 0.3))
-    push!(obs_df, (t = t_steps[ix_t], ix_strain = ix_strain, titre = titre))
-end
-
-obs_df.ix_t = coalesce.(indexin(obs_df.t, unique(obs_df.t)), -1)
+obs_df = filter(:t => t -> t % 2 == 0, complete_obs)
+obs_df.y = obs_df.y .+ rand(Normal(0, 0.3), nrow(obs_df))
 
 write_parquet("data/obs.parquet", obs_df)
 
 model = waning_model(
     dist_matrix,
-    n_strain, n_t_steps,
+
+    n_ind, n_t_steps,
     
-    obs_df, obs_df.titre
+    obs_df_to_matrix(obs_df), obs_df.y
 )
+
+benchmark_model(model; check=false, adbackends=[:forwarddiff])
 
 symbols = DynamicPPL.syms(DynamicPPL.VarInfo(model))
 symbols = symbols[findall(symbols .!= :infections)]
@@ -67,35 +55,37 @@ symbols = symbols[findall(symbols .!= :infections)]
 
 mh_sampler = externalsampler(MHInfectionSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
 
-sampler = Gibbs(
-    :infections => RepeatSampler(mh_sampler, 2),
-    symbols => HMC(0.01, 10)
+# Must somehow balance the level of exploration of the MH sampler
+# with that of the HMC sampler -- so repeating MH or changing HMC
+# step size
+gibbs_sampler = Gibbs(
+    :infections => mh_sampler,
+    symbols => HMC(0.002, 10) # Must be reduced with number of individuals?
 )
 
+@profview sample(model, gibbs_sampler, 400)
 
-chain = sample(model, sampler, MCMCThreads(), 6000, 4)
-save_draws(chain[2000:end], "data/chain.parquet")
+chain = sample(model, gibbs_sampler, MCMCThreads(), 12000, 6)
 
-plot(chain[:mu_long])
-plot(chain[:mu_short])
+plot(chain, [:mu_long, :mu_sum], seriestype = :traceplot)
+plot(chain, [:sigma_long, :sigma_short], seriestype = :traceplot)
+plot(chain, [ :tau], seriestype = :traceplot)
 
-# plot(chain)
 
-ppd_obs = DataFrame(ix_t = Int[], t = Float64[], ix_strain = Int[])
+skip_n_draws = 6000
+save_draws(chain[skip_n_draws:end], "data/chain.parquet")
 
-for ix_t in eachindex(t_steps), ix_strain in 1:n_strain
-    push!(ppd_obs, (ix_t = ix_t, t = t_steps[ix_t], ix_strain = ix_strain))
-end
 
+ppd_obs = expand_grid(t = 1:n_t_steps, s = 1:n_t_steps, i = 1:n_ind)
 # Posterior predictive
 pred_model = waning_model(
     dist_matrix,
-    n_strain, n_t_steps,
+    n_ind, n_t_steps,
     
-    ppd_obs, missing
+    obs_df_to_matrix(ppd_obs), missing
 )
 
-chain_thinning = sample(2000:length(chain), 1000)
+chain_thinning = sample(skip_n_draws:length(chain), 100)
 ppd = StatsBase.predict(pred_model, chain[chain_thinning])
 save_draws(ppd, "data/ppd.parquet")
 write_parquet("data/ppd_obs.parquet", ppd_obs)

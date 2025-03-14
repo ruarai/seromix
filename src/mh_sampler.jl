@@ -51,9 +51,9 @@ function AbstractMCMC.step(
     logprob_previous = LogDensityProblems.logdensity(model.logdensity, theta)
     logprob_proposal = LogDensityProblems.logdensity(model.logdensity, theta_proposal)
 
-    logratio_proposal = 0.0
+    # logratio_proposal = 0.0
 
-    log_α = logprob_proposal - logprob_previous + logratio_proposal
+    log_α = logprob_proposal - logprob_previous# + logratio_proposal
 
     if -Random.randexp(rng) <= log_α
         transition = Transition(theta_proposal)
@@ -64,28 +64,16 @@ function AbstractMCMC.step(
 end
 
 function propose_theta(rng, theta, model)
+    p_swap = rand(rng, Beta(2, length(theta) - 2))
+    # p_swap = rand(rng, Uniform(0, 0.5))
 
-    # How to get this info here?
-    n_strain = 3
-    n_t_steps = 50
+    # theta_prop = zeros(Bool, length(theta))
+    # for i in eachindex(theta)
+    #     theta_prop[i] = xor(rand(Bernoulli(p_swap)), theta[i])
+    # end
 
-    theta_mat = reshape(theta, n_t_steps, n_strain)
-    theta_mat_prop = copy(theta_mat)
+    theta_mask = rand(rng, Bernoulli(p_swap), length(theta))
+    theta_prop = xor.(theta, theta_mask)
 
-    ix_strain = sample(rng, 1:n_strain)
-
-    if any(theta_mat[:, ix_strain])
-        theta_mat_prop[:, ix_strain] .= false
-
-        if rand() < 0.5
-            ix_t = sample(rng, 1:n_t_steps)
-            theta_mat_prop[ix_t, ix_strain] = true
-        end
-
-    else
-        ix_t = sample(rng, 1:n_t_steps)
-        theta_mat_prop[ix_t, ix_strain] = true
-    end
-
-    return Vector{Real}(vec(theta_mat_prop))
+    return Vector{Real}(theta_prop)
 end
