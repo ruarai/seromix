@@ -18,19 +18,17 @@ function waning_curve(
     tau,
     dist_matrix,
     infections,
-    observations
+
+    observations,
+    obs_lookup, n_obs
 )
-    n_obs = size(observations, 2)
     y = zeros(typeof(mu_long), n_obs)
     n_t_steps, n_ind = size(infections)
     
-    # Pre-extract observation data for faster access
-    obs_t = view(observations, 1, :)
-    obs_s = view(observations, 2, :)
-    obs_i = view(observations, 3, :)
+    obs_s = view(observations, :, 2)
     
     for i in 1:n_ind
-        cumulative_infections = 0
+        cumulative_infections = 0.0
         
         for t in 1:n_t_steps
             @inbounds if !infections[t, i]
@@ -38,26 +36,34 @@ function waning_curve(
             end
             
             cumulative_infections += 1
-            
-            for ix_obs in 1:n_obs
-                @inbounds begin
-                    # Skip if observation doesn't match this individual or is before infection
-                    if obs_i[ix_obs] != i || obs_t[ix_obs] < t
-                        continue
+
+            # Only process relevant times (after current infection)
+            for obs_time in t:n_t_steps
+                
+                # Skip if no observations match this individual and time
+                if !haskey(obs_lookup, (i, obs_time))
+                    continue
+                end
+
+                matched_indices = obs_lookup[(i, obs_time)]
+                
+                # Process all matching observations
+                for ix_obs in matched_indices
+                    @inbounds begin
+                        distance = dist_matrix[t, obs_s[ix_obs]]
+                        time_diff = obs_time - t
+                        
+                        # Calculate titre contribution
+                        y[ix_obs] += @inline titre_component(
+                            mu_long, mu_short, omega,
+                            sigma_long, sigma_short, tau,
+                            cumulative_infections,
+                            distance, time_diff
+                        )
                     end
-                    
-                    distance = dist_matrix[t, obs_s[ix_obs]]
-                    time_diff = obs_t[ix_obs] - t
-                    
-                    # Calculate titre contribution
-                    y[ix_obs] += titre_component(
-                        mu_long, mu_short, omega,
-                        sigma_long, sigma_short, tau,
-                        cumulative_infections,
-                        distance, time_diff
-                    )
                 end
             end
+            
         end
     end
     

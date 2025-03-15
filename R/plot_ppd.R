@@ -3,10 +3,10 @@ source("R/common.R")
 
 
 complete_obs <- read_parquet("data/complete_obs.parquet") %>%
-  filter(i < 10)
+  filter(i < 5)
 
 obs_df <- read_parquet("data/obs.parquet") %>%
-  filter(i < 10)
+  filter(i < 5)
 
 ggplot() +
   geom_line(aes(x = t, y = y, group = s, colour = factor(s)),
@@ -48,12 +48,13 @@ chain_df %>%
 
 chain_df %>%
   spread_draws(infections[t, i]) %>%
+  filter(i < 50) %>% 
   group_by(t, i) %>%
   summarise(p = 1 - sum(infections == 0) / n()) %>%
   ggplot() +
   geom_tile(aes(x = t, y = i, fill = p)) +
   
-  geom_point(aes(x = t, y = i), infections_df, colour = "red")
+  geom_point(aes(x = t, y = i), infections_df %>% filter(i < 50), colour = "red")
 
 
 ppd_df <- read_draws("data/ppd.parquet")

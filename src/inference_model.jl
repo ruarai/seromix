@@ -5,7 +5,11 @@
     
     n_ind, n_t_steps,
     
-    obs_df, obs_titre
+    matrix_obs,
+    obs_lookup,
+    n_obs,
+
+    obs_titre
 )
     mu_long ~ LogNormal(1.0, 1.0)
 
@@ -18,7 +22,7 @@
     mu_short = mu_sum - mu_long
 
     # omega ~ LogNormal(-3.0, 1.0)
-    omega = 0.05
+    omega = convert(typeof(mu_long), 0.05)
 
     sigma_long ~ Truncated(LogNormal(-2.0, 1.0), 0, 1)
     sigma_short ~ Truncated(LogNormal(-2.0, 1.0), 0, 1)
@@ -29,13 +33,14 @@
 
     infections ~ filldist(Bernoulli(0.2), n_t_steps, n_ind)
 
-    y_pred = waning_curve(
+    y_pred = waning_curve_optimised(
         mu_long, mu_short, omega,
         sigma_long, sigma_short, tau,
 
         dist_matrix,
-        infections,
-        obs_df
+        Matrix{Bool}(infections),
+        matrix_obs,
+        obs_lookup, n_obs
     )
 
     obs_titre ~ MvNormal(y_pred, 0.3 * I)

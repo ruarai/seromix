@@ -63,17 +63,29 @@ function AbstractMCMC.step(
     end
 end
 
-function propose_theta(rng, theta, model)
-    p_swap = rand(rng, Beta(2, length(theta) - 2))
-    # p_swap = rand(rng, Uniform(0, 0.5))
+# function propose_theta(rng, theta, model)
+#     p_swap = rand(rng, Beta(2, length(theta) - 2))
 
-    # theta_prop = zeros(Bool, length(theta))
-    # for i in eachindex(theta)
-    #     theta_prop[i] = xor(rand(Bernoulli(p_swap)), theta[i])
-    # end
+#     theta_mask = rand(rng, Bernoulli(p_swap), length(theta))
+#     theta_prop = xor.(theta, theta_mask)
 
-    theta_mask = rand(rng, Bernoulli(p_swap), length(theta))
-    theta_prop = xor.(theta, theta_mask)
+#     return Vector{Real}(theta_prop)
+# end
 
+function propose_theta(rng, theta::AbstractVector{T}, model) where T <: Real
+    n = length(theta)
+    p_swap = rand(rng, Beta(2, n - 2))
+    
+    # Generate mask directly (single allocation)
+    theta_mask = rand(rng, Bernoulli(p_swap), n)
+    
+    # Use pre-allocated result vector to avoid intermediate allocation
+    theta_prop = similar(theta)
+    
+    # Apply XOR operation directly
+    @inbounds for i in 1:n
+        theta_prop[i] = xor(theta[i], theta_mask[i])
+    end
+    
     return Vector{Real}(theta_prop)
 end
