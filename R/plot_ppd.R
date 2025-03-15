@@ -33,28 +33,25 @@ bayesplot::mcmc_pairs(chain_df %>% sample_n(500),
 infections_df <- read_parquet("data/infections_df.parquet") %>%
   `colnames<-`(c("t", "i"))
 
-chain_df %>%
+plot_data_inf <- chain_df %>%
   spread_draws(infections[t, i]) %>%
-  filter(i < 10) %>%
   group_by(t, i, .chain) %>%
   summarise(p = 1 - sum(infections == 0) / n()) %>%
-  ggplot() +
-  geom_line(aes(x = t, y = p, group = .chain, colour = factor(.chain))) +
-  
-  geom_vline(aes(xintercept = t), infections_df %>% filter(i < 10)) +
-  facet_wrap(~i, ncol = 1) +
-  scale_x_continuous(breaks = 1:10)
+  left_join(infections_df %>% mutate(inf = TRUE)) %>%
+  mutate(inf = replace_na(inf, FALSE))
+
+autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf))
 
 
-chain_df %>%
-  spread_draws(infections[t, i]) %>%
+plot_data_inf %>%
   filter(i < 50) %>% 
-  group_by(t, i) %>%
-  summarise(p = 1 - sum(infections == 0) / n()) %>%
   ggplot() +
   geom_tile(aes(x = t, y = i, fill = p)) +
   
   geom_point(aes(x = t, y = i), infections_df %>% filter(i < 50), colour = "red")
+
+
+
 
 
 ppd_df <- read_draws("data/ppd.parquet")
@@ -64,7 +61,7 @@ plot_data <- ppd_df %>%
   filter(.draw %% 10 == 0) %>%
   spread_draws(obs_titre[ix_row]) %>%
   left_join(ppd_obs %>% mutate(ix_row = row_number())) %>%
-  filter(i < 4)
+  filter(i < 2)
 
 
 ggplot() +
@@ -73,10 +70,10 @@ ggplot() +
             plot_data) +
   
   geom_point(aes(x = t, y = y),
-             obs_df %>% filter(i < 4), colour = "red") +
+             obs_df %>% filter(i < 2), colour = "red") +
   
-  geom_vline(aes(xintercept = t), infections_df %>% filter(i < 4) %>% mutate(s = t),
+  geom_vline(aes(xintercept = t), infections_df %>% filter(i < 2) %>% mutate(s = t),
              colour = "red") +
   
-  facet_wrap(~i * s, ncol = 6)
+  facet_wrap(~i * s, ncol = 8)
 

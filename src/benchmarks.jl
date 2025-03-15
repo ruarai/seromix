@@ -1,11 +1,9 @@
 
-
-
 include("dependencies.jl")
 
 t_steps = 1:4
 n_t_steps = length(t_steps)
-n_ind = 500
+n_ind = 20
 
 mu_long = 3.0
 mu_short = 5.0
@@ -36,7 +34,6 @@ complete_obs.y .= waning_curve_optimised(
     make_obs_matrix(complete_obs),
     make_obs_lookup(complete_obs), nrow(complete_obs)
 )
-
 
 using BenchmarkTools
 

@@ -26,3 +26,9 @@ end
 function make_obs_matrix(obs_df)
     return Matrix{Int}(obs_df[:,1:3])
 end
+
+function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
+    if iteration % 50 == 0
+        print("$iteration,")
+    end
+end

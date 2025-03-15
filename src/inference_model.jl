@@ -11,7 +11,6 @@
 
     obs_titre
 )
-    mu_long ~ LogNormal(1.0, 1.0)
 
     # Should be constrained to what we expect y to be 
     # immediately post-infection
@@ -19,10 +18,13 @@
     # of subsequent infections.
     mu_sum ~ Truncated(LogNormal(1.0, 1.0), 6.5, 10)
 
+    # Should be such that mu_short > 0 later
+    mu_long ~ Truncated(LogNormal(1.0, 1.0), 0, 10)
+
     mu_short = mu_sum - mu_long
 
     # omega ~ LogNormal(-3.0, 1.0)
-    omega = convert(typeof(mu_long), 0.05)
+    omega = convert(typeof(mu_long), 0.5)
 
     sigma_long ~ Truncated(LogNormal(-2.0, 1.0), 0, 1)
     sigma_short ~ Truncated(LogNormal(-2.0, 1.0), 0, 1)
