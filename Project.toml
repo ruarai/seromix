@@ -1,7 +1,10 @@
 [deps]
+AbstractPPL = "7a57a42e-76ec-4ea3-a279-07e840d6d9cf"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Debugger = "31a5f54b-26ea-5ae9-a837-f05ce5417438"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+DynamicPPL = "366bfd00-2699-11ea-058f-f148b4cae6d8"
 FillArrays = "1a297f60-69ca-5386-bcde-b61e274b549b"
 LogDensityProblems = "6fdf6af0-433a-55f7-b3ed-c6c6e0b8df7c"
 Parquet = "626c502c-15b0-58ad-a749-f091afb673ae"

@@ -19,21 +19,30 @@ ggplot() +
 
 
 
-chain_df <- read_draws("data/chain.parquet")
+chain_df <- read_draws("data/chain.parquet") %>%
+  filter()
 
-parnames <- colnames(chain_df)[4:9]
+warmup_steps <- 43000
+thinning <- 10
+
+mcmc_trace(chain_df, "mu_sum", n_warmup = warmup_steps / thinning)
+
+parnames <- colnames(chain_df)[5:10]
+
+chain_df_filt <- chain_df %>%
+  filter(.iteration > warmup_steps)
 
 
-bayesplot::mcmc_hist(chain_df, parnames)
-bayesplot::mcmc_pairs(chain_df %>% sample_n(500),
-                      parnames[1:5],
-                      off_diag_args = list(size = 0.5))
+mcmc_hist(chain_df_filt, parnames)
+mcmc_pairs(chain_df_filt,
+           parnames[1:5],
+           off_diag_args = list(size = 0.5))
 
 
 infections_df <- read_parquet("data/infections_df.parquet") %>%
   `colnames<-`(c("t", "i"))
 
-plot_data_inf <- chain_df %>%
+plot_data_inf <- chain_df_filt %>%
   spread_draws(infections[t, i]) %>%
   group_by(t, i, .chain) %>%
   summarise(p = 1 - sum(infections == 0) / n()) %>%
@@ -41,7 +50,6 @@ plot_data_inf <- chain_df %>%
   mutate(inf = replace_na(inf, FALSE))
 
 autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf))
-
 
 plot_data_inf %>%
   filter(i < 50) %>% 
@@ -61,7 +69,7 @@ plot_data <- ppd_df %>%
   filter(.draw %% 10 == 0) %>%
   spread_draws(obs_titre[ix_row]) %>%
   left_join(ppd_obs %>% mutate(ix_row = row_number())) %>%
-  filter(i < 2)
+  filter(i < 3)
 
 
 ggplot() +
@@ -70,7 +78,7 @@ ggplot() +
             plot_data) +
   
   geom_point(aes(x = t, y = y),
-             obs_df %>% filter(i < 2), colour = "red") +
+             obs_df %>% filter(i < 3), colour = "red") +
   
   geom_vline(aes(xintercept = t), infections_df %>% filter(i < 2) %>% mutate(s = t),
              colour = "red") +

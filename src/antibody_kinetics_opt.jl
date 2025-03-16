@@ -1,65 +1,85 @@
 
 
-function waning_curve_optimised(
+function waning_curve!(
     mu_long::T,
     mu_short::T, omega::T,
     sigma_long::T, sigma_short::T,
     tau::T,
     dist_matrix::Matrix{Float64},
     infections::Matrix{Bool},
-    observations::Matrix{Int},
-    obs_lookup::Dict{Tuple{Int,Int},Vector{Int}}, n_obs::Int
+
+    obs_lookup::Vector{Dict{Int, Vector{Tuple{Int,Int}}}},
+    obs_views::Vector{UnitRange{Int}},
+    y::AbstractArray{T}
 ) where T <: Real
-    y = zeros(T, n_obs)
     n_t_steps, n_ind = size(infections)
-    
-    # Pre-allocate constants
-    one_t = one(T)
-    zero_t = zero(T)
-    
-    # Direct reference to avoid view allocation
-    obs_s = observations[:, 2]
+
     
     for i in 1:n_ind
-        cumulative_infections = zero_t
-        
-        for t in 1:n_t_steps
-            @inbounds if !infections[t, i]
-                continue
-            end
-            
-            cumulative_infections += one_t
-            seniority = max(zero_t, one_t - tau * (cumulative_infections - one_t))
-            
-            # Process relevant times after infection
-            for obs_time in t:n_t_steps
-                # Avoid tuple allocation in hot loop
-                key = (i, obs_time)
-                if !haskey(obs_lookup, key)
-                    continue
-                end
+        waning_curve_individual!(
+            mu_long, mu_short, omega,
+            sigma_long, sigma_short, tau,
 
-                matched_indices = obs_lookup[key]
-                time_diff = obs_time - t
-                short_term_time_factor = max(zero_t, one_t - omega * time_diff)
-                
-                # Process matching observations
-                @inbounds for ix_obs in matched_indices
-                    distance = dist_matrix[t, obs_s[ix_obs]]
-                    
-                    # Pre-compute distance factors
-                    long_term_dist = max(zero_t, one_t - sigma_long * distance)
-                    short_term_dist = max(zero_t, one_t - sigma_short * distance)
-                    
-                    # Calculate components
-                    long_term = mu_long * long_term_dist
-                    short_term = mu_short * short_term_time_factor * short_term_dist
-                    
-                    y[ix_obs] += seniority * (long_term + short_term)
-                end
-            end
-        end
+            dist_matrix, 
+
+            view(infections, :, i),
+            obs_lookup[i],
+
+            n_t_steps,
+            view(y, obs_views[i])
+        )
     end
     
     return y
+end
+
+function waning_curve_individual!(
+    mu_long::T,
+    mu_short::T, omega::T,
+    sigma_long::T, sigma_short::T,
+    tau::T,
+    dist_matrix::Matrix{Float64},
+    infections::AbstractArray{Bool},
+
+    obs_lookup_ind::Dict{Int64, Vector{Tuple{Int64,Int64}}},
+
+    n_t_steps::Int,
+
+    y::AbstractArray{T}
+) where T <: Real
+    prior_infections = 0.0
+
+    for t in 1:n_t_steps
+        @inbounds if !infections[t]
+            continue
+        end
+        
+        seniority = max(0.0, 1.0 - tau * prior_infections)
+        prior_infections += 1.0
+        
+        # Process relevant times after infection
+        for obs_time in t:n_t_steps
+            if !haskey(obs_lookup_ind, (obs_time))
+                continue
+            end
+
+            matches = obs_lookup_ind[(obs_time)]
+            time_diff = obs_time - t
+            short_term_time_factor = max(0.0, 1.0 - omega * time_diff)
+            
+            # Process matching observations
+            @inbounds for (s, ix_obs) in matches
+                distance = dist_matrix[t, s]
+                
+                long_term_dist = max(0.0, 1.0 - sigma_long * distance)
+                short_term_dist = max(0.0, 1.0 - sigma_short * distance)
+                
+                # Calculate components
+                long_term = mu_long * long_term_dist
+                short_term = mu_short * short_term_time_factor * short_term_dist
+                
+                y[ix_obs] += seniority * (long_term + short_term)
+            end
+        end
+    end
 end

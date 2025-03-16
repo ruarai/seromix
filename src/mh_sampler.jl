@@ -46,46 +46,64 @@ function AbstractMCMC.step(
     prev_transition = state.transition
     theta = prev_transition.θ
 
-    theta_proposal = propose_theta(rng, theta, model)
+    theta_new = copy(theta)
 
-    logprob_previous = LogDensityProblems.logdensity(model.logdensity, theta)
-    logprob_proposal = LogDensityProblems.logdensity(model.logdensity, theta_proposal)
+    # Get the logdensity function
+    f = model.logdensity.ℓ
 
-    # logratio_proposal = 0.0
+    varinfo_prev = DynamicPPL.unflatten(f.varinfo, theta)
 
-    log_α = logprob_proposal - logprob_previous# + logratio_proposal
+    # TODO --- how to get n_ind here?
+    # and n_t_steps?
 
-    if -Random.randexp(rng) <= log_α
-        transition = Transition(theta_proposal)
-        return transition, SamplerState(transition, theta_proposal)
-    else
-        return prev_transition, SamplerState(prev_transition, theta)
+    ## TODO --- verify this individual-by-individual sampling
+    # is mathematically correct
+    # Also, that it is actually helpful?
+    for ix_ind in 1:30
+        context = IndividualSubsetContext(ix_ind)
+        
+        logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
+
+        theta_proposal = propose_theta(rng, theta_new, ix_ind)
+
+        varinfo_proposal = DynamicPPL.unflatten(f.varinfo, theta_proposal)
+
+        logprob_proposal = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_proposal, context)))
+
+        if -Random.randexp(rng) <= logprob_proposal - logprob_previous
+            theta_new = theta_proposal
+        else
+            # nothing?
+        end
     end
+
+
+    transition = Transition(theta_new)
+    return transition, SamplerState(transition, theta_new)
 end
 
-# function propose_theta(rng, theta, model)
-#     p_swap = rand(rng, Beta(2, length(theta) - 2))
-
-#     theta_mask = rand(rng, Bernoulli(p_swap), length(theta))
-#     theta_prop = xor.(theta, theta_mask)
-
-#     return Vector{Real}(theta_prop)
-# end
-
-function propose_theta(rng, theta::AbstractVector{T}, model) where T <: Real
-    n = length(theta)
-    p_swap = rand(rng, Beta(2, n - 2))
+function propose_theta(rng, theta::AbstractVector{T}, ix_ind::Int) where T <: Real
+    n_t_steps = 10
+    p_swap = rand(rng, Beta(2, n_t_steps - 2))
     
     # Generate mask directly (single allocation)
-    theta_mask = rand(rng, Bernoulli(p_swap), n)
+    theta_mask = rand(rng, Bernoulli(p_swap), n_t_steps)
+    theta_prop = copy(theta)
+
+    ix_start = (ix_ind - 1) * n_t_steps + 1
+    ix_end = ix_start + n_t_steps - 1
     
-    # Use pre-allocated result vector to avoid intermediate allocation
-    theta_prop = similar(theta)
-    
-    # Apply XOR operation directly
-    @inbounds for i in 1:n
-        theta_prop[i] = xor(theta[i], theta_mask[i])
+    # @inbounds 
+    for (i, i_theta) in enumerate(ix_start:ix_end)
+        theta_prop[i_theta] = xor(theta[i_theta], theta_mask[i])
     end
     
     return Vector{Real}(theta_prop)
 end
+
+
+struct IndividualSubsetContext <: DynamicPPL.AbstractContext
+    ix::Int
+end
+
+DynamicPPL.NodeTrait(context::IndividualSubsetContext) = DynamicPPL.IsLeaf()

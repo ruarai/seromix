@@ -3,7 +3,7 @@ include("dependencies.jl")
 
 t_steps = 1:4
 n_t_steps = length(t_steps)
-n_ind = 20
+n_ind = 50
 
 mu_long = 3.0
 mu_short = 5.0
@@ -17,50 +17,54 @@ dist_matrix = [abs(i - j) for i in 1:1.0:n_t_steps, j in 1:1.0:n_t_steps]
 
 infections = zeros(Bool, n_t_steps, n_ind)
 
-infections = rand(Bernoulli(0.2), (n_t_steps, n_ind))
+infections = rand(Bernoulli(0.5), (n_t_steps, n_ind))
 
 infections_df = DataFrame(stack([[i[1], i[2]] for i in findall(infections)])', :auto)
-write_parquet("data/infections_df.parquet", infections_df)
+complete_obs = expand_grid(s = 1:n_t_steps, t = 1:n_t_steps, i = 1:n_ind)
 
-complete_obs = expand_grid(t = 1:n_t_steps, s = 1:n_t_steps, i = 1:n_ind)
+# Ensure dataframe is sorted at this stage
+n_obs = nrow(complete_obs)
 
-complete_obs.y .= waning_curve_optimised(
+obs_views = make_obs_views(complete_obs)
+obs_lookup = make_obs_lookup_individuals(complete_obs)
+
+y = zeros(n_obs)
+
+waning_curve!(
     mu_long, mu_short, omega,
     sigma_long, sigma_short, tau,
 
     dist_matrix,
     infections,
 
-    make_obs_matrix(complete_obs),
-    make_obs_lookup(complete_obs), nrow(complete_obs)
+    obs_lookup, obs_views,
+    y
 )
 
 using BenchmarkTools
 
-
-n_obs = nrow(complete_obs)
-
-obs_lookup = make_obs_lookup(complete_obs)
-obs_matrix = make_obs_matrix(complete_obs)
-
-@time [waning_curve_optimised(
-    i, mu_short, omega,
-    sigma_long, sigma_short, tau,
-
-    dist_matrix,
-    infections,
-    obs_matrix,
-    obs_lookup, n_obs
-) for i in 1:1.0:100];
-
-
-@benchmark waning_curve_optimised(
+@benchmark waning_curve!(
     x, $mu_short, $omega,
     $sigma_long, $sigma_short, $tau,
 
     $dist_matrix,
     $infections,
 
-    $obs_matrix,
-    $obs_lookup, $n_obs
-) setup=(x = rand())
+    $obs_lookup, $obs_views,
+    y
+) setup=(x = rand(); y = zeros(n_obs))
+
+
+inf_view = @view infections[:, 1]
+obs_lookup_ind = obs_lookup[1]
+n_obs_ind = length(obs_views[1])
+
+@benchmark waning_curve_individual!(
+    x, $mu_short, $omega,
+    $sigma_long, $sigma_short, $tau,
+
+    $dist_matrix, $inf_view,
+
+    $obs_lookup_ind, $n_t_steps,
+    y
+) setup=(x = rand(); y = zeros(n_obs_ind))
