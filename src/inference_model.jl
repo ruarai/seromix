@@ -24,8 +24,8 @@
 
     mu_short = mu_sum - mu_long
 
-    # omega ~ LogNormal(-3.0, 1.0)
-    omega = convert(typeof(mu_long), 0.8)
+    omega ~ Truncated(LogNormal(-1.0, 0.5), 0, 3)
+    # omega = convert(typeof(mu_long), 0.8)
 
     sigma_long ~ Truncated(LogNormal(-2.0, 1.0), 0, 1)
     sigma_short ~ Truncated(LogNormal(-2.0, 1.0), 0, 1)
@@ -58,10 +58,10 @@
             y_pred
         )
 
+        # Replace with one-liner as in below?
         for (i, ix_obs) in enumerate(obs_views[ix_ind])
             obs_titre[ix_obs] ~ Normal(y_pred[i], 0.5)
         end
-
     else
         y_pred = zeros(typeof(mu_long), n_obs)
 

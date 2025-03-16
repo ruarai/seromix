@@ -53,13 +53,15 @@ function AbstractMCMC.step(
 
     varinfo_prev = DynamicPPL.unflatten(f.varinfo, theta)
 
+    # TOOD -- optimise the code here. lots of copying at the moment
+
     # TODO --- how to get n_ind here?
     # and n_t_steps?
 
     ## TODO --- verify this individual-by-individual sampling
     # is mathematically correct
     # Also, that it is actually helpful?
-    for ix_ind in 1:30
+    for ix_ind in 1:100
         context = IndividualSubsetContext(ix_ind)
         
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))

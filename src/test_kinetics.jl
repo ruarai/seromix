@@ -4,7 +4,7 @@ include("dependencies.jl")
 
 t_steps = 1:10
 n_t_steps = length(t_steps)
-n_ind = 30
+n_ind = 100
 
 mu_long = 2.0
 mu_short = 2.7
@@ -69,13 +69,9 @@ gibbs_sampler = Gibbs(
     symbols => HMC(0.005, 10) # Must be reduced with number of individuals?
 )
 
-chain = sample(
-    model, gibbs_sampler, 5000
-);
-
-chain = sample(
+chain = @time sample(
     model, gibbs_sampler, 
-    MCMCThreads(), 3000, 6,
+    MCMCThreads(), 2000, 6,
     callback = log_callback
 );
 
@@ -89,12 +85,12 @@ chain = sample(
 
 plot(chain, [:mu_long, :mu_sum], seriestype = :traceplot)
 plot(chain, [:sigma_long, :sigma_short], seriestype = :traceplot)
-plot(chain, [:tau], seriestype = :traceplot)
+plot(chain, [:tau, :omega], seriestype = :traceplot)
 
 save_draws(chain, "data/chain.parquet")
 
 
-ppd_start_draw_ix = 5000
+ppd_start_draw_ix = 1000
 # Only first 10 individuals for PPD.
 ppd_obs = expand_grid(t = 1:n_t_steps, s = 1:n_t_steps, i = 1:10)
 # Posterior predictive
