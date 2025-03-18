@@ -21,9 +21,7 @@ complete_obs <- read_parquet(str_c(run_dir, "complete_obs.parquet")) %>%
 
 obs_df <- read_parquet(str_c(run_dir, "obs.parquet")) %>%
   mutate(year_sampled = modelled_years[ix_t_obs],
-         strain_year = modelled_years[ix_strain]) %>%
-  
-  filter(year_sampled %% 2 == 0)
+         strain_year = modelled_years[ix_strain])
 
 infections_df <- read_parquet(str_c(run_dir, "infections_df.parquet")) %>% 
   `colnames<-`(c("ix_t", "ix_subject")) %>%
@@ -31,7 +29,11 @@ infections_df <- read_parquet(str_c(run_dir, "infections_df.parquet")) %>%
 
 ggplot() +
   geom_line(aes(x = strain_year, y = observed_titre),
-                 complete_obs %>% filter(ix_subject == 40)) +
+                 complete_obs %>% filter(ix_subject == 50)) +
+  
+  geom_point(aes(x = strain_year, y = observed_titre),
+             size = 0.5,
+             obs_df %>% filter(ix_subject == 50)) +
   
   xlab("Strain year") +
   
@@ -40,7 +42,7 @@ ggplot() +
 
 chain_df <- read_draws(str_c(run_dir, "chain.parquet"))
 
-warmup_steps <- 4000
+warmup_steps <- 3000
 thinning <- 1
 
 parnames <- colnames(chain_df)[5:9]
@@ -100,9 +102,10 @@ plot_data_inf %>%
 
 
 
+ix_subject_ex <- 45
 
-ppd_obs <- read_parquet("data/ppd_obs.parquet") %>%
-  filter(ix_subject == 40) %>%
+ppd_obs <- read_parquet(str_c(run_dir, "ppd_obs.parquet")) %>%
+  filter(ix_subject == ix_subject_ex) %>%
   mutate(year_sampled = modelled_years[ix_t_obs],
          strain_year = modelled_years[ix_strain]) %>%
   
@@ -110,21 +113,18 @@ ppd_obs <- read_parquet("data/ppd_obs.parquet") %>%
 
 
 ggplot() +
-  # geom_point(aes(x = strain_year, y = observed_titre, group = draw),
-  #            alpha = 0.3, size = 0.5,
-  #            ppd_obs) +
-  # 
   
+  geom_point(aes(x = strain_year, y = observed_titre),
+             size = 0.5,
+             obs_df %>% filter(ix_subject == ix_subject_ex)) +
+
   geom_line(aes(x = strain_year, y = observed_titre, group = draw),
             linewidth = 0.3, alpha = 0.3,
             ppd_obs) +
   
   geom_line(aes(x = strain_year, y = observed_titre),
-            colour = "red", alpha = 0.5,
-            complete_obs %>% filter(ix_subject == 40)) +
+            colour = "red", alpha = 1.0,
+            complete_obs %>% filter(ix_subject == ix_subject_ex)) +
   
-  # geom_linerange(aes(x = strain_year, ymin = 0, ymax = observed_titre),
-  #                linewidth = 1, alpha = 0.3, colour = "red",
-  #                complete_obs %>% filter(ix_subject == 20)) +
   
   facet_wrap(~year_sampled, ncol = 3)

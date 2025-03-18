@@ -1,10 +1,21 @@
 
 
+
+struct FixedModelParameters
+    n_t_steps::Int
+    n_subjects::Int
+
+    antigenic_distances::Matrix{Float64}
+
+    time_diff_matrix::Matrix{Float64}
+
+    subject_birth_ix::Vector{Int}
+end
+
+
+
 @model function waning_model(
-    dist_matrix, time_diff_matrix,
-    subject_birth_ix,
-    
-    n_ind, n_t_steps,
+    model_parameters::FixedModelParameters,
 
     obs_lookup, obs_views,
     n_obs,
@@ -34,7 +45,10 @@
     tau ~ LogNormal(-2.0, 1.0)
 
     # Maybe replace with a matrix-variate distribution?
-    infections ~ filldist(Bernoulli(0.2), n_t_steps, n_ind)
+    infections ~ filldist(
+        Bernoulli(0.2), 
+        model_parameters.n_t_steps, model_parameters.n_subjects
+    )
 
     context = DynamicPPL.leafcontext(__context__)
 
@@ -52,12 +66,12 @@
             mu_long, mu_short, omega,
             sigma_long, sigma_short, tau,
 
-            dist_matrix, time_diff_matrix,
-            subject_birth_ix[ix_subject],
+            model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
+            model_parameters.subject_birth_ix[ix_subject],
+
             AbstractArray{Bool}(view(infections, :, ix_subject)),
 
-            obs_lookup[ix_subject], n_t_steps,
-
+            obs_lookup[ix_subject], 
             y_pred
         )
 
@@ -71,10 +85,11 @@
         waning_curve!(
             mu_long, mu_short, omega,
             sigma_long, sigma_short, tau,
+
+            model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
+            model_parameters.subject_birth_ix,
     
-            dist_matrix, time_diff_matrix,
-            subject_birth_ix,
-            Matrix{Bool}(infections), # Is this necessary?
+            Matrix{Bool}(infections),
     
             obs_lookup, obs_views,
             y_pred

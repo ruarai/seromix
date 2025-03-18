@@ -28,7 +28,6 @@ function waning_curve!(
             view(infections, :, ix_subject),
             obs_lookup[ix_subject],
 
-            n_t_steps,
             view(y, obs_views[ix_subject])
         )
     end
@@ -48,10 +47,10 @@ function waning_curve_individual!(
 
     obs_lookup_ind::Dict{Int64, Vector{Tuple{Int64,Int64}}},
 
-    n_t_steps::Int,
-
     y::AbstractArray{T}
 ) where T <: Real
+    n_t_steps = length(infections)
+
     prior_infections = 0.0
 
     for ix_t in (subject_birth_ix + 1):n_t_steps
