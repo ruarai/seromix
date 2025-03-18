@@ -15,3 +15,14 @@ read_draws <- function(filename) {
     rename_with(function(x) str_remove(x, " ")) 
 }
 
+
+
+save_hdf5 <- function(data_list, filename) {
+  if(file.exists(filename)) {
+    file.remove(filename)
+  }
+  
+  for (i in 1:length(data_list)) {
+    rhdf5::h5write(data_list[[i]], filename, names(data_list)[[i]])
+  }
+}

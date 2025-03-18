@@ -5,72 +5,78 @@ function save_draws(draws, filename)
 end
 
 function make_obs_views(obs_df)
-    n_ind = maximum(complete_obs.i)
+    n_ind = maximum(obs_df.ix_subject)
     [
-        findfirst(obs_df.i .== i):findlast(obs_df.i .== i)
-        for i in 1:n_ind
+        findfirst(obs_df.ix_subject .== ix_subject):findlast(obs_df.ix_subject .== ix_subject)
+        for ix_subject in 1:n_ind
     ]
 end
 
 function make_obs_lookup(obs_df)
-    n_ind = maximum(complete_obs.i)
+    n_ind = maximum(obs_df.ix_subject)
 
     obs_lookup = Vector{Dict{Int64, Vector{Tuple{Int64,Int64}}}}(undef, n_ind)
 
-    for i in 1:n_ind
-        obs_lookup[i] = Dict{Int64, Vector{Tuple{Int64,Int64}}}()
+    obs_ix_offsets = [findfirst(obs_df.ix_subject .== ix_subject) for ix_subject in 1:n_ind]
+
+    for ix_subject in 1:n_ind
+        obs_lookup[ix_subject] = Dict{Int64, Vector{Tuple{Int64,Int64}}}()
     end
 
     for ix_obs in 1:nrow(obs_df)
-        i = obs_df[ix_obs, :i]
-        t_obs = obs_df[ix_obs, :t]
-        s_obs = obs_df[ix_obs, :s]
+        ix_subject = obs_df[ix_obs, :ix_subject]
+        ix_t_obs = obs_df[ix_obs, :ix_t_obs]
+        ix_strain = obs_df[ix_obs, :ix_strain]
 
-        key = t_obs
+        key = ix_t_obs
         
-        if !haskey(obs_lookup[i], key)
-            obs_lookup[i][key] = Int[]
+        if !haskey(obs_lookup[ix_subject], key)
+            obs_lookup[ix_subject][key] = Int[]
         end
 
-        push!(obs_lookup[i][key], (s_obs, ix_obs))
+        push!(obs_lookup[ix_subject][key], (ix_strain, ix_obs - obs_ix_offsets[ix_subject] + 1))
     end
 
     return obs_lookup
 end
 
+function make_time_diff_matrix(modelled_years)
+    n_t_steps = length(modelled_years)
 
-function make_obs_lookup_individuals(obs_df)
-    n_ind = maximum(complete_obs.i)
+    time_diff_matrix = zeros(n_t_steps, n_t_steps)
 
-    obs_lookup = Vector{Dict{Int64, Vector{Tuple{Int64,Int64}}}}(undef, n_ind)
-
-    obs_ix_offsets = [findfirst(complete_obs.i .== i) for i in 1:n_ind]
-
-    for i in 1:n_ind
-        obs_lookup[i] = Dict{Int64, Vector{Tuple{Int64,Int64}}}()
-    end
-
-    for ix_obs in 1:nrow(obs_df)
-        i = obs_df[ix_obs, :i]
-        t_obs = obs_df[ix_obs, :t]
-        s_obs = obs_df[ix_obs, :s]
-
-        key = t_obs
-        
-        if !haskey(obs_lookup[i], key)
-            obs_lookup[i][key] = Int[]
+    for ix_t in 1:n_t_steps
+        for ix_t_obs in 1:n_t_steps
+            time_diff_matrix[ix_t_obs, ix_t] = modelled_years[ix_t_obs] - modelled_years[ix_t]
         end
-
-        push!(obs_lookup[i][key], (s_obs, ix_obs - obs_ix_offsets[i] + 1))
     end
 
-    return obs_lookup
+    return time_diff_matrix
 end
 
 function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
     if iteration % 50 == 0
         print("$iteration,")
     end
+end
+
+function read_obs_df_R(obs_df)
+    obs_df = DataFrame(obs_df)
+
+    obs_df[!, :ix_subject] = convert.(Int64,obs_df[!, :ix_subject])
+    obs_df[!, :ix_t_obs] = convert.(Int64,obs_df[!, :ix_t_obs])
+    obs_df[!, :ix_strain] = convert.(Int64,obs_df[!, :ix_strain])
+
+    obs_df[!, :observed_titre] = convert.(Float64,obs_df[!, :observed_titre])
+
+    return obs_df
+end
+
+function model_symbols_apart_from(model, sym)
+    symbols = DynamicPPL.syms(DynamicPPL.VarInfo(model))
+    symbols = symbols[findall(symbols .!= sym)]
+    
+    return symbols
 end
 
 
@@ -86,4 +92,19 @@ function expand_grid(; iters...)
         out[:,var_names[i]] = collect(iters[i])[var_ix[:,i]]
     end
     return out
+end
+
+
+function ntuple_to_matrix(nt, n_t_steps, n_subjects)
+    elements = collect(nt)
+
+    result = Array{Float64}(undef, n_t_steps, n_subjects)
+
+    i = 1
+    for ix_subject in 1:n_subjects, ix_t in 1:n_t_steps
+        result[ix_t, ix_subject] = elements[i].data[1]
+        i += 1
+    end
+
+    return result
 end

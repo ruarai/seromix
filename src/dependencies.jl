@@ -25,6 +25,8 @@ using LogDensityProblems
 
 using AbstractPPL
 
+using JLD2
+
 
 
 # include("antibody_kinetics.jl")

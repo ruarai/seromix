@@ -60,8 +60,7 @@ function AbstractMCMC.step(
 
     ## TODO --- verify this individual-by-individual sampling
     # is mathematically correct
-    # Also, that it is actually helpful?
-    for ix_ind in 1:100
+    for ix_ind in 1:69
         context = IndividualSubsetContext(ix_ind)
         
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
@@ -85,7 +84,7 @@ function AbstractMCMC.step(
 end
 
 function propose_theta(rng, theta::AbstractVector{T}, ix_ind::Int) where T <: Real
-    n_t_steps = 10
+    n_t_steps = 45
     p_swap = rand(rng, Beta(2, n_t_steps - 2))
     
     # Generate mask directly (single allocation)
@@ -95,8 +94,7 @@ function propose_theta(rng, theta::AbstractVector{T}, ix_ind::Int) where T <: Re
     ix_start = (ix_ind - 1) * n_t_steps + 1
     ix_end = ix_start + n_t_steps - 1
     
-    # @inbounds 
-    for (i, i_theta) in enumerate(ix_start:ix_end)
+    @inbounds for (i, i_theta) in enumerate(ix_start:ix_end)
         theta_prop[i_theta] = xor(theta[i_theta], theta_mask[i])
     end
     
@@ -109,3 +107,7 @@ struct IndividualSubsetContext <: DynamicPPL.AbstractContext
 end
 
 DynamicPPL.NodeTrait(context::IndividualSubsetContext) = DynamicPPL.IsLeaf()
+
+function make_mh_infection_sampler()
+    return externalsampler(MHInfectionSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
+end
