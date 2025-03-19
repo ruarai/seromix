@@ -22,27 +22,23 @@ end
 
     observed_titre     
 )
-    min_inf_titre = 3.0
-    max_inf_titre = 6.0
-
     # Should be constrained to what we expect y to be 
     # immediately post-infection
     # Otherwise this becomes non-identifiable against getting lots
     # of subsequent infections.
-    mu_sum ~ Truncated(LogNormal(1.0, 1.0), min_inf_titre, max_inf_titre)
+    mu_sum ~ Uniform(3.0, 6.0)
 
-    # Should be such that mu_short > 0 later
-    mu_long ~ Truncated(LogNormal(1.0, 1.0), 0, max_inf_titre)
+    mu_long ~ Uniform(0.0, 6.0)
 
     mu_short = mu_sum - mu_long
 
     # omega ~ Truncated(LogNormal(-1.0, 0.5), 0, 3)
     omega = convert(typeof(mu_long), 0.8)
 
-    sigma_long ~ Truncated(LogNormal(-2.0, 1.0), 0, 1)
-    sigma_short ~ Truncated(LogNormal(-2.0, 1.0), 0, 1)
+    sigma_long ~ Uniform(0, 1)
+    sigma_short ~ Uniform(0, 1)
 
-    tau ~ LogNormal(-2.0, 1.0)
+    tau ~ Uniform(0, 1)
 
     # Maybe replace with a matrix-variate distribution?
     infections ~ filldist(

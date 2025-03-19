@@ -1,25 +1,25 @@
-generate_antigenic_map <- function(antigenic_distances, buckets = 1, year_min = 1968, year_max = 2016) {
-  ## Convert strains to correct time dimensions
-  antigenic_distances$strain_year <- antigenic_distances$strain_year * buckets
-  ## Fit spline through antigenic coordinates
-  fit <- smooth.spline(antigenic_distances$X, antigenic_distances$Y, nknots = 10)
+generate_antigenic_map <- function(antigenic_distances, modelled_years) {
   
-  ## Work out relationship between strain circulation time and x coordinate
-  x_line <- lm(data = antigenic_distances, X ~ strain_year)
-  
-  ## Enumerate all strains that could circulate
-  strain_year <- seq(year_min * buckets, year_max * buckets - 1, by = 1)
+  fit <- smooth.spline(antigenic_distances$X, antigenic_distances$Y)
   
   ## Predict x and y coordinates for each possible strain from this spline
-  x_predict <- predict(x_line, data.frame(strain_year))
+  # x_predict <- predict(x_line, data.frame(strain_year))
+  x_predict <- scalemap(modelled_years, modelled_years)
   y_predict <- predict(fit, x = x_predict)
   
   fit_data <- tibble(
     x = y_predict$x, y = y_predict$y,
-    strain_year = strain_year
+    strain_year = modelled_years
   )
   
   return(fit_data)
+}
+
+scalemap<-function(xx, inf_years) {
+  if(max(inf_years)>2012){stop("need infection range to be inside antigenic map")}
+  map.range <- c(1968:2012)
+  alen <- c(333.83,370.28); alenA <- (alen[2]-alen[1])/(max(xx)-min(xx)); alenB <- alen[1]-alenA*min(xx)
+  s1 <- alenA*xx+alenB-alen[1]; s1*length(inf_years)/length(map.range) +alen[1]
 }
 
 generate_antigenic_distances <- function(df) {

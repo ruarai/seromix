@@ -5,14 +5,14 @@ if dirname(Base.active_project()) != pwd()
 end
 
 
-if VERSION != v"1.11.3"
-    println("Julia version has changed. Is this correct?")
+if VERSION != v"1.11.4"
+    println("Julia version has changed (now $VERSION). Is this correct?")
 end
 
 using Distributions
 using Turing
 
-using Plots, StatsPlots
+# using Plots, StatsPlots
 
 using LinearAlgebra
 using StatsBase
@@ -36,3 +36,5 @@ include("inference_model.jl")
 include("mh_sampler.jl")
 
 include("helper_functions.jl")
+
+include("make_ppd.jl")

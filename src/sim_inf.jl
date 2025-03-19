@@ -68,7 +68,9 @@ end
 modelled_years = model_data["modelled_years"]
 obs_df = filter(:ix_t_obs => ix_t_obs -> modelled_years[ix_t_obs] % 4 == 0, complete_obs)
 obs_df = filter([:ix_subject, :ix_t_obs] => filt_age, obs_df)
-obs_df.observed_titre = round.(max.(0, obs_df.observed_titre .+ rand(Normal(0, 1.3), nrow(obs_df))))
+#obs_df.observed_titre = round.(max.(0, obs_df.observed_titre .+ rand(Normal(0, 1.3), nrow(obs_df))))
+obs_df.observed_titre = obs_df.observed_titre .+ rand(Normal(0, 1.3), nrow(obs_df))
+
 write_parquet("$runs_dir/obs.parquet", obs_df)
 
 model = waning_model(
@@ -84,12 +86,12 @@ symbols_not_inf = model_symbols_apart_from(model, :infections)
 # HMC step size must be tuned to balance efficiency of the two samplers
 gibbs_sampler = Gibbs(
     :infections => make_mh_infection_sampler(),
-    symbols_not_inf => HMC(0.004, 10) # Must be reduced with number of individuals?
+    symbols_not_inf => HMC(0.006, 10) # Must be reduced with number of individuals?
 )
 
 chain = @time sample(
     model, gibbs_sampler, 
-    MCMCThreads(), 5000, 6,
+    MCMCThreads(), 100, 6,
     callback = log_callback
 );
 
@@ -102,6 +104,6 @@ plot(chain, [:tau], seriestype = :traceplot)
 save_draws(chain, "$runs_dir/chain.parquet")
 
 
-ppd_obs = make_ppd(chain[3000:end], 50, p)
+ppd_obs = make_ppd(chain[4000:end], 50, p)
 
 write_parquet("$runs_dir/ppd_obs.parquet", ppd_obs)

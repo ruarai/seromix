@@ -5,6 +5,7 @@ true_values <- tribble(
   ~name, ~value,
   "mu_long", 2.0,
   "mu_sum", 2.0 + 2.7,
+  "mu_short", 2.7,
   "sigma_long", 0.13,
   "sigma_short", 0.03,
   "tau", 0.04
@@ -42,14 +43,13 @@ ggplot() +
 
 chain_df <- read_draws(str_c(run_dir, "chain.parquet"))
 
-warmup_steps <- 3000
-thinning <- 1
+warmup_steps <- 4000
 
-parnames <- colnames(chain_df)[5:9]
+parnames <- c(colnames(chain_df)[5:9], "mu_short")
 
 chain_df %>%
-  select(.iteration, .chain, all_of(parnames)) %>%
-  pivot_longer(all_of(parnames)) %>%
+  select(.iteration, .chain, any_of(parnames)) %>%
+  pivot_longer(any_of(parnames)) %>%
   ggplot() +
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain))) +
   
@@ -61,8 +61,11 @@ chain_df_filt <- chain_df %>%
   filter(.iteration > warmup_steps)
 
 chain_filt_wide <- chain_df_filt %>%
-  select(.iteration, .chain, all_of(parnames)) %>%
-  pivot_longer(all_of(parnames))
+  mutate(mu_short = mu_sum - mu_long) %>% 
+  select(.iteration, .chain, any_of(parnames)) %>%
+  pivot_longer(any_of(parnames))
+
+mcmc_pairs(chain_df_filt, parnames)
 
 ggplot() +
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain)),
@@ -90,14 +93,15 @@ plot_data_inf <- chain_df_filt %>%
   left_join(subject_birth_data) %>%
   filter(ix_t > ix_t_birth)
 
-autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf))
-
 plot_data_inf %>%
-  filter(ix_subject < 50) %>% 
+  # filter(ix_subject < 50) %>% 
   ggplot() +
   geom_tile(aes(x = ix_t, y = ix_subject, fill = p)) +
   
-  geom_point(aes(x = ix_t, y = ix_subject), infections_df %>% filter(ix_subject < 50), colour = "red")
+  geom_point(aes(x = ix_t, y = ix_subject), infections_df, colour = "red")
+
+
+autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf), curvetype = "ROC")
 
 
 

@@ -79,6 +79,19 @@ function model_symbols_apart_from(model, sym)
     return symbols
 end
 
+function make_gibbs_sampler(model, inf_sym, hmc_step_size)
+    symbols_not_inf = model_symbols_apart_from(model, inf_sym)
+    
+    # Must somehow balance the level of exploration of the MH sampler
+    # with that of the HMC sampler -- so repeating MH or changing HMC step size
+    gibbs_sampler = Gibbs(
+        :infections => make_mh_infection_sampler(),
+        symbols_not_inf => HMC(hmc_step_size, 10) # Must be reduced with number of individuals?
+    )
+    
+    return gibbs_sampler
+end
+
 
 # Expand grid via
 # https://stackoverflow.com/a/67733908
