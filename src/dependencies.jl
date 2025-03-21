@@ -12,7 +12,7 @@ end
 using Distributions
 using Turing
 
-# using Plots, StatsPlots
+using Plots, StatsPlots
 
 using LinearAlgebra
 using StatsBase
@@ -38,3 +38,5 @@ include("mh_sampler.jl")
 include("helper_functions.jl")
 
 include("make_ppd.jl")
+
+include("matrix_bernoulli.jl")

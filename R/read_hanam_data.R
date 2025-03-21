@@ -35,12 +35,12 @@ read_hanam_data <- function() {
   
   
   hanam_data_processed <- hanam_data_raw %>%
-    rename(subject_id = `Subject number`,
+    rename(ix_subject = `Subject number`,
            year_sampled = `Sample year`) %>%
-    mutate(subject_id = as.integer(subject_id),
+    mutate(ix_subject = as.integer(ix_subject),
            year_sampled = as.integer(year_sampled)) %>%
     
-    pivot_longer(cols = -c(subject_id, year_sampled),
+    pivot_longer(cols = -c(ix_subject, year_sampled),
                  names_to = "strain_name",
                  values_to = "observed_titre") %>%
     
@@ -64,8 +64,7 @@ read_hanam_data <- function() {
   observations_df <- hanam_data_processed %>%
     
     mutate(ix_t_obs = match(year_sampled, modelled_years),
-           ix_strain = match(strain_year, modelled_years),
-           ix_subject = subject_id) %>%
+           ix_strain = match(strain_year, modelled_years)) %>%
     
     mutate(across(c(ix_subject, ix_t_obs, ix_strain), as.integer))
   
@@ -86,8 +85,7 @@ read_hanam_data <- function() {
     generate_antigenic_distances()
   
   subject_birth_data <- birth_data_raw %>%
-    mutate(subject_id = row_number(),
-           ix_subject = subject_id) %>%
+    mutate(ix_subject = row_number()) %>% 
     mutate(ix_t_birth = match(year_of_birth, modelled_years),
            ix_t_birth = replace_na(ix_t_birth, 0))
   

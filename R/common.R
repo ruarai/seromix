@@ -26,3 +26,16 @@ save_hdf5 <- function(data_list, filename) {
     rhdf5::h5write(data_list[[i]], filename, names(data_list)[[i]])
   }
 }
+
+
+read_hdf5 <- function(filename) {
+  item_names <- rhdf5::h5ls(filename)$name
+  
+  l <- map(item_names,
+           function(item_name) {
+             rhdf5::h5read(filename, item_name)
+           }) %>%
+    `names<-`(item_names)
+  
+  return(l)
+}

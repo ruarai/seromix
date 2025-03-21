@@ -13,8 +13,8 @@ function make_ppd(
         chain_sample = sample(chain, 1)
 
         draw_dfs[ix_draw] = expand_grid(
-            ix_t_obs = 1:n_t_steps, 
-            ix_strain = 1:n_t_steps, 
+            ix_t_obs = 1:params.n_t_steps, 
+            ix_strain = 1:params.n_t_steps, 
             ix_subject = ppd_subjects,
             draw = ix_draw,
             observed_titre = 0.0
@@ -28,7 +28,7 @@ function make_ppd(
 
         p = get_params(chain_sample)
         
-        pred_inf = ntuple_to_matrix(p.infections, n_t_steps, n_subjects)
+        pred_inf = ntuple_to_matrix(p.infections, params.n_t_steps, params.n_subjects)
 
         for ix_subject in ppd_subjects
 

@@ -30,7 +30,8 @@ function AbstractMCMC.step(
 )
     d = LogDensityProblems.dimension(model.logdensity)
 
-    theta_init = convert(Vector{Real}, fill(false, d))
+    # theta_init = convert(Vector{Real}, fill(false, d))
+    theta_init = fill(false, d)
 
     transition = Transition(theta_init)
     return transition, SamplerState(transition, theta_init)
@@ -52,29 +53,39 @@ function AbstractMCMC.step(
     f = model.logdensity.ℓ
 
     varinfo_prev = DynamicPPL.unflatten(f.varinfo, theta)
-
-    # TOOD -- optimise the code here. lots of copying at the moment
-
-    # TODO --- how to get n_ind here?
+    
+    # TODO --- how to get n_subjects here?
     # and n_t_steps?
+    n_t_steps = 20
+    n_subjects = 20
+
+    mean_p_swap = 1.0 / n_t_steps
+    alpha = 3.0
+
+    p_swap = rand(rng, Beta(alpha, alpha / mean_p_swap - alpha))
+
+    mask = zeros(Bool, n_t_steps)
 
     ## TODO --- verify this individual-by-individual sampling
     # is mathematically correct
-    for ix_ind in 1:69
-        context = IndividualSubsetContext(ix_ind)
+    for ix_subject in 1:n_subjects
+        context = IndividualSubsetContext(ix_subject)
         
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
-        theta_proposal = propose_theta(rng, theta_new, ix_ind)
+        mask .= rand(rng, Bernoulli(p_swap), n_t_steps)
 
-        varinfo_proposal = DynamicPPL.unflatten(f.varinfo, theta_proposal)
+        apply_mask!(theta_new, mask, ix_subject, n_t_steps)
+
+        varinfo_proposal = DynamicPPL.unflatten(f.varinfo, theta_new)
 
         logprob_proposal = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_proposal, context)))
 
         if -Random.randexp(rng) <= logprob_proposal - logprob_previous
-            theta_new = theta_proposal
+            # nothing
         else
-            # nothing?
+            # Re-apply mask to undo
+            apply_mask!(theta_new, mask, ix_subject, n_t_steps)
         end
     end
 
@@ -83,24 +94,14 @@ function AbstractMCMC.step(
     return transition, SamplerState(transition, theta_new)
 end
 
-function propose_theta(rng, theta::AbstractVector{T}, ix_ind::Int) where T <: Real
-    n_t_steps = 45
-    p_swap = rand(rng, Beta(2, n_t_steps - 2))
-    
-    # Generate mask directly (single allocation)
-    theta_mask = rand(rng, Bernoulli(p_swap), n_t_steps)
-    theta_prop = copy(theta)
-
+function apply_mask!(theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_ind::Int, n_t_steps::Int)
     ix_start = (ix_ind - 1) * n_t_steps + 1
     ix_end = ix_start + n_t_steps - 1
     
     @inbounds for (i, i_theta) in enumerate(ix_start:ix_end)
-        theta_prop[i_theta] = xor(theta[i_theta], theta_mask[i])
+        theta[i_theta] = xor(theta[i_theta], mask[i])
     end
-    
-    return Vector{Real}(theta_prop)
 end
-
 
 struct IndividualSubsetContext <: DynamicPPL.AbstractContext
     ix::Int
@@ -111,3 +112,25 @@ DynamicPPL.NodeTrait(context::IndividualSubsetContext) = DynamicPPL.IsLeaf()
 function make_mh_infection_sampler()
     return externalsampler(MHInfectionSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
 end
+
+
+function DynamicPPL.unflatten(vi::DynamicPPL.VarInfo, spl::AbstractMCMC.AbstractSampler, x::AbstractVector)
+    md = DynamicPPL.unflatten(vi.metadata, spl, x)
+
+    return DynamicPPL.VarInfo(
+        md,
+        Base.RefValue{DynamicPPL.float_type_with_fallback(eltype(x))}(DynamicPPL.getlogp(vi)),
+        Ref(DynamicPPL.get_num_produce(vi)),
+    )
+end
+
+# function DynamicPPL.unflatten(vi::DynamicPPL.VarInfo, x::AbstractVector)
+#     md = DynamicPPL.unflatten(vi.metadata, spl, x)
+#     # Note that use of RefValue{eltype(x)} rather than Ref is necessary to deal with cases
+#     # where e.g. x is a type gradient of some AD backend.
+#     return DynamicPPL.VarInfo(
+#         md,
+#         Base.RefValue{float_type_with_fallback(eltype(x))}(DynamicPPL.getlogp(vi)),
+#         Ref(DynamicPPL.get_num_produce(vi)),
+#     )
+# end

@@ -140,3 +140,7 @@ function read_model_parameters(dict)
     
     return params
 end
+
+function df_to_tuple(df)
+    NamedTuple.(eachrow(df))
+end

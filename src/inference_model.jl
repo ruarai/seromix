@@ -17,6 +17,8 @@ end
 @model function waning_model(
     model_parameters::FixedModelParameters,
 
+    prior_inf::Matrix{Float64},
+
     obs_lookup, obs_views,
     n_obs,
 
@@ -33,7 +35,7 @@ end
     mu_short = mu_sum - mu_long
 
     # omega ~ Truncated(LogNormal(-1.0, 0.5), 0, 3)
-    omega = convert(typeof(mu_long), 0.8)
+    omega = convert(typeof(mu_long), 0.75)
 
     sigma_long ~ Uniform(0, 1)
     sigma_short ~ Uniform(0, 1)
@@ -42,13 +44,15 @@ end
 
     # Maybe replace with a matrix-variate distribution?
     infections ~ filldist(
-        Bernoulli(0.2), 
+        Bernoulli(0.01), 
         model_parameters.n_t_steps, model_parameters.n_subjects
     )
 
+    # infections ~ MatrixBernoulli(prior_inf)
+
     context = DynamicPPL.leafcontext(__context__)
 
-    obs_sigma = 1.3
+    obs_sigma = 1.0
 
     if context isa IndividualSubsetContext
         subset_context::IndividualSubsetContext = context
