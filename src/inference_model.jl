@@ -52,7 +52,7 @@ end
 
     context = DynamicPPL.leafcontext(__context__)
 
-    obs_sigma = 1.0
+    obs_sigma = 1.5
 
     if context isa IndividualSubsetContext
         subset_context::IndividualSubsetContext = context

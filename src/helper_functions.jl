@@ -79,13 +79,13 @@ function model_symbols_apart_from(model, sym)
     return symbols
 end
 
-function make_gibbs_sampler(model, inf_sym, hmc_step_size)
+function make_gibbs_sampler(model, inf_sym, hmc_step_size, n_t_steps, n_subjects)
     symbols_not_inf = model_symbols_apart_from(model, inf_sym)
     
     # Must somehow balance the level of exploration of the MH sampler
     # with that of the HMC sampler -- so repeating MH or changing HMC step size
     gibbs_sampler = Gibbs(
-        :infections => make_mh_infection_sampler(),
+        :infections => make_mh_infection_sampler(n_t_steps, n_subjects),
         symbols_not_inf => HMC(hmc_step_size, 10) # Must be reduced with number of individuals?
     )
     
@@ -126,7 +126,7 @@ end
 function read_model_parameters(dict)
     antigenic_distances = dict["antigenic_distances"]
     modelled_years = dict["modelled_years"]
-    subject_birth_ix::Vector{Int64} = dict["subject_birth_ix"]
+    subject_birth_ix::Vector{Int64} = DataFrame(dict["subject_birth_data"]).ix_t_birth
     
     n_t_steps = length(modelled_years)
     n_subjects = length(subject_birth_ix)

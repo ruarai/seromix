@@ -5,9 +5,9 @@ data_code = "hanam_2018_2"
 run_dir = "runs/sim_study_$(data_code)/"
 mkpath(run_dir)
 
-model_data = load("runs/hanam_2018/model_data.hdf5")
+real_model_data = load("runs/hanam_2018/model_data.hdf5")
 
-p = read_model_parameters(model_data)
+p = read_model_parameters(real_model_data)
 
 n_t_steps = p.n_t_steps
 n_subjects = p.n_subjects
@@ -20,7 +20,8 @@ sigma_short = 0.1
 tau = 0.05
 
 
-modelled_years = model_data["modelled_years"]
+
+modelled_years = real_model_data["modelled_years"]
 
 sd_param = 0.5
 mean_offset = (sd_param / 2) ^ 2 / 2
@@ -42,8 +43,7 @@ heatmap(infections')
 
 
 infections_df = DataFrame(stack([[i[1], i[2]] for i in findall(infections)])', :auto)
-rename!(infections_df, ["t", "ix_subject"] )
-write_parquet("$run_dir/infections_df.parquet", infections_df)
+rename!(infections_df, ["ix_t", "ix_subject"] )
 
 complete_obs = expand_grid(
     ix_t_obs = 1:n_t_steps, ix_strain = 1:n_t_steps, ix_subject = 1:n_subjects,
@@ -62,19 +62,29 @@ waning_curve!(
     complete_obs.observed_titre
 )
 
-write_parquet("$run_dir/complete_obs.parquet", complete_obs)
-
-
 function filt_age(ix_subject, ix_t_obs)
     return ix_t_obs > p.subject_birth_ix[ix_subject]
 end
     
 
+observed_strains = unique(DataFrame(real_model_data["observations"]).ix_strain)
+
 
 # Only include observations from 2007 onwards
-obs_df = filter(:ix_t_obs => ix_t_obs -> modelled_years[ix_t_obs] >= 2007, complete_obs)
-obs_df = filter([:ix_subject, :ix_t_obs] => filt_age, obs_df)
-#obs_df.observed_titre = round.(max.(0, obs_df.observed_titre .+ rand(Normal(0, 1.3), nrow(obs_df))))
-obs_df.observed_titre = obs_df.observed_titre .+ rand(Normal(0, 1.0), nrow(obs_df))
+observations = filter(:ix_t_obs => ix_t_obs -> modelled_years[ix_t_obs] >= 2007, complete_obs)
+observations = filter([:ix_subject, :ix_t_obs] => filt_age, observations)
 
-write_parquet("$run_dir/obs.parquet", obs_df)
+observations = filter(:ix_strain => ix_strain -> in(ix_strain, observed_strains), observations)
+
+observations.observed_titre = observations.observed_titre .+ rand(Normal(0, 1.5), nrow(observations))
+
+model_data = Dict(
+    "modelled_years" => modelled_years,
+    "antigenic_distances" => real_model_data["antigenic_distances"],
+    "observations" => df_to_tuple(observations),
+    "complete_obs" => df_to_tuple(complete_obs),
+    "infections" => df_to_tuple(infections_df),
+    "subject_birth_data" => real_model_data["subject_birth_data"]
+)
+
+save("$run_dir/model_data.hdf5", model_data)

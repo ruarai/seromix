@@ -1,21 +1,9 @@
 
 library(tidyverse)
-library(arrow)
+suppressMessages(library(arrow))
 
-library(tidybayes)
-library(bayesplot)
-
-
-read_draws <- function(filename) {
-  read_parquet(filename) %>%
-    rename(.chain = chain, .iteration = iteration) %>% 
-    mutate(Chain = .chain, # Copy for whatever reason.
-           .draw = (.iteration - min(.iteration)) + (.chain - 1) * (max(.iteration) - min(.iteration) + 1),
-           .before = 3) %>%
-    rename_with(function(x) str_remove(x, " ")) 
-}
-
-
+suppressMessages(library(tidybayes))
+suppressMessages(library(bayesplot))
 
 save_hdf5 <- function(data_list, filename) {
   if(file.exists(filename)) {
@@ -39,3 +27,67 @@ read_hdf5 <- function(filename) {
   
   return(l)
 }
+
+read_model_data <- function(filename) {
+  data <- read_hdf5(filename)
+  
+  types <- map_chr(data, ~ class(.)[1])
+  
+  for(i in 1:length(data)) {
+    if(types[[i]] == "data.frame") {
+      data[[i]] <- process_data_df(data[[i]], data$modelled_years)
+    }
+  }
+  
+  return(data)
+}
+
+process_data_df <- function(data_df, modelled_years) {
+  col_names <- colnames(data_df)
+  
+  if("ix_t_obs" %in% col_names) {
+    data_df <- data_df %>%
+      mutate(year_observed = modelled_years[ix_t_obs])
+  }
+  
+  if("ix_strain" %in% col_names) {
+    data_df <- data_df %>%
+      mutate(strain_year = modelled_years[ix_strain])
+  }
+  
+  if("ix_t_birth" %in% col_names) {
+    data_df <- data_df %>%
+      mutate(ix_t_birth = if_else(ix_t_birth == 0, NA_integer_, ix_t_birth)) %>% 
+      mutate(year_of_birth = modelled_years[ix_t_birth])
+  }
+  
+  if("ix_t" %in% col_names) {
+    data_df <- data_df %>%
+      mutate(year = modelled_years[ix_t])
+  }
+  
+  data_df <- data_df %>%
+    as_tibble()
+  
+  return(data_df)
+}
+
+clean_chain <- function(chain_df) {
+  chain_df %>%
+    rename(.chain = chain, .iteration = iteration) %>% 
+    mutate(Chain = .chain, # Copy for whatever reason.
+           .draw = (.iteration - min(.iteration)) + (.chain - 1) * (max(.iteration) - min(.iteration) + 1),
+           .before = 3) %>%
+    rename_with(function(x) str_remove(x, " ")) 
+}
+
+read_fit_data <- function(filename, modelled_years) {
+  data <- read_hdf5(filename)
+  
+  data$chain <- clean_chain(data$chain)
+  data$ppd <- process_data_df(data$ppd, modelled_years)
+  
+  return(data)
+}
+
+

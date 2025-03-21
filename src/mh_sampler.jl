@@ -1,4 +1,7 @@
 mutable struct MHInfectionSampler <: AbstractMCMC.AbstractSampler
+    # Ideally these would just be in the model but not sure how to do that.
+    n_t_steps::Int
+    n_subjects::Int
 end
 
 import Turing.Inference: isgibbscomponent
@@ -54,10 +57,8 @@ function AbstractMCMC.step(
 
     varinfo_prev = DynamicPPL.unflatten(f.varinfo, theta)
     
-    # TODO --- how to get n_subjects here?
-    # and n_t_steps?
-    n_t_steps = 20
-    n_subjects = 20
+    n_t_steps = sampler.n_t_steps
+    n_subjects = sampler.n_subjects
 
     mean_p_swap = 1.0 / n_t_steps
     alpha = 3.0
@@ -109,8 +110,8 @@ end
 
 DynamicPPL.NodeTrait(context::IndividualSubsetContext) = DynamicPPL.IsLeaf()
 
-function make_mh_infection_sampler()
-    return externalsampler(MHInfectionSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
+function make_mh_infection_sampler(n_t_steps, n_subjects)
+    return externalsampler(MHInfectionSampler(n_t_steps, n_subjects), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
 end
 
 

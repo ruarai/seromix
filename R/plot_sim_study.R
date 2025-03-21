@@ -2,42 +2,31 @@
 
 plot_sim_study <- function(
   study_name,
-  model_data_file
+  model_data
 ) {
-  model_data <- read_hdf5(model_data_file)
-  
-  
   results_name <- str_c("sim_study_", study_name)
   run_dir <- str_c("runs/", results_name, "/")
-  
   
   plot_model_data(model_data, results_name, plot_individuals = FALSE)
   
   
-  infections <- model_data$infections %>%
-    mutate(year = model_data$modelled_years[ix_t])
+  infections <- model_data$infections
   
   
   sample_dates <- model_data$observations %>%
-    mutate(year_sampled = model_data$modelled_years[ix_t_obs]) %>% 
-    distinct(ix_subject, year_sampled)
-  
-  
-  birth_data <- tibble(birth_t_ix = model_data$subject_birth_ix) %>%
-    mutate(ix_subject = row_number(),
-           year_of_birth = model_data$modelled_years[birth_t_ix + 1] - 1)
+    distinct(ix_subject, year_observed)
   
   ggplot() +
     
     geom_rect(aes(xmin = -Inf, xmax = year_of_birth + 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
               fill = "grey90",
-              birth_data) +
+              model_data$subject_birth_data) +
     
     geom_tile(aes(x = year, y = ix_subject),
               fill = "lightblue",
               infections) +
     
-    geom_point(aes(x = year_sampled, y = ix_subject),
+    geom_point(aes(x = year_observed, y = ix_subject),
                size = 0.5,
                sample_dates) +
     

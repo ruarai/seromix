@@ -67,7 +67,7 @@ function waning_curve_individual!(
                 continue
             end
 
-            matches = obs_lookup_ind[(ix_t_obs)]
+            matches = obs_lookup_ind[ix_t_obs]
             time_diff = time_diff_matrix[ix_t_obs, ix_t]
             short_term_time_factor = max(0.0, 1.0 - omega * time_diff)
             

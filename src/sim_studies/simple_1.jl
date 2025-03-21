@@ -15,7 +15,9 @@ time_diff_matrix = make_time_diff_matrix(modelled_years)
 
 antigenic_distance = abs.(time_diff_matrix)
 
-subject_birth_ix = floor.(Int, reverse(1:n_subjects) .* 0.3 )
+subject_birth_ix = floor.(Int, reverse(1:n_subjects) .* 0.3)
+
+subject_birth_data = DataFrame(ix_subject = 1:n_subjects, ix_t_birth = subject_birth_ix)
 
 p = FixedModelParameters(
     n_t_steps, n_subjects,
@@ -34,7 +36,7 @@ tau = 0.05
 infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
 
 for ix_subject in 1:n_subjects
-    if p.subject_birth_ix[ix_subject] > 0
+    if p.subject_birth_ix[ix_subject] > 0 ## TODO fix?
         infections[1:p.subject_birth_ix[ix_subject], ix_subject] .= false
     end
 end
@@ -50,6 +52,8 @@ complete_obs = expand_grid(
     observed_titre = 0.0
 )
 
+make_obs_lookup(complete_obs)[1][10]
+
 waning_curve!(
     mu_long, mu_short, omega,
     sigma_long, sigma_short, tau,
@@ -63,21 +67,20 @@ waning_curve!(
 )
 
 function filt_age(ix_subject, ix_t_obs)
-    return ix_t_obs > p.subject_birth_ix[ix_subject]
+    return ix_t_obs >= p.subject_birth_ix[ix_subject]
 end
     
 
 observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
 observations.observed_titre = observations.observed_titre .+ rand(Normal(0, 1.0), nrow(observations))
 
-
 model_data = Dict(
     "modelled_years" => modelled_years,
     "antigenic_distances" => antigenic_distance,
-    "subject_birth_ix" => subject_birth_ix,
     "observations" => df_to_tuple(observations),
     "complete_obs" => df_to_tuple(complete_obs),
-    "infections" => df_to_tuple(infections_df)
+    "infections" => df_to_tuple(infections_df),
+    "subject_birth_data" => df_to_tuple(subject_birth_data)
 )
 
 save("$run_dir/model_data.hdf5", model_data)

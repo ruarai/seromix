@@ -36,11 +36,11 @@ read_hanam_data <- function() {
   
   hanam_data_processed <- hanam_data_raw %>%
     rename(ix_subject = `Subject number`,
-           year_sampled = `Sample year`) %>%
+           year_observed = `Sample year`) %>%
     mutate(ix_subject = as.integer(ix_subject),
-           year_sampled = as.integer(year_sampled)) %>%
+           year_observed = as.integer(year_observed)) %>%
     
-    pivot_longer(cols = -c(ix_subject, year_sampled),
+    pivot_longer(cols = -c(ix_subject, year_observed),
                  names_to = "strain_name",
                  values_to = "observed_titre") %>%
     
@@ -50,7 +50,7 @@ read_hanam_data <- function() {
     drop_na(observed_titre)
   
   
-  unique_sample_years <- sort(unique(hanam_data_processed$year_sampled))
+  unique_sample_years <- sort(unique(hanam_data_processed$year_observed))
   unique_strain_years <- sort(unique(hanam_data_processed$strain_year))
   
   sample_or_strain_years <- sort(unique(c(unique_sample_years, unique_strain_years))) %>%
@@ -63,7 +63,7 @@ read_hanam_data <- function() {
   
   observations_df <- hanam_data_processed %>%
     
-    mutate(ix_t_obs = match(year_sampled, modelled_years),
+    mutate(ix_t_obs = match(year_observed, modelled_years),
            ix_strain = match(strain_year, modelled_years)) %>%
     
     mutate(across(c(ix_subject, ix_t_obs, ix_strain), as.integer))
@@ -91,11 +91,10 @@ read_hanam_data <- function() {
   
   
   model_data <- list(
-    observations_df = observations_df,
+    observations = observations_df,
     
     modelled_years = modelled_years,
     antigenic_distances = antigenic_distances,
-    subject_birth_ix = subject_birth_data$ix_t_birth,
     subject_birth_data = subject_birth_data,
     
     fit_strain_coords = fit_strain_coords,
@@ -103,5 +102,4 @@ read_hanam_data <- function() {
   )
   
   return(model_data)
-  
 }
