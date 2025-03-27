@@ -1,9 +1,11 @@
 
-library(tidyverse)
+suppressMessages(library(tidyverse))
 suppressMessages(library(arrow))
 
 suppressMessages(library(tidybayes))
 suppressMessages(library(bayesplot))
+
+theme_set(theme_minimal())
 
 save_hdf5 <- function(data_list, filename) {
   if(file.exists(filename)) {
@@ -88,6 +90,10 @@ read_fit_data <- function(filename, modelled_years) {
   data$ppd <- process_data_df(data$ppd, modelled_years)
   
   return(data)
+}
+
+read_chain <- function(filename) {
+  clean_chain(read_parquet(filename))
 }
 
 

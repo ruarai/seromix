@@ -17,10 +17,7 @@ end
 @model function waning_model(
     model_parameters::FixedModelParameters,
 
-    prior_inf::Matrix{Float64},
-
     obs_lookup, obs_views,
-    n_obs,
 
     observed_titre     
 )
@@ -42,18 +39,17 @@ end
 
     tau ~ Uniform(0, 1)
 
-    # Maybe replace with a matrix-variate distribution?
-    infections ~ filldist(
-        Bernoulli(0.01), 
-        model_parameters.n_t_steps, model_parameters.n_subjects
-    )
+    # infections = Matrix{Bool}(undef, model_parameters.n_t_steps, model_parameters.n_subjects)
 
-    # infections ~ MatrixBernoulli(prior_inf)
+    # for ix_t in 1:model_parameters.n_t_steps, ix_subject in 1:model_parameters.n_subjects
+    #     infections[ix_t, ix_subject] ~ Bernoulli(0.1)
+    # end
 
-    context = DynamicPPL.leafcontext(__context__)
+    infections ~ filldist(Bernoulli(0.1), model_parameters.n_t_steps, model_parameters.n_subjects)
 
     obs_sigma = 1.5
 
+    context = DynamicPPL.leafcontext(__context__)
     if context isa IndividualSubsetContext
         subset_context::IndividualSubsetContext = context
 
@@ -75,26 +71,38 @@ end
             y_pred
         )
 
-        # Replace with one-liner as in below?
-        for (i, ix_obs) in enumerate(obs_views[ix_subject])
-            observed_titre[ix_obs] ~ Normal(y_pred[i], obs_sigma)
-        end
+        # for (i, ix_obs) in enumerate(obs_views[ix_subject])
+        #     observed_titre[ix_obs] ~ Normal(y_pred[i], obs_sigma)
+        # end
+
+        observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
     else
-        y_pred = zeros(typeof(mu_long), n_obs)
+        y_pred_mem = zeros(typeof(mu_long), 400) # TODO fix
 
-        waning_curve!(
-            mu_long, mu_short, omega,
-            sigma_long, sigma_short, tau,
+        for ix_subject in 1:model_parameters.n_subjects
+            n_obs_subset = length(obs_views[ix_subject])
+            y_pred = view(y_pred_mem, 1:n_obs_subset)
+            fill!(y_pred, 0.0)
 
-            model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
-            model_parameters.subject_birth_ix,
-    
-            Matrix{Bool}(infections),
-    
-            obs_lookup, obs_views,
-            y_pred
-        )
-    
-        observed_titre ~ MvNormal(y_pred, obs_sigma * I)
+
+            waning_curve_individual!(
+                mu_long, mu_short, omega,
+                sigma_long, sigma_short, tau,
+
+                model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
+                model_parameters.subject_birth_ix[ix_subject],
+
+                AbstractArray{Bool}(view(infections, :, ix_subject)),
+
+                obs_lookup[ix_subject], 
+                y_pred
+            )
+
+            # for (i, ix_obs) in enumerate(obs_views[ix_subject])
+            #     observed_titre[ix_obs] ~ Normal(y_pred[i], obs_sigma)
+            # end
+
+            observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
+        end
     end
 end

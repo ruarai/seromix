@@ -88,3 +88,42 @@ M_test = [rand(MatrixBernoulli(rand(Uniform(0.0, 1), (10, 10)))) for i in 1:1000
 
 
 t = Matrix{Real}(zeros(Bool, 10, 10))
+
+
+
+data_code = "sim_study_simple_1"
+
+run_dir = "runs/$(data_code)/"
+
+model_data = load("runs/$data_code/model_data.hdf5")
+obs_df = DataFrame(model_data["observations"])
+
+p = read_model_parameters(model_data)
+
+
+model = waning_model(
+    p,
+
+    make_obs_lookup(obs_df),
+    make_obs_views(obs_df),
+    obs_df.observed_titre
+);
+
+
+gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_subjects)
+
+sample(model, gibbs_sampler, 10, callback = log_callback);
+
+@profview sample(model, gibbs_sampler, 500, callback = log_callback);
+@profview_allocs sample(model, gibbs_sampler, 500, callback = log_callback);
+
+@time sample(model, gibbs_sampler, 500, callback = log_callback);
+
+@code_warntype model.f(
+    model,
+    Turing.VarInfo(model),
+    Turing.SamplingContext(
+        Random.default_rng(), Turing.SampleFromPrior(), Turing.DefaultContext()
+    ),
+    model.args...,
+)

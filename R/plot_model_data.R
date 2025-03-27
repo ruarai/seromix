@@ -16,7 +16,7 @@ plot_model_data <- function(model_data, run_name, plot_individuals = FALSE) {
   
   ggplot() +
     
-    geom_rect(aes(xmin = -Inf, xmax = year_of_birth, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
+    geom_rect(aes(xmin = -Inf, xmax = year_of_birth - 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
               fill = "grey90",
               model_data$subject_birth_data) +
     

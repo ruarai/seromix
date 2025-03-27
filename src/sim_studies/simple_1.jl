@@ -36,7 +36,7 @@ tau = 0.05
 infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
 
 for ix_subject in 1:n_subjects
-    if p.subject_birth_ix[ix_subject] > 0 ## TODO fix?
+    if p.subject_birth_ix[ix_subject] > 0
         infections[1:p.subject_birth_ix[ix_subject], ix_subject] .= false
     end
 end
@@ -72,7 +72,7 @@ end
     
 
 observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
-observations.observed_titre = observations.observed_titre .+ rand(Normal(0, 1.0), nrow(observations))
+observations.observed_titre = observations.observed_titre .+ rand(Normal(0, 1.5), nrow(observations))
 
 model_data = Dict(
     "modelled_years" => modelled_years,

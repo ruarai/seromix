@@ -55,6 +55,7 @@ function make_time_diff_matrix(modelled_years)
 end
 
 function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
+    println(fieldnames(typeof(sampler)))
     if iteration % 50 == 0
         print("$iteration,")
     end

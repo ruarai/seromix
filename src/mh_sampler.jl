@@ -63,7 +63,8 @@ function AbstractMCMC.step(
     mean_p_swap = 1.0 / n_t_steps
     alpha = 3.0
 
-    p_swap = rand(rng, Beta(alpha, alpha / mean_p_swap - alpha))
+    # p_swap = rand(rng, Beta(alpha, alpha / mean_p_swap - alpha))
+    p_swap = rand(rng, Uniform(0, 1))
 
     mask = zeros(Bool, n_t_steps)
 
@@ -124,14 +125,3 @@ function DynamicPPL.unflatten(vi::DynamicPPL.VarInfo, spl::AbstractMCMC.Abstract
         Ref(DynamicPPL.get_num_produce(vi)),
     )
 end
-
-# function DynamicPPL.unflatten(vi::DynamicPPL.VarInfo, x::AbstractVector)
-#     md = DynamicPPL.unflatten(vi.metadata, spl, x)
-#     # Note that use of RefValue{eltype(x)} rather than Ref is necessary to deal with cases
-#     # where e.g. x is a type gradient of some AD backend.
-#     return DynamicPPL.VarInfo(
-#         md,
-#         Base.RefValue{float_type_with_fallback(eltype(x))}(DynamicPPL.getlogp(vi)),
-#         Ref(DynamicPPL.get_num_produce(vi)),
-#     )
-# end

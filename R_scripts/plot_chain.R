@@ -13,16 +13,14 @@ true_values <- tribble(
 
 run_dir <- "runs/sim_study_simple_1/"
 
-model_data <- tar_read(sim_study_1_data)
-fit_data <- read_fit_data(str_c(run_dir, "fit_data.hdf5"), model_data$modelled_years)
+model_data <- read_model_data(str_c(run_dir, "model_data.hdf5"))
 
-chain <- fit_data$chain
-ppd <- fit_data$ppd
+chain <- read_chain(str_c(run_dir, "chain.parquet"))
 
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)
 
-warmup_steps <- 1800
+warmup_steps <- 3000
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
 
@@ -56,30 +54,22 @@ ggplot() +
   
   facet_wrap(~name, scales = "free")
 
-plot_data_inf <- chain_filt %>%
-  
-  spread_draws(infections[ix_t, ix_subject]) %>%
-  
-  group_by(ix_t, ix_subject) %>%
-  summarise(p = 1 - sum(infections == 0) / n()) %>%
-  left_join(model_data$infections %>% mutate(inf = TRUE)) %>%
-  mutate(inf = replace_na(inf, FALSE)) %>%
-  
-  left_join(model_data$subject_birth_data) %>%
-  mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>% 
-  filter(ix_t >= ix_t_birth)
 
-
-
-plot_data_inf %>%
-  ggplot() +
-  geom_tile(aes(x = ix_t, y = ix_subject, fill = p)) +
+ggplot() +
+  geom_tile(aes(x = ix_t, y = ix_subject, fill = p),
+            get_inf_data(chain_filt, model_data)) +
   
   geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, colour = "red")
 
 
+plot_data_inf <- get_inf_data(chain_filt, model_data)
 autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf), curvetype = "ROC")
 
 
-ix_subject_ex <- 15
+ggplot() +
+  geom_line(aes(x = .iteration, y = accuracy),
+            get_inf_accuracy(chain, model_data))
+
+
+
 

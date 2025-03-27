@@ -26,10 +26,12 @@ modelled_years = real_model_data["modelled_years"]
 sd_param = 0.5
 mean_offset = (sd_param / 2) ^ 2 / 2
 
-attack_rates = vcat(
-    rand(LogNormal(log(0.5) - mean_offset, sd_param)),
-    rand(LogNormal(log(0.15) - mean_offset, sd_param), length(modelled_years) - 1)
-)
+# attack_rates = vcat(
+#     rand(LogNormal(log(0.5) - mean_offset, sd_param)),
+#     rand(LogNormal(log(0.15) - mean_offset, sd_param), length(modelled_years) - 1)
+# )
+
+attack_rates = fill(0.1, length(modelled_years))
 
 infections = Matrix(stack([rand(Bernoulli(a), (n_subjects)) for a in attack_rates])')
 

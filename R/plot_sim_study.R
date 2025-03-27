@@ -18,7 +18,7 @@ plot_sim_study <- function(
   
   ggplot() +
     
-    geom_rect(aes(xmin = -Inf, xmax = year_of_birth + 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
+    geom_rect(aes(xmin = -Inf, xmax = year_of_birth - 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
               fill = "grey90",
               model_data$subject_birth_data) +
     
