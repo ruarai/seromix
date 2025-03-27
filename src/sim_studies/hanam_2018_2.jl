@@ -31,7 +31,7 @@ mean_offset = (sd_param / 2) ^ 2 / 2
 #     rand(LogNormal(log(0.15) - mean_offset, sd_param), length(modelled_years) - 1)
 # )
 
-attack_rates = fill(0.1, length(modelled_years))
+attack_rates = fill(0.2, length(modelled_years))
 
 infections = Matrix(stack([rand(Bernoulli(a), (n_subjects)) for a in attack_rates])')
 

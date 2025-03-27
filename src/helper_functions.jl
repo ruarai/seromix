@@ -55,9 +55,18 @@ function make_time_diff_matrix(modelled_years)
 end
 
 function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
-    println(fieldnames(typeof(sampler)))
+    
     if iteration % 50 == 0
-        print("$iteration,")
+        # print("$iteration,")
+        mh_sampler = sampler.alg.samplers[1].alg.sampler
+
+        # TODO - get HMC acceptance rate here?
+        # Is the current method weird, also?
+
+        println("$iteration, $(mh_sampler_acceptance_rate(mh_sampler))")
+
+        mh_sampler.acceptions = 0
+        mh_sampler.rejections = 0
     end
 end
 
@@ -87,7 +96,8 @@ function make_gibbs_sampler(model, inf_sym, hmc_step_size, n_t_steps, n_subjects
     # with that of the HMC sampler -- so repeating MH or changing HMC step size
     gibbs_sampler = Gibbs(
         :infections => make_mh_infection_sampler(n_t_steps, n_subjects),
-        symbols_not_inf => HMC(hmc_step_size, 10) # Must be reduced with number of individuals?
+        # symbols_not_inf => HMC(hmc_step_size, 10) # Must be reduced with number of individuals?
+        symbols_not_inf => NUTS(init_ϵ = 0.01)
     )
     
     return gibbs_sampler

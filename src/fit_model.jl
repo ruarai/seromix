@@ -1,7 +1,7 @@
 include("dependencies.jl")
 
 # data_code = ARGS[1]
-data_code = "sim_study_simple_1"
+data_code = "sim_study_hanam_2018_2"
 
 run_dir = "runs/$(data_code)/"
 
@@ -9,6 +9,8 @@ model_data = load("runs/$data_code/model_data.hdf5")
 obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
+
+maximum(length.(make_obs_views(obs_df)))
 
 model = waning_model(
     p,
@@ -22,9 +24,8 @@ gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_s
 
 chain = @time sample(
     model, gibbs_sampler, 
-    MCMCThreads(), 2000, 6,
-    
-    # thinning = 10,
+    MCMCThreads(), 200, 6,
+
     callback = log_callback
 );
 

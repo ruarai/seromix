@@ -2,7 +2,14 @@ mutable struct MHInfectionSampler <: AbstractMCMC.AbstractSampler
     # Ideally these would just be in the model but not sure how to do that.
     n_t_steps::Int
     n_subjects::Int
+    
+    rejections::Int
+    acceptions::Int
 end
+
+MHInfectionSampler(n_t_step, n_subjects) = MHInfectionSampler(n_t_step, n_subjects, 0, 0)
+
+mh_sampler_acceptance_rate(s::MHInfectionSampler) = s.acceptions / (s.acceptions + s.rejections)
 
 import Turing.Inference: isgibbscomponent
 
@@ -28,7 +35,7 @@ end
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
-    spl::MHInfectionSampler;
+    sampler::MHInfectionSampler;
     kwargs...
 )
     d = LogDensityProblems.dimension(model.logdensity)
@@ -64,7 +71,8 @@ function AbstractMCMC.step(
     alpha = 3.0
 
     # p_swap = rand(rng, Beta(alpha, alpha / mean_p_swap - alpha))
-    p_swap = rand(rng, Uniform(0, 1))
+    # p_swap = rand(rng, Uniform(0, 1))
+    p_swap = mean_p_swap * 1.5
 
     mask = zeros(Bool, n_t_steps)
 
@@ -85,9 +93,12 @@ function AbstractMCMC.step(
 
         if -Random.randexp(rng) <= logprob_proposal - logprob_previous
             # nothing
+
+            sampler.acceptions += 1
         else
             # Re-apply mask to undo
             apply_mask!(theta_new, mask, ix_subject, n_t_steps)
+            sampler.rejections += 1
         end
     end
 

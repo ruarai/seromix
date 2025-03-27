@@ -100,19 +100,17 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-
 model = waning_model(
     p,
 
-    make_obs_lookup(obs_df),
-    make_obs_views(obs_df),
+    make_obs_lookup(obs_df), make_obs_views(obs_df),
     obs_df.observed_titre
 );
 
 
 gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_subjects)
 
-sample(model, gibbs_sampler, 10, callback = log_callback);
+sample(model, gibbs_sampler, 2, callback = log_callback);
 
 @profview sample(model, gibbs_sampler, 500, callback = log_callback);
 @profview_allocs sample(model, gibbs_sampler, 500, callback = log_callback);

@@ -77,7 +77,7 @@ end
 
         observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
     else
-        y_pred_mem = zeros(typeof(mu_long), 400) # TODO fix
+        y_pred_mem = zeros(typeof(mu_long), 132) # TODO fix
 
         for ix_subject in 1:model_parameters.n_subjects
             n_obs_subset = length(obs_views[ix_subject])
