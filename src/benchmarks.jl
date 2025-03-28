@@ -100,13 +100,18 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
+
+n_max_ind_obs = maximum(length.(make_obs_views(obs_df)))
+individual_titre_obs = [obs_df.observed_titre[v] for v in make_obs_views(obs_df)]
+
+
 model = waning_model(
     p,
 
     make_obs_lookup(obs_df), make_obs_views(obs_df),
-    obs_df.observed_titre
+    n_max_ind_obs,
+    individual_titre_obs
 );
-
 
 gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_subjects)
 

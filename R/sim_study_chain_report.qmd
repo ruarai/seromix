@@ -82,7 +82,7 @@ chain <- read_chain(params$chain_file)
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)
 
-warmup_steps <- min(3500, max(chain$.iteration) - 1)
+warmup_steps <- min(2000, max(chain$.iteration) - 1)
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
 

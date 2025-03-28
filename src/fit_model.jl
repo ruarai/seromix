@@ -12,19 +12,20 @@ p = read_model_parameters(model_data)
 
 n_max_ind_obs = maximum(length.(make_obs_views(obs_df)))
 
+individual_titre_obs = [obs_df.observed_titre[v] for v in make_obs_views(obs_df)]
 model = waning_model(
     p,
 
     make_obs_lookup(obs_df),
     make_obs_views(obs_df),
     n_max_ind_obs,
-    obs_df.observed_titre
+    individual_titre_obs
 );
 
 gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_subjects)
 
 n_thinning = 1
-n_sample = 300
+n_sample = 3000
 chain = @time sample(
     model, gibbs_sampler, 
     MCMCThreads(), n_sample ÷ n_thinning, 6,

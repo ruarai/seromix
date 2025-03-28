@@ -41,5 +41,5 @@ include("make_ppd.jl")
 # include("distributions/matrix_bernoulli.jl")
 
 
-const const_titre_min = 0
-const const_titre_max = 8
+const const_titre_min = 0.0
+const const_titre_max = 8.0

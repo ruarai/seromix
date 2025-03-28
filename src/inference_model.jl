@@ -20,7 +20,7 @@ end
     obs_lookup, obs_views,
     n_max_ind_obs::Int,
 
-    observed_titre     
+    observed_titre::Vector{Vector{Float64}}     
 )
     # Should be constrained to what we expect y to be 
     # immediately post-infection
@@ -48,7 +48,9 @@ end
 
     infections ~ filldist(Bernoulli(0.1), model_parameters.n_t_steps, model_parameters.n_subjects)
 
-    obs_sigma = 1.5
+    obs_sigma = convert(typeof(mu_long), 1.5)
+    obs_min = convert(typeof(mu_long), const_titre_min)
+    obs_max = convert(typeof(mu_long), const_titre_max)
 
     context = DynamicPPL.leafcontext(__context__)
     if context isa IndividualSubsetContext
@@ -72,19 +74,17 @@ end
             y_pred
         )
 
-        for (i, ix_obs) in enumerate(obs_views[ix_subject])
-            observed_titre[ix_obs] ~ TitreNormal(Normal(y_pred[i], obs_sigma), const_titre_min, const_titre_max)
-        end
-
-        # observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
+        observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sigma, obs_min, obs_max)
     else
         y_pred_mem = zeros(typeof(mu_long), n_max_ind_obs)
 
         for ix_subject in 1:model_parameters.n_subjects
             n_obs_subset = length(obs_views[ix_subject])
+            
             y_pred = view(y_pred_mem, 1:n_obs_subset)
             fill!(y_pred, 0.0)
 
+            # y_pred = zeros(typeof(mu_long), n_obs_subset)
 
             waning_curve_individual!(
                 mu_long, mu_short, omega,
@@ -99,11 +99,7 @@ end
                 y_pred
             )
 
-            for (i, ix_obs) in enumerate(obs_views[ix_subject])
-                observed_titre[ix_obs] ~ TitreNormal(Normal(y_pred[i], obs_sigma), const_titre_min, const_titre_max)
-            end
-
-            # observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
+            observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sigma, obs_min, obs_max)
         end
     end
 end
