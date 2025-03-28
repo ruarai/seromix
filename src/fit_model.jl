@@ -1,7 +1,7 @@
 include("dependencies.jl")
 
 data_code = ARGS[1]
-# data_code = "sim_study_hanam_2018_3"
+# data_code = "sim_study_simple_1"
 
 run_dir = "runs/$(data_code)/"
 
@@ -23,10 +23,11 @@ model = waning_model(
 
 gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_subjects)
 
-n_thinning = 2
+n_thinning = 1
+n_sample = 300
 chain = @time sample(
     model, gibbs_sampler, 
-    MCMCThreads(), 6000 ÷ n_thinning, 6,
+    MCMCThreads(), n_sample ÷ n_thinning, 6,
 
     thinning = n_thinning,
     callback = log_callback

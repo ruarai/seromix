@@ -72,11 +72,11 @@ end
             y_pred
         )
 
-        # for (i, ix_obs) in enumerate(obs_views[ix_subject])
-        #     observed_titre[ix_obs] ~ Normal(y_pred[i], obs_sigma)
-        # end
+        for (i, ix_obs) in enumerate(obs_views[ix_subject])
+            observed_titre[ix_obs] ~ TitreNormal(Normal(y_pred[i], obs_sigma), const_titre_min, const_titre_max)
+        end
 
-        observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
+        # observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
     else
         y_pred_mem = zeros(typeof(mu_long), n_max_ind_obs)
 
@@ -99,11 +99,11 @@ end
                 y_pred
             )
 
-            # for (i, ix_obs) in enumerate(obs_views[ix_subject])
-            #     observed_titre[ix_obs] ~ Normal(y_pred[i], obs_sigma)
-            # end
+            for (i, ix_obs) in enumerate(obs_views[ix_subject])
+                observed_titre[ix_obs] ~ TitreNormal(Normal(y_pred[i], obs_sigma), const_titre_min, const_titre_max)
+            end
 
-            observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
+            # observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
         end
     end
 end

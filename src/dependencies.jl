@@ -29,14 +29,17 @@ using JLD2
 
 
 
-# include("antibody_kinetics.jl")
-include("antibody_kinetics_opt.jl")
+include("antibody_kinetics.jl")
+
 include("inference_model.jl")
-# include("function_proposal.jl")
 include("mh_sampler.jl")
 
 include("helper_functions.jl")
 
 include("make_ppd.jl")
 
-include("matrix_bernoulli.jl")
+# include("distributions/matrix_bernoulli.jl")
+
+
+const const_titre_min = 0
+const const_titre_max = 8

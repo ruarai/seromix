@@ -53,7 +53,7 @@ function waning_curve_individual!(
 
     prior_infections = 0.0
 
-    for ix_t in (subject_birth_ix + 1):n_t_steps
+    for ix_t in max(1, subject_birth_ix):n_t_steps
         @inbounds if !infections[ix_t]
             continue
         end

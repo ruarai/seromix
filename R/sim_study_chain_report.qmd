@@ -5,8 +5,8 @@ editor: visual
 editor_options: 
   chunk_output_type: console
 params:
-  model_data_file: runs/sim_study_hanam_2018_3/model_data.hdf5
-  chain_file: runs/sim_study_hanam_2018_3/chain.parquet
+  model_data_file: runs/sim_study_simple_1/model_data.hdf5
+  chain_file: runs/sim_study_simple_1/chain.parquet
 ---
 
 ## Simulation study MCMC fit
@@ -17,14 +17,9 @@ params:
 library(targets)
 suppressMessages(tar_source())
 
-```
-
-```{r}
-#| echo: false
-
 model_data <- read_model_data(params$model_data_file)
-```
 
+```
 
 ```{r}
 sample_dates <- model_data$observations %>%
@@ -138,6 +133,6 @@ autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf),
 
 
 ggplot() +
-  geom_line(aes(x = .iteration, y = accuracy),
+  geom_line(aes(x = .iteration, y = accuracy, colour = factor(.chain)),
             get_inf_accuracy(chain, model_data)) # Should be by chain?
 ```

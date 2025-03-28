@@ -11,7 +11,7 @@ get_inf_data <- function(chain, model_data) {
     
     left_join(model_data$subject_birth_data) %>%
     mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>% 
-    filter(ix_t > ix_t_birth)
+    filter(ix_t >= ix_t_birth)
 }
 
 
@@ -26,7 +26,7 @@ get_inf_accuracy <- function(chain, model_data) {
            infection = infections > 0) %>%
     
     left_join(model_data$subject_birth_data) %>% 
-    filter(ix_t > ix_t_birth) %>%
-    group_by(.iteration) %>%
+    filter(ix_t >= ix_t_birth) %>%
+    group_by(.iteration, .chain) %>%
     summarise(accuracy = sum(inf == infection) / n())
 }
