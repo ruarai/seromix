@@ -12,18 +12,15 @@ n_t_steps = length(modelled_years)
 n_subjects = 20
 
 time_diff_matrix = make_time_diff_matrix(modelled_years)
-
 antigenic_distance = abs.(time_diff_matrix)
 
-subject_birth_ix = floor.(Int, reverse(1:n_subjects) .* 0.3)
-
-subject_birth_data = DataFrame(ix_subject = 1:n_subjects, ix_t_birth = subject_birth_ix)
+subject_birth_data = DataFrame(ix_subject = 1:n_subjects, ix_t_birth = floor.(Int, reverse(1:n_subjects) .* 0.3))
 
 p = FixedModelParameters(
     n_t_steps, n_subjects,
     antigenic_distance,
     time_diff_matrix,
-    subject_birth_ix
+    subject_birth_data.ix_t_birth
 )
 
 mu_long = 2.0
@@ -32,15 +29,10 @@ omega = 0.75
 sigma_long = 0.2
 sigma_short = 0.1
 tau = 0.05
+sigma_obs = 1.5
 
 infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
-
-for ix_subject in 1:n_subjects
-    if p.subject_birth_ix[ix_subject] > 0
-        infections[1:p.subject_birth_ix[ix_subject], ix_subject] .= false
-    end
-end
-
+mask_infections_birth_year!(infections, p.subject_birth_ix)
 heatmap(infections')
 
 
@@ -51,8 +43,6 @@ complete_obs = expand_grid(
     ix_t_obs = 1:n_t_steps, ix_strain = 1:n_t_steps, ix_subject = 1:n_subjects,
     observed_titre = 0.0
 )
-
-make_obs_lookup(complete_obs)[1][10]
 
 waning_curve!(
     mu_long, mu_short, omega,
@@ -72,7 +62,7 @@ end
     
 
 observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
-observations.observed_titre = observations.observed_titre .+ rand(Normal(0, 1.5), nrow(observations))
+observations.observed_titre = observations.observed_titre .+ rand(Normal(0, sigma_obs), nrow(observations))
 
 model_data = Dict(
     "modelled_years" => modelled_years,

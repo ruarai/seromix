@@ -155,3 +155,13 @@ end
 function df_to_tuple(df)
     NamedTuple.(eachrow(df))
 end
+
+
+function mask_infections_birth_year!(infections, subject_birth_ix)
+    n_subjects = length(subject_birth_ix)
+    for ix_subject in 1:n_subjects
+        if subject_birth_ix[ix_subject] > 1
+            infections[1:(subject_birth_ix[ix_subject] - 1), ix_subject] .= false
+        end
+    end
+end

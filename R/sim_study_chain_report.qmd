@@ -5,8 +5,8 @@ editor: visual
 editor_options: 
   chunk_output_type: console
 params:
-  model_data_file: runs/sim_study_hanam_2018_2/model_data.hdf5
-  chain_file: runs/sim_study_hanam_2018_2/chain.parquet
+  model_data_file: runs/sim_study_hanam_2018_3/model_data.hdf5
+  chain_file: runs/sim_study_hanam_2018_3/chain.parquet
 ---
 
 ## Simulation study MCMC fit
@@ -19,10 +19,57 @@ suppressMessages(tar_source())
 
 ```
 
-{{< pagebreak >}}
-
 ```{r}
 #| echo: false
+
+model_data <- read_model_data(params$model_data_file)
+```
+
+
+```{r}
+sample_dates <- model_data$observations %>%
+  distinct(ix_subject, year_observed)
+
+strains_observed <- model_data$observations %>%
+  distinct(ix_subject, strain_year)
+
+ggplot() +
+  
+  geom_rect(aes(xmin = -Inf, xmax = year_of_birth - 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
+            fill = "grey90",
+            model_data$subject_birth_data) +
+  
+  geom_tile(aes(x = year, y = ix_subject),
+            fill = "lightblue",
+            model_data$infections) +
+  
+  geom_point(aes(x = year_observed, y = ix_subject),
+             size = 0.5,
+             sample_dates) +
+  
+  geom_rug(aes(x = year), tibble(year = model_data$modelled_years)) +
+  
+  theme_bw()
+
+ggplot() +
+  
+  geom_rect(aes(xmin = -Inf, xmax = year_of_birth - 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
+            fill = "grey90",
+            model_data$subject_birth_data) +
+  
+  geom_tile(aes(x = strain_year, y = ix_subject),
+             fill = "red", alpha = 0.3,
+             strains_observed) +
+  geom_point(aes(x = year_observed, y = ix_subject),
+             sample_dates) +
+  
+  geom_rug(aes(x = year), tibble(year = model_data$modelled_years)) +
+  
+  theme_bw()
+```
+
+
+```{r}
 
 true_values <- tribble(
   ~name, ~value,
@@ -34,7 +81,6 @@ true_values <- tribble(
   "tau", 0.05
 )
 
-model_data <- read_model_data(params$model_data_file)
 
 chain <- read_chain(params$chain_file)
 
@@ -44,6 +90,10 @@ chain <- chain %>%
 warmup_steps <- min(3500, max(chain$.iteration) - 1)
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
+
+```
+
+```{r}
 
 chain %>%
   select(.iteration, .chain, any_of(parnames)) %>%
@@ -89,5 +139,5 @@ autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf),
 
 ggplot() +
   geom_line(aes(x = .iteration, y = accuracy),
-            get_inf_accuracy(chain, model_data))
+            get_inf_accuracy(chain, model_data)) # Should be by chain?
 ```

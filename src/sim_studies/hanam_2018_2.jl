@@ -18,29 +18,14 @@ omega = 0.75
 sigma_long = 0.2
 sigma_short = 0.1
 tau = 0.05
-
+sigma_obs = 1.5
 
 
 modelled_years = real_model_data["modelled_years"]
 
-sd_param = 0.5
-mean_offset = (sd_param / 2) ^ 2 / 2
 
-# attack_rates = vcat(
-#     rand(LogNormal(log(0.5) - mean_offset, sd_param)),
-#     rand(LogNormal(log(0.15) - mean_offset, sd_param), length(modelled_years) - 1)
-# )
-
-attack_rates = fill(0.2, length(modelled_years))
-
-infections = Matrix(stack([rand(Bernoulli(a), (n_subjects)) for a in attack_rates])')
-
-for ix_subject in 1:n_subjects
-    if p.subject_birth_ix[ix_subject] > 0
-        infections[1:p.subject_birth_ix[ix_subject], ix_subject] .= false
-    end
-end
-
+infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
+mask_infections_birth_year!(infections, p.subject_birth_ix)
 heatmap(infections')
 
 
@@ -78,7 +63,7 @@ observations = filter([:ix_subject, :ix_t_obs] => filt_age, observations)
 
 observations = filter(:ix_strain => ix_strain -> in(ix_strain, observed_strains), observations)
 
-observations.observed_titre = observations.observed_titre .+ rand(Normal(0, 1.5), nrow(observations))
+observations.observed_titre = observations.observed_titre .+ rand(Normal(0, sigma_obs), nrow(observations))
 
 model_data = Dict(
     "modelled_years" => modelled_years,

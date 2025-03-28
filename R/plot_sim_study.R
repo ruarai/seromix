@@ -1,13 +1,12 @@
 
 
 plot_sim_study <- function(
-  study_name,
+  run_name,
   model_data
 ) {
-  results_name <- str_c("sim_study_", study_name)
-  run_dir <- str_c("runs/", results_name, "/")
+  run_dir <- str_c("runs/", run_name, "/")
   
-  plot_model_data(model_data, results_name, plot_individuals = FALSE)
+  plot_model_data(model_data, run_name, plot_individuals = FALSE)
   
   
   infections <- model_data$infections

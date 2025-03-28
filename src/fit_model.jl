@@ -1,7 +1,7 @@
 include("dependencies.jl")
 
 data_code = ARGS[1]
-# data_code = "sim_study_hanam_2018_2"
+# data_code = "sim_study_hanam_2018_3"
 
 run_dir = "runs/$(data_code)/"
 
@@ -40,15 +40,3 @@ chain = @time sample(
 
 
 save_draws(chain, "$run_dir/chain.parquet")
-
-
-# This PPD should go to its own function ?
-# ppd_obs = make_ppd(chain[1900:end], 1, p)
-
-
-# fit_data = Dict(
-#     "chain" => df_to_tuple(DataFrame(chain)),
-#     "ppd" => df_to_tuple(ppd_obs)
-# );
-
-# save("$run_dir/fit_data.hdf5", fit_data)
