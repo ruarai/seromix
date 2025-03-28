@@ -12,7 +12,7 @@ end
 using Distributions
 using Turing
 
-using Plots, StatsPlots
+# using Plots, StatsPlots
 
 using LinearAlgebra
 using StatsBase

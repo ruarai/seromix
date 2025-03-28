@@ -18,6 +18,7 @@ end
     model_parameters::FixedModelParameters,
 
     obs_lookup, obs_views,
+    n_max_ind_obs::Int,
 
     observed_titre     
 )
@@ -77,7 +78,7 @@ end
 
         observed_titre[obs_views[ix_subject]] ~ MvNormal(y_pred, I * obs_sigma)
     else
-        y_pred_mem = zeros(typeof(mu_long), 132) # TODO fix
+        y_pred_mem = zeros(typeof(mu_long), n_max_ind_obs)
 
         for ix_subject in 1:model_parameters.n_subjects
             n_obs_subset = length(obs_views[ix_subject])

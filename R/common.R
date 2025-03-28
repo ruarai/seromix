@@ -15,6 +15,8 @@ save_hdf5 <- function(data_list, filename) {
   for (i in 1:length(data_list)) {
     rhdf5::h5write(data_list[[i]], filename, names(data_list)[[i]])
   }
+  
+  return(filename)
 }
 
 
@@ -95,5 +97,19 @@ read_fit_data <- function(filename, modelled_years) {
 read_chain <- function(filename) {
   clean_chain(read_parquet(filename))
 }
+
+render_quarto <- function(run_name, run_dir, model_data_file, chain_file, quarto_file) {
+  suppressWarnings(file.remove(str_c(run_dir, "chain_report.pdf")))
+  quarto::quarto_render(
+    quarto_file,
+    output_file = str_c(run_name, ".pdf"),
+    execute_params = list(model_data_file = model_data_file, chain_file = chain_file),
+    quiet = TRUE
+  )
+  file.copy(str_c(run_name, ".pdf"), str_c(run_dir, "chain_report.pdf"))
+  file.remove(str_c(run_name, ".pdf"))
+}
+
+
 
 

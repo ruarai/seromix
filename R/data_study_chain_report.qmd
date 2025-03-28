@@ -1,0 +1,78 @@
+---
+title: "chain_report"
+format: pdf
+editor: visual
+editor_options: 
+  chunk_output_type: console
+params:
+  model_data_file: runs/hanam_2018/model_data.hdf5
+  chain_file: runs/hanam_2018/chain.parquet
+---
+
+## Data study MCMC fit
+
+```{r}
+#| echo: false
+
+library(targets)
+suppressMessages(tar_source())
+
+```
+
+{{< pagebreak >}}
+
+```{r}
+#| echo: false
+
+# True as in reported by Kucharski
+true_values <- tribble(
+  ~name, ~value,
+  "mu_long", 2.02,
+  "mu_short", 2.69,
+  "mu_sum", 2.02 + 2.69,
+  "sigma_long", 0.13,
+  "sigma_short", 0.03,
+  "tau", 0.039
+)
+
+model_data <- read_model_data(params$model_data_file)
+
+chain <- read_chain(params$chain_file)
+
+chain <- chain %>%
+  mutate(mu_short = mu_sum - mu_long)
+
+warmup_steps <- min(5000, max(chain$.iteration) - 1)
+
+parnames <- c(colnames(chain)[5:9], "mu_short")
+
+chain %>%
+  select(.iteration, .chain, any_of(parnames)) %>%
+  pivot_longer(any_of(parnames)) %>%
+  ggplot() +
+  geom_line(aes(x = .iteration, y = value, colour = factor(.chain))) +
+  
+  geom_vline(xintercept = warmup_steps) +
+  
+  facet_wrap(~name, scales = "free_y")
+
+chain_filt <- chain %>%
+  filter(.iteration > warmup_steps)
+
+chain_filt_wide <- chain_filt %>% 
+  select(.iteration, .chain, any_of(parnames)) %>%
+  pivot_longer(any_of(parnames))
+
+ggplot() +
+  geom_line(aes(x = .iteration, y = value, colour = factor(.chain)),
+            chain_filt_wide) +
+  facet_wrap(~name, scales = "free_y")
+
+ggplot() +
+  geom_histogram(aes(x = value), bins = 50,
+                 chain_filt_wide) +
+  
+  geom_vline(aes(xintercept = value), true_values) +
+  
+  facet_wrap(~name, scales = "free")
+```
