@@ -1,7 +1,10 @@
 ---
 title: "chain_report"
-format: pdf
-editor: visual
+format:
+  pdf:
+    fig-width: 9
+    fig-height: 6
+editor: source
 editor_options: 
   chunk_output_type: console
 params:
@@ -18,8 +21,6 @@ library(targets)
 suppressMessages(tar_source())
 
 ```
-
-{{< pagebreak >}}
 
 ```{r}
 #| echo: false
@@ -42,7 +43,7 @@ chain <- read_chain(params$chain_file)
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)
 
-warmup_steps <- min(5000, max(chain$.iteration) - 1)
+warmup_steps <- min(22000, max(chain$.iteration) - 1)
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
 
@@ -66,6 +67,9 @@ chain_filt_wide <- chain_filt %>%
 ggplot() +
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain)),
             chain_filt_wide) +
+  
+  geom_hline(aes(yintercept = value), true_values) +
+  
   facet_wrap(~name, scales = "free_y")
 
 ggplot() +
@@ -78,12 +82,12 @@ ggplot() +
 
 
 # Not filtering by birth year here...
-# plot_data_n_inf <- chain %>%
-#   mutate(n_inf = rowSums(across(starts_with("infections"))))
-# 
-# ggplot() +
-#   geom_line(aes(x = .iteration, y = n_inf, group = .chain, colour = factor(.chain)),
-#             plot_data_n_inf) +
-#   ylab("Number of infections")
+plot_data_n_inf <- chain %>%
+  mutate(n_inf = rowSums(across(starts_with("infections"))))
+
+ggplot() +
+  geom_line(aes(x = .iteration, y = n_inf, group = .chain, colour = factor(.chain)),
+            plot_data_n_inf) +
+  ylab("Number of infections")
 
 ```

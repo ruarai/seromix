@@ -37,6 +37,7 @@ include("mh_sampler.jl")
 include("helper_functions.jl")
 
 include("make_ppd.jl")
+include("distributions/titre_arraynormal.jl")
 
 # include("distributions/matrix_bernoulli.jl")
 

@@ -56,7 +56,7 @@ end
 observations = filter(:ix_t_obs => ix_t_obs -> modelled_years[ix_t_obs] % 4 == 0, complete_obs)
 observations = filter([:ix_subject, :ix_t_obs] => filt_age, observations)
 
-observations.observed_titre = observations.observed_titre .+ rand(Normal(0, 1.5), nrow(observations))
+observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, sigma_obs, const_titre_min, const_titre_max))
 
 model_data = Dict(
     "modelled_years" => modelled_years,

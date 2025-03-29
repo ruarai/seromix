@@ -118,11 +118,11 @@ gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_s
 sample(model, gibbs_sampler, 2, callback = log_callback);
 
 @profview sample(model, gibbs_sampler, 500, callback = log_callback);
-@profview_allocs sample(model, gibbs_sampler, 500, callback = log_callback);
+@profview_allocs sample(model, gibbs_sampler, 1000, callback = log_callback);
 
 @time sample(model, gibbs_sampler, 500, callback = log_callback);
 
-@code_warntype model.f(
+@report_opt model.f(
     model,
     Turing.VarInfo(model),
     Turing.SamplingContext(
@@ -130,3 +130,23 @@ sample(model, gibbs_sampler, 2, callback = log_callback);
     ),
     model.args...,
 )
+
+
+a = TitreArrayNormal(rand(300), 0.5, 0.0, 8.0)
+
+y = rand(a)
+
+
+using BenchmarkTools
+
+@benchmark logpdf(a, y) setup = (a = a, y = rand(a))
+
+
+@profview [logpdf(a, y) for i in 1:10000]
+
+
+
+
+using JET
+
+@code_warntype logpdf(a, y)

@@ -9,7 +9,7 @@ tar_option_set(packages = c("tidyverse", "arrow", "tidybayes", "bayesplot"))
 
 
 # sim_studies <- tibble(run_name = str_c("sim_study_", c("simple_1", "hanam_2018_1", "hanam_2018_2", "hanam_2018_3")))
-sim_studies <- tibble(run_name = str_c("sim_study_", c("hanam_2018_3")))
+sim_studies <- tibble(run_name = str_c("sim_study_", c("simple_1", "hanam_2018_1", "hanam_2018_3")))
 data_studies <- tibble(run_name = c("hanam_2018"))
 
 

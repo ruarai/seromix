@@ -63,7 +63,7 @@ observations = filter([:ix_subject, :ix_t_obs] => filt_age, observations)
 
 observations = filter(:ix_strain => ix_strain -> in(ix_strain, observed_strains), observations)
 
-observations.observed_titre = observations.observed_titre .+ rand(Normal(0, sigma_obs), nrow(observations))
+observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, sigma_obs, const_titre_min, const_titre_max))
 
 model_data = Dict(
     "modelled_years" => modelled_years,

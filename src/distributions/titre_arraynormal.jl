@@ -1,9 +1,9 @@
 
 using Distributions
-using SpecialFunctions
+using StatsFuns
 
 struct TitreArrayNormal{T <: Real} <: DiscreteMultivariateDistribution
-    μ::AbstractVector{T} # May cause issues with type stability?
+    μ::AbstractVector{T}
     σ::T
 
     minimum::T
@@ -22,75 +22,34 @@ Distributions.minimum(d::TitreArrayNormal) = d.minimum
 Distributions.maximum(d::TitreArrayNormal) = d.maximum
 Base.length(d::TitreArrayNormal)::Int = length(d.μ)
 
-# function Distributions.insupport(d::TitreMvNormal, x::Real)
-#     return d.minimum <= x <= d.maximum
-# end
-
-
 function titre_logpdf_component(x::S, μ::T, σ::T, min::T, max::T) where {T <: Real, S <: Real}
     if x <= min
-        return log(normal_cdf(x + 1, μ, σ))
+        return normlogcdf(μ, σ, x + 1)
     elseif x > min && x < max
-        return log(normal_cdf(x + 1, μ, σ) - normal_cdf(x, μ, σ))
+        return log(normcdf(μ, σ, x + 1) - normcdf(μ, σ, x))
     elseif x >= max
-        return log(1 - normal_cdf(x, μ, σ))
+        return normlogccdf(μ, σ, x + 1)
     else
         return typemax(T)
     end
 end
 
-function normal_cdf(x::S, μ::T, σ::T) where {T <: Real, S <:Real}
-    return 0.5 * (1.0 + SpecialFunctions.erf((x - μ) / (σ * 1.4142135623730951)))
+function apply_logpdf(x::AbstractVector{S}, μ::SubArray{T, }, σ::T, min::T, max::T) where {T <: Real, S <: Real}
+    return mapreduce(
+        x -> titre_logpdf_component(x[1], x[2], σ, min, max),
+        +, 
+        zip(x, μ)
+    )
 end
 
-function apply_logcdf(x::AbstractArray{S, M}, μ::SubArray{T, }, σ::T, min::T, max::T) where {M, T <: Real, S <: Real}
-    lp::T = 0.0
-
-    @inbounds for i::Int in 1:length(μ)
-        lp += titre_logpdf_component(x[i], μ[i], σ, min, max)
-    end
-
-    return lp
+function apply_logpdf(x::AbstractVector{S}, μ::Vector{T}, σ::T, min::T, max::T) where {T <: Real, S <: Real}
+    return mapreduce(
+        x -> titre_logpdf_component(x[1], x[2], σ, min, max),
+        +, 
+        zip(x, μ)
+    )
 end
 
-function apply_logcdf(x::AbstractArray{S, M}, μ::Vector{T}, σ::T, min::T, max::T) where {M, T <: Real, S <: Real}
-    lp::T = 0.0
-
-    @inbounds for i::Int in 1:length(μ)
-        lp += titre_logpdf_component(x[i], μ[i], σ, min, max)
-    end
-
-    return lp
+function Distributions.logpdf(d::TitreArrayNormal{T}, x::AbstractVector{S})::T where {T <: Real, S <: Real}
+    return apply_logpdf(x, d.μ, d.σ, d.minimum, d.maximum)
 end
-
-function Distributions.logpdf(d::TitreArrayNormal{T}, x::AbstractArray{S, M})::T where {M, T <: Real, S <: Real}
-    return apply_logcdf(x, d.μ, d.σ, d.minimum, d.maximum)
-end
-
-
-# a = TitreArrayNormal(fill(3.0, 100), 1.5, 0.0, 8.0)
-
-# y = rand(a)
-# logpdf(a, y)
-
-# @code_warntype logpdf(a, y)
-
-# using BenchmarkTools
-
-# @benchmark logpdf(a, y) setup=(a = a, y = rand(a))
-
-# @benchmark logpdf(a, y) setup=(a = a, y = view(rand(a), :))
-
-# rand(a)
-
-
-# @model function test_model(y)
-
-#     a ~ Normal(0, 2)
-
-#     y ~ TitreArrayNormal(fill(a, length(y)), 1.5, const_titre_min, const_titre_max)
-# end
-
-# model = test_model(y)
-
-# sample(model, MH(), 100)

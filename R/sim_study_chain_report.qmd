@@ -1,7 +1,10 @@
 ---
 title: "chain_report"
-format: pdf
-editor: visual
+format: 
+  pdf:
+    fig-width: 9
+    fig-height: 6
+editor: source
 editor_options: 
   chunk_output_type: console
 params:
@@ -63,7 +66,6 @@ ggplot() +
   theme_bw()
 ```
 
-
 ```{r}
 
 true_values <- tribble(
@@ -82,7 +84,7 @@ chain <- read_chain(params$chain_file)
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)
 
-warmup_steps <- min(2000, max(chain$.iteration) - 1)
+warmup_steps <- min(22000, max(chain$.iteration) - 1)
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
 
@@ -98,6 +100,8 @@ chain %>%
   
   geom_vline(xintercept = warmup_steps) +
   
+  geom_hline(aes(yintercept = value), true_values) +
+  
   facet_wrap(~name, scales = "free_y")
 
 chain_filt <- chain %>%
@@ -110,6 +114,7 @@ chain_filt_wide <- chain_filt %>%
 ggplot() +
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain)),
             chain_filt_wide) +
+  
   facet_wrap(~name, scales = "free_y")
 
 ggplot() +
@@ -132,7 +137,7 @@ plot_data_inf <- get_inf_data(chain_filt, model_data)
 autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf), curvetype = "ROC")
 
 
-ggplot() +
-  geom_line(aes(x = .iteration, y = accuracy, colour = factor(.chain)),
-            get_inf_accuracy(chain, model_data)) # Should be by chain?
+# ggplot() +
+#   geom_line(aes(x = .iteration, y = accuracy, colour = factor(.chain)),
+#             get_inf_accuracy(chain, model_data))
 ```

@@ -99,15 +99,19 @@ read_chain <- function(filename) {
 }
 
 render_quarto <- function(run_name, run_dir, model_data_file, chain_file, quarto_file) {
-  suppressWarnings(file.remove(str_c(run_dir, "chain_report.pdf")))
+  file_out <- str_c("reports/", run_name, ".pdf")
+  file_tmp <- str_c(run_name, ".pdf")
+  
+  suppressWarnings(file.remove(file_out))
   quarto::quarto_render(
     quarto_file,
-    output_file = str_c(run_name, ".pdf"),
+    output_file = file_tmp,
     execute_params = list(model_data_file = model_data_file, chain_file = chain_file),
     quiet = TRUE
   )
-  file.copy(str_c(run_name, ".pdf"), str_c(run_dir, "chain_report.pdf"))
-  file.remove(str_c(run_name, ".pdf"))
+  
+  file.copy(file_tmp, file_out)
+  file.remove(file_tmp)
 }
 
 

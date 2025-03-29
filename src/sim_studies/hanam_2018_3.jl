@@ -71,18 +71,16 @@ end
 observed_strains = unique(DataFrame(real_model_data["observations"]).ix_strain)
 
 
-# Only include observations from 2007 onwards
-
 real_observations = DataFrame(real_model_data["observations"])
 
+# Only include observations that were in the real study.
 observations = innerjoin(
     complete_obs, 
     real_observations[:, [:ix_subject, :ix_strain, :ix_t_obs]],
     on = [:ix_subject, :ix_strain, :ix_t_obs]
 )
 
-
-observations.observed_titre = observations.observed_titre .+ rand(Normal(0, sigma_obs), nrow(observations))
+observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, sigma_obs, const_titre_min, const_titre_max))
 
 model_data = Dict(
     "modelled_years" => modelled_years,

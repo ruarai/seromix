@@ -46,7 +46,7 @@ end
     #     infections[ix_t, ix_subject] ~ Bernoulli(0.1)
     # end
 
-    infections ~ filldist(Bernoulli(0.1), model_parameters.n_t_steps, model_parameters.n_subjects)
+    infections ~ filldist(Bernoulli(0.2), model_parameters.n_t_steps, model_parameters.n_subjects)
 
     obs_sigma = convert(typeof(mu_long), 1.5)
     obs_min = convert(typeof(mu_long), const_titre_min)

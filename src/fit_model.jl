@@ -1,7 +1,7 @@
 include("dependencies.jl")
 
 data_code = ARGS[1]
-# data_code = "sim_study_simple_1"
+# data_code = "hanam_2018"
 
 run_dir = "runs/$(data_code)/"
 
@@ -22,9 +22,9 @@ model = waning_model(
     individual_titre_obs
 );
 
-gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_subjects)
+gibbs_sampler = make_gibbs_sampler(model, :infections, 0.0075, p.n_t_steps, p.n_subjects)
 
-n_thinning = 1
+n_thinning = 10
 n_sample = 3000
 chain = @time sample(
     model, gibbs_sampler, 
@@ -33,6 +33,7 @@ chain = @time sample(
     thinning = n_thinning,
     callback = log_callback
 );
+
 
 # plot(chain, [:mu_long, :mu_sum], seriestype = :traceplot)
 # plot(chain[1500:end], [:mu_long, :mu_sum], seriestype = :traceplot)
