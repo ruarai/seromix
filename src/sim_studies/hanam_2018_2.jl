@@ -1,8 +1,8 @@
 include("../dependencies.jl")
 
-data_code = "hanam_2018_2"
+data_code = "sim_study_hanam_2018_2"
 
-run_dir = "runs/sim_study_$(data_code)/"
+run_dir = "runs/$(data_code)/"
 mkpath(run_dir)
 
 real_model_data = load("runs/hanam_2018/model_data.hdf5")
@@ -18,7 +18,7 @@ omega = 0.75
 sigma_long = 0.2
 sigma_short = 0.1
 tau = 0.05
-sigma_obs = 1.5
+obs_sd = 1.5
 
 
 modelled_years = real_model_data["modelled_years"]
@@ -63,7 +63,7 @@ observations = filter([:ix_subject, :ix_t_obs] => filt_age, observations)
 
 observations = filter(:ix_strain => ix_strain -> in(ix_strain, observed_strains), observations)
 
-observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, sigma_obs, const_titre_min, const_titre_max))
+observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max))
 
 model_data = Dict(
     "modelled_years" => modelled_years,

@@ -2,9 +2,9 @@
 
 include("../dependencies.jl")
 
-data_code = "simple_1"
+data_code = "sim_study_simple_1"
 
-run_dir = "runs/sim_study_$(data_code)/"
+run_dir = "runs/$(data_code)/"
 mkpath(run_dir)
 
 modelled_years = collect(1980:1999)
@@ -29,7 +29,7 @@ omega = 0.75
 sigma_long = 0.2
 sigma_short = 0.1
 tau = 0.05
-sigma_obs = 1.5
+obs_sd = 1.5
 
 infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
 mask_infections_birth_year!(infections, p.subject_birth_ix)
@@ -62,7 +62,7 @@ end
     
 
 observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
-observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, sigma_obs, const_titre_min, const_titre_max))
+observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max))
 
 model_data = Dict(
     "modelled_years" => modelled_years,

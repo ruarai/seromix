@@ -1,8 +1,8 @@
 include("../dependencies.jl")
 
-data_code = "hanam_2018_3"
+data_code = "sim_study_hanam_2018_3"
 
-run_dir = "runs/sim_study_$(data_code)/"
+run_dir = "runs/$(data_code)/"
 mkpath(run_dir)
 
 real_model_data = load("runs/hanam_2018/model_data.hdf5")
@@ -15,10 +15,10 @@ n_subjects = p.n_subjects
 mu_long = 2.0
 mu_short = 2.0
 omega = 0.75
-sigma_long = 0.2
-sigma_short = 0.1
+sigma_long = 0.15
+sigma_short = 0.05
 tau = 0.05
-sigma_obs = 1.5
+obs_sd = 1.5
 
 
 modelled_years = real_model_data["modelled_years"]
@@ -31,6 +31,7 @@ attack_rates = vcat(
     rand(LogNormal(log(0.15) - mean_offset, sd_param), length(modelled_years) - 1)
 )
 infections = Matrix(stack([rand(Bernoulli(a), (n_subjects)) for a in attack_rates])')
+
 mask_infections_birth_year!(infections, p.subject_birth_ix)
 # heatmap(infections')
 
@@ -54,19 +55,18 @@ waning_curve!(
     complete_obs.observed_titre
 )
 
-observed_strains = unique(DataFrame(real_model_data["observations"]).ix_strain)
-
-
 real_observations = DataFrame(real_model_data["observations"])
 
 # Only include observations that were in the real study.
-observations = semijoin(
+observations = innerjoin(
     complete_obs, 
     real_observations[:, [:ix_subject, :ix_strain, :ix_t_obs]],
     on = [:ix_subject, :ix_strain, :ix_t_obs]
 )
 
-observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, sigma_obs, const_titre_min, const_titre_max))
+observations.observed_titre = rand(
+    TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max)
+)
 
 model_data = Dict(
     "modelled_years" => modelled_years,
