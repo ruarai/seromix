@@ -23,25 +23,16 @@ sigma_obs = 1.5
 
 modelled_years = real_model_data["modelled_years"]
 
-# sd_param = 0.5
-# mean_offset = (sd_param / 2) ^ 2 / 2
+sd_param = 0.5
+mean_offset = (sd_param / 2) ^ 2 / 2
 
-# attack_rates = vcat(
-#     rand(LogNormal(log(0.5) - mean_offset, sd_param)),
-#     rand(LogNormal(log(0.15) - mean_offset, sd_param), length(modelled_years) - 1)
-# )
-# attack_rates = fill(0.2, length(modelled_years))
-# infections = Matrix(stack([rand(Bernoulli(a), (n_subjects)) for a in attack_rates])')
-# for ix_subject in 1:n_subjects
-#     if p.subject_birth_ix[ix_subject] > 0
-#         infections[1:p.subject_birth_ix[ix_subject], ix_subject] .= false
-#     end
-# end
-
-infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
+attack_rates = vcat(
+    rand(LogNormal(log(0.5) - mean_offset, sd_param)),
+    rand(LogNormal(log(0.15) - mean_offset, sd_param), length(modelled_years) - 1)
+)
+infections = Matrix(stack([rand(Bernoulli(a), (n_subjects)) for a in attack_rates])')
 mask_infections_birth_year!(infections, p.subject_birth_ix)
-heatmap(infections')
-
+# heatmap(infections')
 
 infections_df = DataFrame(stack([[i[1], i[2]] for i in findall(infections)])', :auto)
 rename!(infections_df, ["ix_t", "ix_subject"] )
@@ -63,18 +54,13 @@ waning_curve!(
     complete_obs.observed_titre
 )
 
-function filt_age(ix_subject, ix_t_obs)
-    return ix_t_obs > p.subject_birth_ix[ix_subject]
-end
-    
-
 observed_strains = unique(DataFrame(real_model_data["observations"]).ix_strain)
 
 
 real_observations = DataFrame(real_model_data["observations"])
 
 # Only include observations that were in the real study.
-observations = innerjoin(
+observations = semijoin(
     complete_obs, 
     real_observations[:, [:ix_subject, :ix_strain, :ix_t_obs]],
     on = [:ix_subject, :ix_strain, :ix_t_obs]

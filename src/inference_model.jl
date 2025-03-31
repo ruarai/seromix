@@ -12,6 +12,22 @@ struct FixedModelParameters
     subject_birth_ix::Vector{Int}
 end
 
+function make_waning_model(
+    model_parameters::FixedModelParameters,
+    obs_df::DataFrame
+)
+    n_max_ind_obs = maximum(length.(make_obs_views(obs_df)))
+
+    individual_titre_obs = [obs_df.observed_titre[v] for v in make_obs_views(obs_df)]
+    return waning_model(
+        model_parameters,
+
+        make_obs_lookup(obs_df),
+        make_obs_views(obs_df),
+        n_max_ind_obs,
+        individual_titre_obs
+    );
+end
 
 
 @model function waning_model(
@@ -75,6 +91,7 @@ end
         )
 
         observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sigma, obs_min, obs_max)
+        # observed_titre[ix_subject] ~ MvNormal(y_pred, I * obs_sigma)
     else
         y_pred_mem = zeros(typeof(mu_long), n_max_ind_obs)
 
@@ -100,6 +117,7 @@ end
             )
 
             observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sigma, obs_min, obs_max)
+            # observed_titre[ix_subject] ~ MvNormal(y_pred, I * obs_sigma)
         end
     end
 end

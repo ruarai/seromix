@@ -165,3 +165,20 @@ function mask_infections_birth_year!(infections, subject_birth_ix)
         end
     end
 end
+
+function sample_chain(
+    model, 
+    gibbs_sampler;
+    n_sample::Int,
+    n_thinning::Int,
+    n_chain::Int
+)
+
+    return sample(
+        model, gibbs_sampler, 
+        MCMCThreads(), n_sample ÷ n_thinning, n_chain,
+
+        thinning = n_thinning,
+        callback = log_callback
+    )
+end
