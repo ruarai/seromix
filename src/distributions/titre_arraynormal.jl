@@ -35,19 +35,23 @@ function titre_logpdf_component(x::S, μ::T, σ::T, min::T, max::T) where {T <: 
 end
 
 function apply_logpdf(x::AbstractVector{S}, μ::SubArray{T, }, σ::T, min::T, max::T) where {T <: Real, S <: Real}
-    return mapreduce(
-        x -> titre_logpdf_component(x[1], x[2], σ, min, max),
-        +, 
-        zip(x, μ)
-    )
+    l_sum::T = zero(T)
+
+    @inbounds for i in eachindex(x)
+        l_sum += titre_logpdf_component(x[i], μ[i], σ, min, max)
+    end
+
+    return l_sum
 end
 
 function apply_logpdf(x::AbstractVector{S}, μ::Vector{T}, σ::T, min::T, max::T) where {T <: Real, S <: Real}
-    return mapreduce(
-        x -> titre_logpdf_component(x[1], x[2], σ, min, max),
-        +, 
-        zip(x, μ)
-    )
+    l_sum::T = zero(T)
+
+    @inbounds for i in eachindex(x)
+        l_sum += titre_logpdf_component(x[i], μ[i], σ, min, max)
+    end
+
+    return l_sum
 end
 
 function Distributions.logpdf(d::TitreArrayNormal{T}, x::AbstractVector{S})::T where {T <: Real, S <: Real}

@@ -115,14 +115,24 @@ model = waning_model(
 
 gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_subjects)
 
+symbols_not_inf = model_symbols_apart_from(model, :infections)
+    
+gibbs_sampler = Gibbs(
+    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects),
+    symbols_not_inf => HMC(0.005, 10)
+)
+
 sample(model, gibbs_sampler, 2, callback = log_callback);
+sample(model, gibbs_sampler, 500, callback = log_callback);
 
 @profview sample(model, gibbs_sampler, 500, callback = log_callback);
 @profview_allocs sample(model, gibbs_sampler, 1000, callback = log_callback);
 
 @time sample(model, gibbs_sampler, 500, callback = log_callback);
 
-@report_opt model.f(
+using Cthulhu
+
+@descend model.f(
     model,
     Turing.VarInfo(model),
     Turing.SamplingContext(
@@ -136,17 +146,13 @@ a = TitreArrayNormal(rand(300), 0.5, 0.0, 8.0)
 
 y = rand(a)
 
+@descend logpdf(a, y)
 
 using BenchmarkTools
+
+a = TitreArrayNormal(rand(300) .+ 3, 0.5, 0.0, 8.0)
 
 @benchmark logpdf(a, y) setup = (a = a, y = rand(a))
 
 
 @profview [logpdf(a, y) for i in 1:10000]
-
-
-
-
-using JET
-
-@code_warntype logpdf(a, y)
