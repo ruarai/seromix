@@ -29,7 +29,6 @@ function make_waning_model(
     );
 end
 
-
 @model function waning_model(
     model_parameters::FixedModelParameters,
 
@@ -64,7 +63,7 @@ end
 
     infections ~ filldist(Bernoulli(0.2), model_parameters.n_t_steps, model_parameters.n_subjects)
 
-    obs_sigma = convert(typeof(mu_long), 1.5)
+    obs_sd = convert(typeof(mu_long), 1.5)
     obs_min = convert(typeof(mu_long), const_titre_min)
     obs_max = convert(typeof(mu_long), const_titre_max)
 
@@ -90,8 +89,8 @@ end
             y_pred
         )
 
-        observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sigma, obs_min, obs_max)
-        # observed_titre[ix_subject] ~ MvNormal(y_pred, I * obs_sigma)
+        observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max)
+        # observed_titre[ix_subject] ~ MvNormal(y_pred, I * obs_sd)
     else
         y_pred_mem = zeros(typeof(mu_long), n_max_ind_obs)
 
@@ -116,8 +115,8 @@ end
                 y_pred
             )
 
-            observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sigma, obs_min, obs_max)
-            # observed_titre[ix_subject] ~ MvNormal(y_pred, I * obs_sigma)
+            observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max)
+            # observed_titre[ix_subject] ~ MvNormal(y_pred, I * obs_sd)
         end
     end
 end
