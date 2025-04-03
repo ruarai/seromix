@@ -8,8 +8,8 @@ editor: source
 editor_options: 
   chunk_output_type: console
 params:
-  model_data_file: runs/sim_study_simple_1/model_data.hdf5
-  chain_file: runs/sim_study_simple_1/chain.parquet
+  model_data_file: runs/sim_study_hanam_2018_3/model_data.hdf5
+  chain_file: runs/sim_study_hanam_2018_3/chain.parquet
 ---
 
 ## Simulation study MCMC fit
@@ -55,6 +55,10 @@ ggplot() +
             fill = "grey90",
             model_data$subject_birth_data) +
   
+  geom_tile(aes(x = year, y = ix_subject),
+            fill = "lightblue",
+            model_data$infections)  +
+  
   geom_tile(aes(x = strain_year, y = ix_subject),
              fill = "red", alpha = 0.3,
              strains_observed) +
@@ -73,8 +77,8 @@ true_values <- tribble(
   "mu_long", 2.0,
   "mu_sum", 2.0 + 2.0,
   "mu_short", 2.0,
-  "sigma_long", 0.2,
-  "sigma_short", 0.1,
+  "sigma_long", 0.15,
+  "sigma_short", 0.05,
   "tau", 0.05
 )
 
@@ -84,9 +88,16 @@ chain <- read_chain(params$chain_file)
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)
 
-warmup_steps <- min(22000, max(chain$.iteration) - 1)
+warmup_steps <- 2000
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
+
+chain_filt <- chain %>%
+  filter(.iteration > warmup_steps)
+
+chain_filt_wide <- chain_filt %>% 
+  select(.iteration, .chain, any_of(parnames)) %>%
+  pivot_longer(any_of(parnames))
 
 ```
 
@@ -104,16 +115,11 @@ chain %>%
   
   facet_wrap(~name, scales = "free_y")
 
-chain_filt <- chain %>%
-  filter(.iteration > warmup_steps)
-
-chain_filt_wide <- chain_filt %>% 
-  select(.iteration, .chain, any_of(parnames)) %>%
-  pivot_longer(any_of(parnames))
-
 ggplot() +
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain)),
             chain_filt_wide) +
+  
+  geom_hline(aes(yintercept = value), true_values) +
   
   facet_wrap(~name, scales = "free_y")
 
@@ -126,18 +132,26 @@ ggplot() +
   facet_wrap(~name, scales = "free")
 
 
+strains_observed <- model_data$observations %>%
+  distinct(ix_subject, ix_strain)
+
 ggplot() +
   geom_tile(aes(x = ix_t, y = ix_subject, fill = p),
-            get_inf_data(chain_filt, model_data)) +
+            get_inf_data(chain_filt, model_data))  +
   
-  geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, colour = "red")
+  # geom_tile(aes(x = ix_strain, y = ix_subject),
+  #            fill = "red", alpha = 0.3,
+  #            strains_observed) +
+  
+  geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, size = 0.5, colour = "red")
 
 
 plot_data_inf <- get_inf_data(chain_filt, model_data)
 autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf), curvetype = "ROC")
 
-
 # ggplot() +
 #   geom_line(aes(x = .iteration, y = accuracy, colour = factor(.chain)),
 #             get_inf_accuracy(chain, model_data))
+
+
 ```

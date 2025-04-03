@@ -67,17 +67,10 @@ function AbstractMCMC.step(
     n_t_steps = sampler.n_t_steps
     n_subjects = sampler.n_subjects
 
-    mean_p_swap = 1.0 / n_t_steps
-    alpha = 3.0
-
-    # p_swap = rand(rng, Beta(alpha, alpha / mean_p_swap - alpha))
-    # p_swap = rand(rng, Uniform(0, 1))
-    p_swap = mean_p_swap * 1.5
+    p_swap = 0.1 / n_t_steps
 
     mask = zeros(Bool, n_t_steps)
 
-    ## TODO --- verify this individual-by-individual sampling
-    # is mathematically correct
     for ix_subject in 1:n_subjects
         context = IndividualSubsetContext(ix_subject)
         

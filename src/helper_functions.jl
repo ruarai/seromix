@@ -173,7 +173,6 @@ function sample_chain(
     n_thinning::Int,
     n_chain::Int
 )
-
     return sample(
         model, gibbs_sampler, 
         MCMCThreads(), n_sample ÷ n_thinning, n_chain,

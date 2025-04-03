@@ -17,7 +17,7 @@ get_inf_data <- function(chain, model_data) {
 
 get_inf_accuracy <- function(chain, model_data) {
   chain %>%
-    filter(.iteration %% 5 == 0) %>% 
+    filter((.iteration - 1) %% 5 == 0) %>% 
     
     spread_draws(infections[ix_t, ix_subject]) %>%
     
