@@ -1,59 +1,72 @@
 
-## Terrible function!
-function make_ppd(
-    chain, n_samples,
 
-    params
+
+include("dependencies.jl")
+
+
+data_code = "sim_study_simple_1"
+
+run_dir = "runs/$(data_code)/"
+
+
+model_data = load("$run_dir/model_data.hdf5")
+
+p = read_model_parameters(model_data)
+
+
+chain = QuackIO.read_parquet(DataFrame, "$run_dir/chain.parquet")
+
+# draw_n(i, c) = (i .- minimum(c)) .+ (c .- 1) .* (maximum(i) - minimum(i) + 1)
+# chain.draw .= draw_n(chain.iteration, chain.chain)
+
+
+chain_filt = filter(:iteration => iteration -> iteration > 2500, chain)
+n_ppd_subjects = 1
+n_draws = 100
+
+n_skip_draws = 250
+
+obs_df = expand_grid(
+    ix_t_obs = 1:p.n_t_steps, 
+    ix_strain = 1:p.n_t_steps, 
+    ix_subject = 1:n_ppd_subjects,
+    observed_titre = 0.0,
+    ix_draw = 1:n_draws,
 )
-    ppd_subjects = 1:params.n_subjects
 
-    draw_dfs = Array{DataFrame}(undef, n_samples)
+obs_df_grouped = groupby(obs_df, :ix_draw)
 
-    for ix_draw in 1:n_samples
-        chain_sample = sample(chain, 1)
+# Share across draws
+infections = Matrix{Bool}(undef, p.n_t_steps, p.n_subjects)
 
-        draw_dfs[ix_draw] = expand_grid(
-            ix_t_obs = 1:params.n_t_steps, 
-            ix_strain = 1:params.n_t_steps, 
-            ix_subject = ppd_subjects,
-            draw = ix_draw,
-            observed_titre = 0.0
-        )
+for ix_draw in obs_df.ix_draw
+    ix_sample = sample(1:nrow(chain_filt))
 
-        obs_lookup = make_obs_lookup(draw_dfs[ix_draw])
-        obs_views = make_obs_views(draw_dfs[ix_draw])
+    draw = chain_filt[ix_sample,:]
+    
+    obs_lookup = make_obs_lookup(obs_df_grouped[ix_draw])
 
-
-        n_obs_subset = length(obs_views[1])
-
-        p = get_params(chain_sample)
-        
-        pred_inf = ntuple_to_matrix(p.infections, params.n_t_steps, params.n_subjects)
-
-        for ix_subject in ppd_subjects
-
-            y_pred = zeros(n_obs_subset)
-
-            waning_curve_individual!(
-                p.mu_long[1], p.mu_sum[1] - p.mu_long[1], 0.8,
-                p.sigma_long[1], p.sigma_short[1], p.tau[1],
-
-                params.antigenic_distances, params.time_diff_matrix,
-                params.subject_birth_ix[ix_subject],
-                AbstractArray{Bool}(view(pred_inf, :, ix_subject)),
-
-                obs_lookup[ix_subject],
-
-                y_pred
-            )
-
-            for (i, ix_obs) in enumerate(obs_views[ix_subject])
-                draw_dfs[ix_draw].observed_titre[ix_obs] = y_pred[i]
-            end
-        end
+    for ix_subject in 1:p.n_subjects, ix_t in 1:p.n_t_steps
+        infections[ix_t, ix_subject] = chain_filt[ix_sample, "infections[$ix_t, $ix_subject]"]
     end
 
-    ppd_obs = vcat(draw_dfs...)
-    
-    return ppd_obs
+    for ix_subject in 1:n_ppd_subjects
+        waning_curve_individual!(
+            draw.mu_long, draw.mu_sum - draw.mu_long, 0.75,
+            draw.sigma_long, draw.sigma_short, draw.tau,
+
+            p.antigenic_distances, p.time_diff_matrix,
+            p.subject_birth_ix[ix_subject],
+
+            AbstractArray{Bool}(view(infections, :, ix_subject)),
+
+            obs_lookup[ix_subject], 
+            obs_df_grouped[ix_draw].observed_titre
+        )
+    end
 end
+
+ppd_df = DataFrame(obs_df_grouped)
+
+
+save_draws(ppd_df, "$run_dir/ppd.parquet")
