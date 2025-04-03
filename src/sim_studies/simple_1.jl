@@ -26,8 +26,8 @@ p = FixedModelParameters(
 mu_long = 2.0
 mu_short = 2.0
 omega = 0.75
-sigma_long = 0.2
-sigma_short = 0.1
+sigma_long = 0.15
+sigma_short = 0.05
 tau = 0.05
 obs_sd = 1.5
 
@@ -59,7 +59,6 @@ waning_curve!(
 function filt_age(ix_subject, ix_t_obs)
     return ix_t_obs >= p.subject_birth_ix[ix_subject]
 end
-    
 
 observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
 observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max))

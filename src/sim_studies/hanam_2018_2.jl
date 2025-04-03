@@ -15,8 +15,8 @@ n_subjects = p.n_subjects
 mu_long = 2.0
 mu_short = 2.0
 omega = 0.75
-sigma_long = 0.2
-sigma_short = 0.1
+sigma_long = 0.15
+sigma_short = 0.05
 tau = 0.05
 obs_sd = 1.5
 
