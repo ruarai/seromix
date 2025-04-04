@@ -76,7 +76,6 @@ observed_strains = unique(DataFrame(real_model_data["observations"]).ix_strain)
 
 # Only include observations from 2007 onwards
 observations = filter(:ix_t_obs => ix_t_obs -> modelled_years[ix_t_obs] >= 2007, complete_obs)
-
 observations = filter(:ix_strain => ix_strain -> in(ix_strain, observed_strains), observations)
 
 
@@ -91,6 +90,7 @@ model_data = Dict(
     "observations" => df_to_tuple(observations),
     "complete_obs" => df_to_tuple(complete_obs),
     "infections" => df_to_tuple(infections_df),
+    "infections_matrix" => infections,
     "subject_birth_data" => df_to_tuple(subject_birth_data)
 )
 

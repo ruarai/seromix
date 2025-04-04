@@ -67,7 +67,7 @@ function AbstractMCMC.step(
     n_t_steps = sampler.n_t_steps
     n_subjects = sampler.n_subjects
 
-    p_swap = 0.1 / n_t_steps
+    p_swap = 0.5 / n_t_steps
 
     mask = zeros(Bool, n_t_steps)
 

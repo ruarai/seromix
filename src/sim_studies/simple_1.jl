@@ -14,7 +14,10 @@ n_subjects = 20
 time_diff_matrix = make_time_diff_matrix(modelled_years)
 antigenic_distance = abs.(time_diff_matrix)
 
-subject_birth_data = DataFrame(ix_subject = 1:n_subjects, ix_t_birth = floor.(Int, reverse(1:n_subjects) .* 0.3))
+subject_birth_data = DataFrame(
+    ix_subject = 1:n_subjects, 
+    ix_t_birth = floor.(Int, reverse(1:n_subjects) .* 0.7)
+)
 
 p = FixedModelParameters(
     n_t_steps, n_subjects,

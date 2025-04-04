@@ -29,6 +29,7 @@ function make_waning_model(
     );
 end
 
+
 @model function waning_model(
     model_parameters::FixedModelParameters,
 
@@ -41,9 +42,11 @@ end
     # immediately post-infection
     # Otherwise this becomes non-identifiable against getting lots
     # of subsequent infections.
-    mu_sum ~ Uniform(3.0, 6.0)
+    # mu_sum ~ Uniform(3.0, 6.0)
 
     mu_long ~ Uniform(0.0, 6.0)
+    mu_sum = convert(typeof(mu_long), 4.0)
+
 
     mu_short = mu_sum - mu_long
 
