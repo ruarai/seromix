@@ -90,30 +90,19 @@ M_test = [rand(MatrixBernoulli(rand(Uniform(0.0, 1), (10, 10)))) for i in 1:1000
 t = Matrix{Real}(zeros(Bool, 10, 10))
 
 
-
 data_code = "sim_study_simple_1"
 
 run_dir = "runs/$(data_code)/"
 
-model_data = load("runs/$data_code/model_data.hdf5")
+model_data = load("$run_dir/model_data.hdf5")
+
 obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
+model = make_waning_model(p, obs_df);
 
-n_max_ind_obs = maximum(length.(make_obs_views(obs_df)))
-individual_titre_obs = [obs_df.observed_titre[v] for v in make_obs_views(obs_df)]
-
-
-model = waning_model(
-    p,
-
-    make_obs_lookup(obs_df), make_obs_views(obs_df),
-    n_max_ind_obs,
-    individual_titre_obs
-);
-
-gibbs_sampler = make_gibbs_sampler(model, :infections, 0.004, p.n_t_steps, p.n_subjects)
+gibbs_sampler = make_gibbs_sampler(model, :infections, 0.0075, p.n_t_steps, p.n_subjects)
 
 symbols_not_inf = model_symbols_apart_from(model, :infections)
     

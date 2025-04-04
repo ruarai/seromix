@@ -72,6 +72,7 @@ model_data = Dict(
     "observations" => df_to_tuple(observations),
     "complete_obs" => df_to_tuple(complete_obs),
     "infections" => df_to_tuple(infections_df),
+    "infections_matrix" => infections,
     "subject_birth_data" => df_to_tuple(subject_birth_data)
 )
 

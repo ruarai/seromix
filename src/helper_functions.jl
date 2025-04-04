@@ -181,3 +181,32 @@ function sample_chain(
         callback = log_callback
     )
 end
+
+
+
+
+function chain_infections_matrix(chain, ix_iter, ix_chain, params)
+    infections = zeros(Bool, params.n_t_steps, params.n_subjects)
+
+    for ix_subject in 1:params.n_subjects
+        for ix_t in max(1, params.subject_birth_ix[ix_subject]):params.n_t_steps
+            infections[ix_t, ix_subject] = chain[ix_iter, Symbol("infections[$ix_t, $ix_subject]"), ix_chain]
+        end
+    end
+
+    return infections
+end
+
+
+
+function chain_infections_prob(chain, params)
+    infections = zeros(Float64, params.n_t_steps, params.n_subjects)
+
+    for ix_subject in 1:params.n_subjects
+        for ix_t in max(1, params.subject_birth_ix[ix_subject]):params.n_t_steps
+            infections[ix_t, ix_subject] = mean(chain[Symbol("infections[$ix_t, $ix_subject]")])
+        end
+    end
+
+    return infections
+end
