@@ -76,7 +76,7 @@ function AbstractMCMC.step(
         
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
-        mask .= rand(rng, Bernoulli(p_swap), n_t_steps)
+        propose_mask!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
 
         apply_mask!(theta_new, mask, ix_subject, n_t_steps)
 
@@ -100,8 +100,40 @@ function AbstractMCMC.step(
     return transition, SamplerState(transition, theta_new)
 end
 
-function apply_mask!(theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_ind::Int, n_t_steps::Int)
-    ix_start = (ix_ind - 1) * n_t_steps + 1
+function propose_mask!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
+    if rand(rng) < 0.5
+        mask .= rand(rng, Bernoulli(p_swap), n_t_steps)
+    else
+        mask .= false
+
+        ix_start = (ix_subject - 1) * n_t_steps + 1
+        ix_end = ix_start + n_t_steps - 1
+    
+
+        n_inf = sum(@view theta[ix_start:ix_end])
+
+        if n_inf > 0
+            # Maybe just sample randomly and check?
+            inf_indices = findall(@view theta[ix_start:ix_end])
+
+            ix_t_from = sample(rng, inf_indices)
+            # ix_t_to = clamp(ix_t_from + round(Int, randn() * 10), 1, n_t_steps)
+            ix_t_to = sample(rng, 1:n_t_steps)
+
+            # Ensure ix_t_to is not currently an infection event
+            if !view(theta, ix_start:ix_end)[ix_t_to]
+                # Set mask such that ix_t_from will become not an infection event
+                # and ix_t_to will be an infection event
+                # i.e. move infection
+                mask[ix_t_from] = true
+                mask[ix_t_to] = true
+            end
+        end
+    end
+end
+
+function apply_mask!(theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int)
+    ix_start = (ix_subject - 1) * n_t_steps + 1
     ix_end = ix_start + n_t_steps - 1
     
     @inbounds for (i, i_theta) in enumerate(ix_start:ix_end)

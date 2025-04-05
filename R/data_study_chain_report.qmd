@@ -43,7 +43,7 @@ chain <- read_chain(params$chain_file)
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)
 
-warmup_steps <- min(22000, max(chain$.iteration) - 1)
+warmup_steps <- min(6000, max(chain$.iteration) - 1)
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
 
@@ -54,6 +54,7 @@ chain %>%
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain))) +
   
   geom_vline(xintercept = warmup_steps) +
+  geom_hline(aes(yintercept = value), true_values) +
   
   facet_wrap(~name, scales = "free_y")
 

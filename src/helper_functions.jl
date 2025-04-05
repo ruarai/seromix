@@ -1,7 +1,7 @@
 
 
 function save_draws(draws, filename)
-    write_parquet(filename, DataFrame(draws))
+    write_table(filename, DataFrame(draws), format = :parquet)
 end
 
 function make_obs_views(obs_df)
@@ -89,15 +89,15 @@ function model_symbols_apart_from(model, sym)
     return symbols
 end
 
-function make_gibbs_sampler(model, inf_sym, hmc_step_size, n_t_steps, n_subjects)
+function make_gibbs_sampler(model, inf_sym, hmc_step_size, n_leapfrog, n_t_steps, n_subjects)
     symbols_not_inf = model_symbols_apart_from(model, inf_sym)
     
     # Must somehow balance the level of exploration of the MH sampler
     # with that of the HMC sampler -- so repeating MH or changing HMC step size
     gibbs_sampler = Gibbs(
         :infections => make_mh_infection_sampler(n_t_steps, n_subjects),
-        symbols_not_inf => HMC(hmc_step_size, 10) # Must be reduced with number of individuals?
-        # symbols_not_inf => NUTS(init_ϵ = 0.01)
+        # symbols_not_inf => HMC(hmc_step_size, n_leapfrog) # Must be reduced with number of individuals?
+        symbols_not_inf => NUTS(init_ϵ = 0.007)
     )
     
     return gibbs_sampler

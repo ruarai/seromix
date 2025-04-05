@@ -18,6 +18,7 @@ using LinearAlgebra
 using StatsBase
 
 using DataFrames
+using QuackIO
 # using Parquet
 
 using Random
