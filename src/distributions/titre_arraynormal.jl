@@ -28,7 +28,7 @@ function titre_logpdf_component(x::S, μ::T, σ::T, min::T, max::T) where {T <: 
     elseif x > min && x < max
         return log(normcdf(μ, σ, x + 1) - normcdf(μ, σ, x))
     elseif x >= max
-        return normlogccdf(μ, σ, x + 1)
+        return normlogccdf(μ, σ, x)
     else
         return typemax(T)
     end
