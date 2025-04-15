@@ -40,8 +40,9 @@ function AbstractMCMC.step(
 )
     d = LogDensityProblems.dimension(model.logdensity)
 
-    # theta_init = convert(Vector{Real}, fill(false, d))
     theta_init = fill(false, d)
+
+    # theta_init = rand(rng, Bernoulli(0.1), d)
 
     transition = Transition(theta_init)
     return transition, SamplerState(transition, theta_init)
@@ -67,29 +68,28 @@ function AbstractMCMC.step(
     n_t_steps = sampler.n_t_steps
     n_subjects = sampler.n_subjects
 
-    p_swap = 0.5 / n_t_steps
+    p_swap = 1.5 / n_t_steps
 
     mask = zeros(Bool, n_t_steps)
+    context = DynamicPPL.DefaultContext()
 
     for ix_subject in 1:n_subjects
-        context = IndividualSubsetContext(ix_subject)
-        
+        # context = IndividualSubsetContext(ix_subject)
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
-        propose_mask!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
+        propose_mask_random!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
 
         apply_mask!(theta_new, mask, ix_subject, n_t_steps)
 
         varinfo_proposal = DynamicPPL.unflatten(f.varinfo, theta_new)
-
         logprob_proposal = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_proposal, context)))
 
         if -Random.randexp(rng) <= logprob_proposal - logprob_previous
-            # nothing
+            # Accept, do nothing
 
             sampler.acceptions += 1
         else
-            # Re-apply mask to undo
+            # Reject, re-apply mask to undo
             apply_mask!(theta_new, mask, ix_subject, n_t_steps)
             sampler.rejections += 1
         end
@@ -100,15 +100,30 @@ function AbstractMCMC.step(
     return transition, SamplerState(transition, theta_new)
 end
 
-function propose_mask!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
-    if rand(rng) < 0.5
-        mask .= rand(rng, Bernoulli(p_swap), n_t_steps)
-    else
-        mask .= false
+function propose_mask_random!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
 
-        ix_start = (ix_subject - 1) * n_t_steps + 1
-        ix_end = ix_start + n_t_steps - 1
-    
+    mask .= rand(rng, Bernoulli(p_swap), n_t_steps)
+
+end
+
+function propose_mask_kucharski!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
+
+    mask .= false
+
+    if rand(rng) < 0.5
+        return # 50% chance of doing nothing
+    end
+
+    ix_start = (ix_subject - 1) * n_t_steps + 1
+    ix_end = ix_start + n_t_steps - 1
+
+    if rand(rng) < 0.66
+        # Case 1 - remove/add an infection
+
+        ix_swap = sample(rng, 1:n_t_steps)
+        mask[ix_swap] = true
+    else
+        # Case 3 - move an infection
 
         n_inf = sum(@view theta[ix_start:ix_end])
 
@@ -117,7 +132,6 @@ function propose_mask!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_
             inf_indices = findall(@view theta[ix_start:ix_end])
 
             ix_t_from = sample(rng, inf_indices)
-            # ix_t_to = clamp(ix_t_from + round(Int, randn() * 10), 1, n_t_steps)
             ix_t_to = sample(rng, 1:n_t_steps)
 
             # Ensure ix_t_to is not currently an infection event
