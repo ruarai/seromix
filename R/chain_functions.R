@@ -30,3 +30,20 @@ get_inf_accuracy <- function(chain, model_data) {
     group_by(.iteration, .chain) %>%
     summarise(accuracy = sum(inf == infection) / n())
 }
+
+get_inf_count <- function(chain, model_data) {
+  n_t_steps <- length(model_data$modelled_years)
+  
+  valid_inf_cols <- model_data$subject_birth_data %>%
+    mutate(ix_t_birth = replace_na(ix_t_birth, 1)) %>%
+    rowwise() %>%
+    mutate(ix_t = list(ix_t_birth:n_t_steps)) %>% 
+    unnest(ix_t) %>%
+    arrange(ix_t, ix_subject) %>%
+    mutate(col_name = str_c("infections[", ix_t, ",", ix_subject, "]")) %>%
+    pull(col_name)
+  
+  chain %>%
+    select(.iteration, .chain, any_of(valid_inf_cols)) %>% 
+    mutate(total_inf = rowSums(across(starts_with("infections"))))
+}

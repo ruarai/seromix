@@ -1,7 +1,7 @@
 include("dependencies.jl")
 
 # data_code = ARGS[1]
-data_code = "hanam_2018"
+data_code = "sim_study_hanam_2018_3"
 
 run_dir = "runs/$(data_code)/"
 
@@ -13,22 +13,26 @@ p = read_model_parameters(model_data)
 
 model = make_waning_model(p, obs_df);
 
-# Condition on true values
-# model = model | 
-#     (mu_sum = 4.0, mu_long = 2.0, sigma_long = 0.15, sigma_short = 0.05, tau = 0.05);
 
-gibbs_sampler = make_gibbs_sampler(model, :infections, 0.007, 10, p.n_t_steps, p.n_subjects);
+gibbs_sampler = make_gibbs_sampler(model, :infections, 0.007, 10, p);
 
 chain = @time sample_chain(
     model, gibbs_sampler;
-    n_sample = 2000, n_thinning = 1, n_chain = 6
+    n_sample = 10000, n_thinning = 10, n_chain = 6
 );
 
+heatmap(chain_infections_prob(chain[800:end], p)')
 
-heatmap(chain_infections_prob(chain[1500:end], p)')
+@gif for i in 1:5:1000
+    heatmap(chain_infections_prob(chain[i], p)')
+end
+
 
 plot(chain, [:mu_long, :mu_sum], seriestype = :traceplot)
 plot(chain, [:sigma_long, :sigma_short], seriestype = :traceplot)
 plot(chain, [:tau], seriestype = :traceplot)
+
+plot(chain_sum_infections(chain))
+hline!([sum(model_data["infections_matrix"])])
 
 save_draws(chain, "$run_dir/chain.parquet")

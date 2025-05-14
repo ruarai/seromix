@@ -7,7 +7,7 @@ data_code = "sim_study_simple_1"
 run_dir = "runs/$(data_code)/"
 mkpath(run_dir)
 
-modelled_years = collect(1980:1999)
+modelled_years = collect(2000:2019)
 n_t_steps = length(modelled_years)
 n_subjects = 20
 
@@ -36,7 +36,7 @@ obs_sd = 1.5
 
 infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
 mask_infections_birth_year!(infections, p.subject_birth_ix)
-heatmap(infections')
+# heatmap(infections')
 
 
 infections_df = DataFrame(stack([[i[1], i[2]] for i in findall(infections)])', :auto)
@@ -72,7 +72,7 @@ model_data = Dict(
     "observations" => df_to_tuple(observations),
     "complete_obs" => df_to_tuple(complete_obs),
     "infections" => df_to_tuple(infections_df),
-    "infections_matrix" => infections,
+    "infections_matrix" => Matrix{Float64}(infections),
     "subject_birth_data" => df_to_tuple(subject_birth_data)
 )
 

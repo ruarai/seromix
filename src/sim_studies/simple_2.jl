@@ -1,16 +1,29 @@
+
 include("../dependencies.jl")
 
-data_code = "sim_study_hanam_2018_2"
+data_code = "sim_study_simple_2"
 
 run_dir = "runs/$(data_code)/"
 mkpath(run_dir)
 
-real_model_data = load("runs/hanam_2018/model_data.hdf5")
+modelled_years = collect(2000:2049)
+n_t_steps = length(modelled_years)
+n_subjects = 20
 
-p = read_model_parameters(real_model_data)
+time_diff_matrix = make_time_diff_matrix(modelled_years)
+antigenic_distance = abs.(time_diff_matrix)
 
-n_t_steps = p.n_t_steps
-n_subjects = p.n_subjects
+subject_birth_data = DataFrame(
+    ix_subject = 1:n_subjects, 
+    ix_t_birth = floor.(Int, reverse(1:n_subjects) .* 0.7)
+)
+
+p = FixedModelParameters(
+    n_t_steps, n_subjects,
+    antigenic_distance,
+    time_diff_matrix,
+    subject_birth_data.ix_t_birth
+)
 
 mu_long = 2.0
 mu_short = 2.0
@@ -19,10 +32,6 @@ sigma_long = 0.15
 sigma_short = 0.05
 tau = 0.05
 obs_sd = 1.5
-
-
-modelled_years = real_model_data["modelled_years"]
-
 
 infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
 mask_infections_birth_year!(infections, p.subject_birth_ix)
@@ -50,28 +59,20 @@ waning_curve!(
 )
 
 function filt_age(ix_subject, ix_t_obs)
-    return ix_t_obs > p.subject_birth_ix[ix_subject]
+    return ix_t_obs >= p.subject_birth_ix[ix_subject]
 end
-    
 
-observed_strains = unique(DataFrame(real_model_data["observations"]).ix_strain)
-
-
-# Only include observations from 2007 onwards
-observations = filter(:ix_t_obs => ix_t_obs -> modelled_years[ix_t_obs] >= 2007, complete_obs)
-observations = filter([:ix_subject, :ix_t_obs] => filt_age, observations)
-
-observations = filter(:ix_strain => ix_strain -> in(ix_strain, observed_strains), observations)
-
+observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
 observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max))
 
 model_data = Dict(
     "modelled_years" => modelled_years,
-    "antigenic_distances" => real_model_data["antigenic_distances"],
+    "antigenic_distances" => antigenic_distance,
     "observations" => df_to_tuple(observations),
     "complete_obs" => df_to_tuple(complete_obs),
     "infections" => df_to_tuple(infections_df),
-    "subject_birth_data" => real_model_data["subject_birth_data"]
+    "infections_matrix" => Matrix{Float64}(infections),
+    "subject_birth_data" => df_to_tuple(subject_birth_data)
 )
 
 save("$run_dir/model_data.hdf5", model_data)

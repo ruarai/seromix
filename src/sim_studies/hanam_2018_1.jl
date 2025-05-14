@@ -1,4 +1,3 @@
-
 include("../dependencies.jl")
 
 data_code = "sim_study_hanam_2018_1"
@@ -48,7 +47,7 @@ waning_curve!(
 )
 
 function filt_age(ix_subject, ix_t_obs)
-    return ix_t_obs > p.subject_birth_ix[ix_subject]
+    return ix_t_obs >= p.subject_birth_ix[ix_subject]
 end
 
 
@@ -64,6 +63,7 @@ model_data = Dict(
     "observations" => df_to_tuple(observations),
     "complete_obs" => df_to_tuple(complete_obs),
     "infections" => df_to_tuple(infections_df),
+    "infections_matrix" => Matrix{Float64}(infections),
     "subject_birth_data" => real_model_data["subject_birth_data"]
 )
 

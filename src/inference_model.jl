@@ -38,7 +38,8 @@ end
 
     observed_titre::Vector{Vector{Float64}}     
 )
-    mu_sum ~ Uniform(3.0, 6.0)
+    # mu_sum ~ Uniform(3.0, 6.0)
+    mu_sum ~ Uniform(0.0, 6.0)
     mu_long ~ Uniform(0.0, 6.0)
 
 
@@ -50,7 +51,7 @@ end
     sigma_long ~ Uniform(0, 1)
     sigma_short ~ Uniform(0, 1)
 
-    tau ~ Uniform(0, 1)
+    tau ~ Uniform(0, 0.25)
 
     # infections = Matrix{Bool}(undef, model_parameters.n_t_steps, model_parameters.n_subjects)
 
@@ -87,7 +88,6 @@ end
         )
 
         observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max)
-        # observed_titre[ix_subject] ~ MvNormal(y_pred, I * obs_sd)
     else
         y_pred_mem = zeros(typeof(mu_long), n_max_ind_obs)
 
@@ -113,7 +113,6 @@ end
             )
 
             observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max)
-            # observed_titre[ix_subject] ~ MvNormal(y_pred, I * obs_sd)
         end
     end
 end

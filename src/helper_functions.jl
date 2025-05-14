@@ -89,15 +89,15 @@ function model_symbols_apart_from(model, sym)
     return symbols
 end
 
-function make_gibbs_sampler(model, inf_sym, hmc_step_size, n_leapfrog, n_t_steps, n_subjects)
+function make_gibbs_sampler(model, inf_sym, hmc_step_size, n_leapfrog, params)
     symbols_not_inf = model_symbols_apart_from(model, inf_sym)
     
     # Must somehow balance the level of exploration of the MH sampler
     # with that of the HMC sampler -- so repeating MH or changing HMC step size
     gibbs_sampler = Gibbs(
-        :infections => make_mh_infection_sampler(n_t_steps, n_subjects),
-        # symbols_not_inf => HMC(hmc_step_size, n_leapfrog) # Must be reduced with number of individuals?
-        symbols_not_inf => NUTS(init_ϵ = 0.007)
+        :infections => make_mh_infection_sampler(params.n_t_steps, params.n_subjects),
+        symbols_not_inf => HMC(hmc_step_size, n_leapfrog) # Must be reduced with number of individuals?
+        # symbols_not_inf => NUTS(init_ϵ = 0.007)
     )
     
     return gibbs_sampler
@@ -195,6 +195,12 @@ function chain_infections_matrix(chain, ix_iter, ix_chain, params)
     end
 
     return infections
+end
+
+
+function chain_sum_infections(chain)
+    sums = sum(Array(chain)[:, size(chain, 3):end], dims = 2)
+    return [sums[(1:size(chain, 1)) .+ i * size(chain, 1)] for i in 0:(size(chain, 3) - 1)]
 end
 
 

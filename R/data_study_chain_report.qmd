@@ -43,7 +43,7 @@ chain <- read_chain(params$chain_file)
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)
 
-warmup_steps <- min(6000, max(chain$.iteration) - 1)
+warmup_steps <- min(5000, max(chain$.iteration) - 1)
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
 
@@ -80,15 +80,5 @@ ggplot() +
   geom_vline(aes(xintercept = value), true_values) +
   
   facet_wrap(~name, scales = "free")
-
-
-# Not filtering by birth year here...
-plot_data_n_inf <- chain %>%
-  mutate(n_inf = rowSums(across(starts_with("infections"))))
-
-ggplot() +
-  geom_line(aes(x = .iteration, y = n_inf, group = .chain, colour = factor(.chain)),
-            plot_data_n_inf) +
-  ylab("Number of infections")
 
 ```

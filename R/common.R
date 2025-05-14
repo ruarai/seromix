@@ -99,7 +99,7 @@ read_chain <- function(filename) {
 }
 
 render_quarto <- function(run_name, run_dir, model_data_file, chain_file, quarto_file) {
-  file_out <- str_c("reports/", run_name, ".pdf")
+  file_out <- str_c("reports/", run_name, "_", today(), ".pdf")
   file_tmp <- str_c(run_name, ".pdf")
   
   suppressWarnings(file.remove(file_out))
@@ -114,6 +114,13 @@ render_quarto <- function(run_name, run_dir, model_data_file, chain_file, quarto
   file.remove(file_tmp)
 }
 
-
-
+render_quarto_sim_study <- function(run_name) {
+  render_quarto(
+    run_name, 
+    str_c("runs/", run_name, "/"),
+    str_c("runs/", run_name, "/model_data.hdf5"),
+    str_c("runs/", run_name, "/chain.parquet"),
+    "R/sim_study_chain_report.qmd"
+  )
+}
 

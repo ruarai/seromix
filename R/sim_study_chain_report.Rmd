@@ -1,15 +1,5 @@
 ---
 title: "chain_report"
-format: 
-  pdf:
-    fig-width: 9
-    fig-height: 6
-editor: source
-editor_options: 
-  chunk_output_type: console
-params:
-  model_data_file: runs/sim_study_hanam_2018_3/model_data.hdf5
-  chain_file: runs/sim_study_hanam_2018_3/chain.parquet
 ---
 
 ## Simulation study MCMC fit
@@ -20,7 +10,7 @@ params:
 library(targets)
 suppressMessages(tar_source())
 
-model_data <- read_model_data(params$model_data_file)
+model_data <- read_model_data("runs/sim_study_simple_1/model_data.hdf5")
 
 ```
 
@@ -45,6 +35,9 @@ ggplot() +
              size = 0.5,
              sample_dates) +
   
+  geom_hline(aes(yintercept = ix_subject + 0.5), sample_dates %>% distinct(ix_subject),
+             colour = "grey40") +
+  
   geom_rug(aes(x = year), tibble(year = model_data$modelled_years)) +
   
   theme_bw()
@@ -63,7 +56,11 @@ ggplot() +
              fill = "red", alpha = 0.3,
              strains_observed) +
   geom_point(aes(x = year_observed, y = ix_subject),
+             size = 0.5,
              sample_dates) +
+  
+  geom_hline(aes(yintercept = ix_subject + 0.5), sample_dates %>% distinct(ix_subject),
+             colour = "white") +
   
   geom_rug(aes(x = year), tibble(year = model_data$modelled_years)) +
   
@@ -88,7 +85,7 @@ chain <- read_chain(params$chain_file)
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)
 
-warmup_steps <- 4000
+warmup_steps <- 1500
 
 parnames <- c(colnames(chain)[5:9], "mu_short")
 
@@ -138,26 +135,37 @@ mcmc_pairs(chain_filt, pars = colnames(chain)[5:9])
 strains_observed <- model_data$observations %>%
   distinct(ix_subject, ix_strain)
 
+plot_data_inf <- get_inf_data(chain_filt, model_data)
+
 ggplot() +
   geom_tile(aes(x = ix_t, y = ix_subject, fill = p),
-            get_inf_data(chain_filt, model_data))  +
+            plot_data_inf)  +
   
-  # geom_tile(aes(x = ix_strain, y = ix_subject),
-  #            fill = "red", alpha = 0.3,
-  #            strains_observed) +
+  scale_fill_viridis_c(option = "B") +
   
-  scale_fill_viridis_c(option = "B")# +
+  geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, size = 1.0, colour = "white") +
+  geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, size = 0.5, stroke = 0.3, colour = "black") +
   
-  # geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, size = 1.0, colour = "blue") +
-  # geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, size = 0.5, colour = "lightblue")
+  geom_hline(aes(yintercept = ix_subject + 0.5), sample_dates %>% distinct(ix_subject),
+             linewidth = 0.2,
+             colour = "white")
 
 
-plot_data_inf <- get_inf_data(chain_filt, model_data)
 autoplot(precrec::evalmod(scores = plot_data_inf$p, labels = plot_data_inf$inf), curvetype = "ROC")
 
-# ggplot() +
-#   geom_line(aes(x = .iteration, y = accuracy, colour = factor(.chain)),
-#             get_inf_accuracy(chain, model_data))
+
+
+
+plot_data_inf_count <- get_inf_count(chain, model_data)
+
+
+ggplot() +
+  geom_line(aes(x = .iteration, y = total_inf, colour = factor(.chain)),
+            plot_data_inf_count) +
+  
+  geom_vline(xintercept = warmup_steps) +
+
+  geom_hline(yintercept = sum(model_data$infections_matrix))
 
 
 ```

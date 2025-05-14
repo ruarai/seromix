@@ -32,16 +32,16 @@ list(
     tar_target(chain_file, call_fit_chain(run_name, run_dir, model_data_file, fit_model_jl), format = "file"),
     
     tar_target(chain_report, render_quarto(run_name, run_dir, model_data_file, chain_file,  "R/sim_study_chain_report.qmd"))
-  ),
+  )#,
   
-  tar_map(
-    values = data_studies,
-    tar_target(run_dir, str_c("runs/", run_name, "/")),
-    
-    tar_target(model_data_file, str_c(run_dir, "model_data.hdf5"), format = "file"),
-    tar_target(chain_file, call_fit_chain(run_name, run_dir, model_data_file, fit_model_jl), format = "file"),
-    
-    tar_target(chain_report, render_quarto(run_name, run_dir, model_data_file, chain_file, "R/data_study_chain_report.qmd"))
-  )
+  # tar_map(
+  #   values = data_studies,
+  #   tar_target(run_dir, str_c("runs/", run_name, "/")),
+  #   
+  #   tar_target(model_data_file, str_c(run_dir, "model_data.hdf5"), format = "file"),
+  #   tar_target(chain_file, call_fit_chain(run_name, run_dir, model_data_file, fit_model_jl), format = "file"),
+  #   
+  #   tar_target(chain_report, render_quarto(run_name, run_dir, model_data_file, chain_file, "R/data_study_chain_report.qmd"))
+  # )
 
 )
