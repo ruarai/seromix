@@ -18,11 +18,11 @@ gibbs_sampler = make_gibbs_sampler(model, :infections);
 
 chain = @time sample_chain(
     model, gibbs_sampler;
-    n_sample = 10000, n_thinning = 10, n_chain = 6
+    n_sample = 20000, n_thinning = 10, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')
-heatmap(chain_infections_prob(chain[800:end], p)')
+heatmap(chain_infections_prob(chain[1800:end], p)')
 
 @gif for i in 1:5:1000
     heatmap(chain_infections_prob(chain[i], p)')

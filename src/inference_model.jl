@@ -39,11 +39,12 @@ end
     observed_titre::Vector{Vector{Float64}}     
 )
     # mu_sum ~ Uniform(3.0, 6.0)
-    mu_sum ~ Uniform(0.0, 6.0)
+    # mu_sum ~ Uniform(0.0, 6.0)
     mu_long ~ Uniform(0.0, 6.0)
+    mu_short ~ Uniform(0.0, 6.0)
 
 
-    mu_short = mu_sum - mu_long
+    # mu_short = mu_sum - mu_long
 
     # omega ~ Truncated(LogNormal(-1.0, 0.5), 0, 3)
     omega = convert(typeof(mu_long), 0.75)
@@ -96,8 +97,6 @@ end
             
             y_pred = view(y_pred_mem, 1:n_obs_subset)
             fill!(y_pred, 0.0)
-
-            # y_pred = zeros(typeof(mu_long), n_obs_subset)
 
             waning_curve_individual!(
                 mu_long, mu_short, omega,

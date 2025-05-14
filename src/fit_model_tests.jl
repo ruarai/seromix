@@ -3,7 +3,7 @@ include("dependencies.jl")
 using Plots
 
 
-data_code = "sim_study_simple_2"
+data_code = "sim_study_simple_1"
 
 run_dir = "runs/$(data_code)/"
 
@@ -22,12 +22,14 @@ gibbs_sampler = Gibbs(
     symbols_not_inf => make_mh_parameter_sampler()
 )
 
-# chain = @time sample(model, gibbs_sampler, 4000);
+infections_0 = initial_infections_matrix(p, obs_df, Random.default_rng())
 
-chain = @time sample_chain(
-    model, gibbs_sampler;
-    n_sample = 1000, n_thinning = 4, n_chain = 6
-);
+chain = @time sample(model, gibbs_sampler, 8000, initial_params = (infections = infections_0,));
+
+# chain = @time sample_chain(
+#     model, gibbs_sampler;
+#     n_sample = 1000, n_thinning = 4, n_chain = 6
+# );
 
 heatmap(model_data["infections_matrix"]')
 heatmap(chain_infections_prob(chain[200:end], p)')
@@ -37,11 +39,10 @@ heatmap(chain_infections_prob(chain[200:end], p)')
 end
 
 
-plot(chain, [:mu_long, :mu_sum], seriestype = :traceplot)
+plot(chain, [:mu_long, :mu_short], seriestype = :traceplot)
 plot(chain, [:sigma_long, :sigma_short], seriestype = :traceplot)
 plot(chain, [:tau], seriestype = :traceplot)
 
-plot(chain, [:mu_long, :mu_sum], seriestype = :traceplot)
 
 plot(chain_sum_infections(chain)) # TODO this is broken?
 hline!([sum(model_data["infections_matrix"])])
