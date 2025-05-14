@@ -1,7 +1,9 @@
 include("dependencies.jl")
 
-# data_code = ARGS[1]
-data_code = "sim_study_hanam_2018_3"
+using Plots
+
+
+data_code = "sim_study_simple_2"
 
 run_dir = "runs/$(data_code)/"
 
@@ -13,29 +15,33 @@ p = read_model_parameters(model_data)
 
 model = make_waning_model(p, obs_df);
 
+symbols_not_inf = model_symbols_apart_from(model, :infections)
 
-gibbs_sampler = make_gibbs_sampler(model, :infections);
+gibbs_sampler = Gibbs(
+    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects),
+    symbols_not_inf => make_mh_parameter_sampler()
+)
+
+# chain = @time sample(model, gibbs_sampler, 4000);
 
 chain = @time sample_chain(
     model, gibbs_sampler;
-    n_sample = 10000, n_thinning = 10, n_chain = 6
+    n_sample = 1000, n_thinning = 4, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')
-heatmap(chain_infections_prob(chain[800:end], p)')
+heatmap(chain_infections_prob(chain[200:end], p)')
 
 @gif for i in 1:5:1000
     heatmap(chain_infections_prob(chain[i], p)')
 end
-
-plot(chain, [:mu_long, :mu_sum, :sigma_long, :sigma_short, :tau], seriestype = :traceplot)
 
 
 plot(chain, [:mu_long, :mu_sum], seriestype = :traceplot)
 plot(chain, [:sigma_long, :sigma_short], seriestype = :traceplot)
 plot(chain, [:tau], seriestype = :traceplot)
 
-plot(chain_sum_infections(chain))
-hline!([sum(model_data["infections_matrix"])])
+plot(chain, [:mu_long, :mu_sum], seriestype = :traceplot)
 
-save_draws(chain, "$run_dir/chain.parquet")
+plot(chain_sum_infections(chain)) # TODO this is broken?
+hline!([sum(model_data["infections_matrix"])])

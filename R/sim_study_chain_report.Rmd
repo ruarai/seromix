@@ -1,17 +1,17 @@
 ---
 title: "chain_report"
+wd: "../"
 ---
 
 ## Simulation study MCMC fit
 
 ```{r}
-#| echo: false
-
 library(targets)
 suppressMessages(tar_source())
 
 model_data <- read_model_data("runs/sim_study_simple_1/model_data.hdf5")
 
+chain <- read_chain("runs/sim_study_simple_1/chain.parquet")
 ```
 
 ```{r}
@@ -80,7 +80,6 @@ true_values <- tribble(
 )
 
 
-chain <- read_chain(params$chain_file)
 
 chain <- chain %>%
   mutate(mu_short = mu_sum - mu_long)

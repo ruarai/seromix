@@ -3,6 +3,7 @@ mutable struct MHInfectionSampler <: AbstractMCMC.AbstractSampler
     n_t_steps::Int
     n_subjects::Int
     
+    # TODO move these out of here
     rejections::Int
     acceptions::Int
 end
@@ -11,24 +12,20 @@ MHInfectionSampler(n_t_step, n_subjects) = MHInfectionSampler(n_t_step, n_subjec
 
 mh_sampler_acceptance_rate(s::MHInfectionSampler) = s.acceptions / (s.acceptions + s.rejections)
 
-import Turing.Inference: isgibbscomponent
-
 isgibbscomponent(::MHInfectionSampler) = true
 
-struct Transition{T}
+struct InfectionSamplerTransition{T}
     θ::AbstractVector{T}
 end
 
-struct SamplerState{P<:Transition, T}
+struct InfectionSamplerState{P<:InfectionSamplerTransition, T}
     transition::P
     θ::AbstractVector{T}
 end
 
-AbstractMCMC.getparams(state::SamplerState) = state.θ
-function AbstractMCMC.setparams!!(state::SamplerState, θ)
-    return SamplerState(
-        Transition(θ), θ
-    )
+AbstractMCMC.getparams(state::InfectionSamplerState) = state.θ
+function AbstractMCMC.setparams!!(state::InfectionSamplerState, θ)
+    return InfectionSamplerState(InfectionSamplerTransition(θ), θ)
 end
 
 
@@ -44,15 +41,15 @@ function AbstractMCMC.step(
 
     # theta_init = rand(rng, Bernoulli(0.1), d)
 
-    transition = Transition(theta_init)
-    return transition, SamplerState(transition, theta_init)
+    transition = InfectionSamplerTransition(theta_init)
+    return transition, InfectionSamplerState(transition, theta_init)
 end
 
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     sampler::MHInfectionSampler,
-    state::SamplerState;
+    state::InfectionSamplerState;
     kwargs...
 )
     prev_transition = state.transition
@@ -71,10 +68,10 @@ function AbstractMCMC.step(
     p_swap = 1.5 / n_t_steps
 
     mask = zeros(Bool, n_t_steps)
-    context = DynamicPPL.DefaultContext()
+    # context = DynamicPPL.DefaultContext() ## TODO think about?
 
     for ix_subject in 1:n_subjects
-        # context = IndividualSubsetContext(ix_subject)
+        context = IndividualSubsetContext(ix_subject)
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
         propose_mask_random!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
@@ -96,8 +93,8 @@ function AbstractMCMC.step(
     end
 
 
-    transition = Transition(theta_new)
-    return transition, SamplerState(transition, theta_new)
+    transition = InfectionSamplerTransition(theta_new)
+    return transition, InfectionSamplerState(transition, theta_new)
 end
 
 function propose_mask_random!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
@@ -163,15 +160,4 @@ DynamicPPL.NodeTrait(context::IndividualSubsetContext) = DynamicPPL.IsLeaf()
 
 function make_mh_infection_sampler(n_t_steps, n_subjects)
     return externalsampler(MHInfectionSampler(n_t_steps, n_subjects), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
-end
-
-
-function DynamicPPL.unflatten(vi::DynamicPPL.VarInfo, spl::AbstractMCMC.AbstractSampler, x::AbstractVector)
-    md = DynamicPPL.unflatten(vi.metadata, spl, x)
-
-    return DynamicPPL.VarInfo(
-        md,
-        Base.RefValue{DynamicPPL.float_type_with_fallback(eltype(x))}(DynamicPPL.getlogp(vi)),
-        Ref(DynamicPPL.get_num_produce(vi)),
-    )
 end
