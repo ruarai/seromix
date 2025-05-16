@@ -34,6 +34,7 @@ function titre_logpdf_component(x::S, μ::T, σ::T, min::T, max::T) where {T <: 
     end
 end
 
+# TODO fix this mess of typing, it is not doing anything?
 function apply_logpdf(x::AbstractVector{S}, μ::SubArray{T, }, σ::T, min::T, max::T) where {T <: Real, S <: Real}
     l_sum::T = zero(T)
 

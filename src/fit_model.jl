@@ -13,12 +13,11 @@ p = read_model_parameters(model_data)
 
 model = make_waning_model(p, obs_df);
 
-
 gibbs_sampler = make_gibbs_sampler(model, :infections);
 
 chain = @time sample_chain(
     model, gibbs_sampler;
-    n_sample = 5000, n_thinning = 1, n_chain = 6
+    n_sample = 4000, n_thinning = 2, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')

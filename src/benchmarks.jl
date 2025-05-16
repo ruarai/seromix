@@ -90,7 +90,7 @@ M_test = [rand(MatrixBernoulli(rand(Uniform(0.0, 1), (10, 10)))) for i in 1:1000
 t = Matrix{Real}(zeros(Bool, 10, 10))
 
 
-data_code = "sim_study_simple_1"
+data_code = "sim_study_hanam_2018_3"
 
 run_dir = "runs/$(data_code)/"
 
@@ -102,19 +102,11 @@ p = read_model_parameters(model_data)
 
 model = make_waning_model(p, obs_df);
 
-gibbs_sampler = make_gibbs_sampler(model, :infections, 0.0075, p.n_t_steps, p.n_subjects)
-
-symbols_not_inf = model_symbols_apart_from(model, :infections)
-    
-gibbs_sampler = Gibbs(
-    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects),
-    symbols_not_inf => HMC(0.005, 10)
-)
+gibbs_sampler = make_gibbs_sampler(model, :infections)
 
 sample(model, gibbs_sampler, 2, callback = log_callback);
-sample(model, gibbs_sampler, 500, callback = log_callback);
 
-@profview sample(model, gibbs_sampler, 500, callback = log_callback);
+@profview sample(model, gibbs_sampler, 500);
 @profview_allocs sample(model, gibbs_sampler, 1000, callback = log_callback);
 
 @time sample(model, gibbs_sampler, 500, callback = log_callback);
@@ -145,3 +137,12 @@ a = TitreArrayNormal(rand(300) .+ 3, 0.5, 0.0, 8.0)
 
 
 @profview [logpdf(a, y) for i in 1:10000]
+
+
+
+M = MatrixBernoulli(0.15, 100, 100)
+M = filldist(Bernoulli(0.15), 100, 100)
+
+y = rand(M)
+
+@benchmark logpdf(M, y) setup = (M = M, y = rand(M))

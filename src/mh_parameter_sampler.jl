@@ -67,7 +67,7 @@ function AbstractMCMC.step(
     sigma_covar_adapted = max(0.00001, min(1, exp(log(state.sigma_covar) + (obs_accept_rate - target_accept_rate) * 0.999 ^ n_steps)))
 
     # Get the logdensity function
-    f = model.logdensity.ℓ
+    f = model.logdensity
 
     context = DynamicPPL.DefaultContext()
 

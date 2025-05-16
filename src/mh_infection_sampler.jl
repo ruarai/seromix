@@ -66,7 +66,8 @@ function AbstractMCMC.step(
     theta_new = copy(theta)
 
     # Get the logdensity function
-    f = model.logdensity.ℓ
+    # println(fieldnames(typeof(model.logdensity)))
+    f = model.logdensity
 
     varinfo_prev = DynamicPPL.unflatten(f.varinfo, theta)
     
@@ -81,18 +82,14 @@ function AbstractMCMC.step(
     for ix_subject in 1:n_subjects
 
         if rand(rng) < 0.8
-            continue # some chance of doing nothing for each individual
+            continue # Per Kucharski model, some chance of doing nothing for each individual
         end
 
         context = IndividualSubsetContext(ix_subject)
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
-        # propose_mask_random!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
-
-
-        log_hastings_ratio = propose_mask_kucharski_literal!(
-            rng, theta_new, mask, ix_subject, n_t_steps, p_swap
-        )
+        # log_hastings_ratio = propose_mask_random!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
+        log_hastings_ratio = propose_mask_kucharski_literal!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
 
         apply_mask!(theta_new, mask, ix_subject, n_t_steps)
 
@@ -120,6 +117,8 @@ function propose_mask_random!(
     p_swap::Real
 )
     mask .= rand(rng, Bernoulli(p_swap), n_t_steps)
+
+    return 0
 end
 
 function propose_mask_kucharski_literal!(

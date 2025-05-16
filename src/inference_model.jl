@@ -54,13 +54,8 @@ end
 
     tau ~ Uniform(0.0, 10.0)
 
-    # infections = Matrix{Bool}(undef, model_parameters.n_t_steps, model_parameters.n_subjects)
-
-    # for ix_t in 1:model_parameters.n_t_steps, ix_subject in 1:model_parameters.n_subjects
-    #     infections[ix_t, ix_subject] ~ Bernoulli(0.1)
-    # end
-
-    infections ~ filldist(Bernoulli(0.2), model_parameters.n_t_steps, model_parameters.n_subjects)
+    # infections ~ filldist(Bernoulli(0.15), model_parameters.n_t_steps, model_parameters.n_subjects)
+    infections ~ MatrixBernoulli(0.15, model_parameters.n_t_steps, model_parameters.n_subjects)
 
     obs_sd = convert(typeof(mu_long), 1.5)
     obs_min = convert(typeof(mu_long), const_titre_min)
