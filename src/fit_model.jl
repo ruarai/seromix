@@ -1,7 +1,7 @@
 include("dependencies.jl")
 
 # data_code = ARGS[1]
-data_code = "hanam_2018"
+data_code = "sim_study_hanam_2018_3"
 
 run_dir = "runs/$(data_code)/"
 
@@ -18,11 +18,11 @@ gibbs_sampler = make_gibbs_sampler(model, :infections);
 
 chain = @time sample_chain(
     model, gibbs_sampler;
-    n_sample = 50000, n_thinning = 10, n_chain = 6
+    n_sample = 5000, n_thinning = 1, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')
-heatmap(chain_infections_prob(chain[800:end], p)')
+heatmap(chain_infections_prob(chain[4000:end], p)')
 
 @gif for i in 1:5:1000
     heatmap(chain_infections_prob(chain[i], p)')

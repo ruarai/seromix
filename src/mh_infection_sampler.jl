@@ -90,14 +90,16 @@ function AbstractMCMC.step(
         # propose_mask_random!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
 
 
-        propose_mask_kucharski_literal!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
+        log_hastings_ratio = propose_mask_kucharski_literal!(
+            rng, theta_new, mask, ix_subject, n_t_steps, p_swap
+        )
 
         apply_mask!(theta_new, mask, ix_subject, n_t_steps)
 
         varinfo_proposal = DynamicPPL.unflatten(f.varinfo, theta_new)
         logprob_proposal = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_proposal, context)))
 
-        if -Random.randexp(rng) <= logprob_proposal - logprob_previous
+        if -Random.randexp(rng) <= logprob_proposal - logprob_previous + log_hastings_ratio
             # Accept, do nothing
 
             sampler.acceptions += 1
@@ -113,49 +115,17 @@ function AbstractMCMC.step(
     return transition, InfectionSamplerState(transition, theta_new)
 end
 
-function propose_mask_random!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
-
+function propose_mask_random!(
+    rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int,
+    p_swap::Real
+)
     mask .= rand(rng, Bernoulli(p_swap), n_t_steps)
-
 end
 
-function propose_mask_kucharski!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
-    mask .= false
-
-    ix_start = (ix_subject - 1) * n_t_steps + 1
-    ix_end = ix_start + n_t_steps - 1
-
-    if rand(rng) < 0.66
-        # Case 1 - remove/add an infection
-
-        ix_swap = sample(rng, 1:n_t_steps)
-        mask[ix_swap] = true
-    else
-        # Case 3 - move an infection
-
-        n_inf = sum(@view theta[ix_start:ix_end])
-
-        if n_inf > 0
-            # Maybe just sample randomly and check?
-            inf_indices = findall(@view theta[ix_start:ix_end])
-
-            ix_t_from = sample(rng, inf_indices)
-            ix_t_to = sample(rng, 1:n_t_steps)
-
-            # Ensure ix_t_to is not currently an infection event
-            if !view(theta, ix_start:ix_end)[ix_t_to]
-                # Set mask such that ix_t_from will become not an infection event
-                # and ix_t_to will be an infection event
-                # i.e. move infection
-                mask[ix_t_from] = true
-                mask[ix_t_to] = true
-            end
-        end
-    end
-end
-
-
-function propose_mask_kucharski_literal!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
+function propose_mask_kucharski_literal!(
+    rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int,
+    p_swap::Real
+)
     mask .= false
 
     ix_start = (ix_subject - 1) * n_t_steps + 1
@@ -163,7 +133,7 @@ function propose_mask_kucharski_literal!(rng, theta::AbstractVector{Bool}, mask:
 
     r_sample = rand(rng)
 
-    if r_sample < 0.33
+    if r_sample < 1/3
         # Case 1 - remove an infection
 
         inf_indices = findall(@view theta[ix_start:ix_end])
@@ -171,8 +141,18 @@ function propose_mask_kucharski_literal!(rng, theta::AbstractVector{Bool}, mask:
         if length(inf_indices) > 0
             ix_remove = sample(rng, inf_indices)
             mask[ix_remove] = true
+
+            # Forward transition probability
+            # 1/3 * 1 / n_I(s)
+            p_forward = 1/3 * 1 / length(inf_indices)
+
+            # Reverse transition probability, from case 2
+            # 1/3 * 1 / n_U(s+1) = 1/3 * 1 / (n_t_steps - n_I(s) + 1)
+            p_reverse = 1/3 * 1 / (n_t_steps - length(inf_indices) + 1)
+
+            return log(p_reverse) - log(p_forward) # TODO simplify out the log terms?
         end
-    elseif r_sample < 0.66
+    elseif r_sample < 2/3
         # Case 2 - add an infection
 
         not_inf_indices = findall(.!(@view theta[ix_start:ix_end]))
@@ -180,6 +160,16 @@ function propose_mask_kucharski_literal!(rng, theta::AbstractVector{Bool}, mask:
         if length(not_inf_indices) > 0
             ix_remove = sample(rng, not_inf_indices)
             mask[ix_remove] = true
+
+            # Forward transition probability
+            # 1/3 * 1 / n_U(s)
+            p_forward = 1/3 * 1 / length(not_inf_indices)
+
+            # Reverse transition probability, from case 1
+            # 1/3 * 1 / n_I(s+1) = 1/3 * 1 / (n_t_steps - n_U(s) + 1)
+            p_reverse = 1/3 * 1 / (n_t_steps - length(not_inf_indices) + 1)
+
+            return log(p_reverse) - log(p_forward)
         end
     else
         # Case 3 - move an infection
@@ -188,15 +178,18 @@ function propose_mask_kucharski_literal!(rng, theta::AbstractVector{Bool}, mask:
         not_inf_indices = findall(.!(@view theta[ix_start:ix_end]))
 
         if length(inf_indices) > 0 && length(not_inf_indices) > 0
-            # Maybe just sample randomly and check?
-
             ix_t_from = sample(rng, inf_indices)
             ix_t_to = sample(rng, not_inf_indices)
 
             mask[ix_t_from] = true
             mask[ix_t_to] = true
+
+            # Forward and reverse transition probabilities are equal
+            return 0
         end
     end
+
+    return 0 # Nothing has occurred, no hastings ratio
 end
 
 function apply_mask!(theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int)
