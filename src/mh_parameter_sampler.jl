@@ -32,7 +32,7 @@ function AbstractMCMC.step(
 )
     d = LogDensityProblems.dimension(model.logdensity)
 
-    theta_init = [2.0, 2.0, 0.15, 0.05, 0.05] .* rand(rng, Uniform(0.95, 1.05), 5)
+    theta_init = [2.0, 2.0, 0.75, 0.15, 0.05, 0.05, 1.5] .* rand(rng, Uniform(0.95, 1.05), 7)
 
     sigma_covar_0 = 0.001
 

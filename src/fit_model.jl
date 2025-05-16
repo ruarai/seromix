@@ -23,7 +23,7 @@ chain = @time sample_chain(
 heatmap(model_data["infections_matrix"]')
 heatmap(chain_infections_prob(chain[4000:end], p)')
 
-@gif for i in 1:5:1000
+@gif for i in 1:20:2000
     heatmap(chain_infections_prob(chain[i], p)')
 end
 

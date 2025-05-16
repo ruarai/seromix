@@ -38,26 +38,20 @@ end
 
     observed_titre::Vector{Vector{Float64}}     
 )
-    # mu_sum ~ Uniform(3.0, 6.0)
-    # mu_sum ~ Uniform(0.0, 6.0)
     mu_long ~ Uniform(0.0, 10.0)
     mu_short ~ Uniform(0.0, 10.0)
 
 
-    # mu_short = mu_sum - mu_long
-
-    # omega ~ Uniform(0.0, 1.0)
-    omega = convert(typeof(mu_long), 0.75)
+    omega ~ Uniform(0.0, 1.0)
 
     sigma_long ~ Uniform(0.0, 10.0)
     sigma_short ~ Uniform(0.0, 10.0)
 
     tau ~ Uniform(0.0, 10.0)
 
-    # infections ~ filldist(Bernoulli(0.15), model_parameters.n_t_steps, model_parameters.n_subjects)
     infections ~ MatrixBernoulli(0.15, model_parameters.n_t_steps, model_parameters.n_subjects)
 
-    obs_sd = convert(typeof(mu_long), 1.5)
+    obs_sd ~ Uniform(0.0, 10.0)
     obs_min = convert(typeof(mu_long), const_titre_min)
     obs_max = convert(typeof(mu_long), const_titre_max)
 
