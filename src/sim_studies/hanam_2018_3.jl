@@ -29,12 +29,12 @@ obs_sd = 1.5
 
 modelled_years = real_model_data["modelled_years"]
 
-sd_param = 0.5
-mean_offset = (sd_param / 2) ^ 2 / 2
+inf_sd_param = 0.5
+mean_offset = (inf_sd_param / 2) ^ 2 / 2
 
 attack_rates = vcat(
-    rand(LogNormal(log(0.5) - (sd_param / 2) ^ 2 / 2, sd_param / 2)),
-    rand(LogNormal(log(0.15) - sd_param ^ 2 / 2, sd_param), length(modelled_years) - 1)
+    rand(LogNormal(log(0.5) - (inf_sd_param / 2) ^ 2 / 2, inf_sd_param / 2)),
+    rand(LogNormal(log(0.15) - inf_sd_param ^ 2 / 2, inf_sd_param), length(modelled_years) - 1)
 )
 infections = Matrix(stack([rand(Bernoulli(a), (n_subjects)) for a in attack_rates])')
 
@@ -61,15 +61,6 @@ waning_curve!(
     make_obs_lookup(complete_obs), make_obs_views(complete_obs),
     complete_obs.observed_titre
 )
-
-# real_observations = DataFrame(real_model_data["observations"])
-
-# Only include observations that were in the real study.
-# observations = innerjoin(
-#     complete_obs, 
-#     real_observations[:, [:ix_subject, :ix_strain, :ix_t_obs]],
-#     on = [:ix_subject, :ix_strain, :ix_t_obs]
-# )
 
 observed_strains = unique(DataFrame(real_model_data["observations"]).ix_strain)
 

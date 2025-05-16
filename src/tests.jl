@@ -2,12 +2,7 @@
 include("dependencies.jl")
 
 
-
-
-
-
-
-@model function test_model(y, t_min, t_max)
+@model function test_titre_model(y, t_min, t_max)
     mu ~ Uniform(0, 8)
     sd ~ LogNormal(0, 1)
 
@@ -19,6 +14,12 @@ include("dependencies.jl")
 
 end
 
+@testset "Titre-normal" begin
+    
+
+
+    
+end
 
 t_min = 0.0
 t_max = 8.0

@@ -52,14 +52,18 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
     
     if iteration % 50 == 0
         # print("$iteration,")
-        mh_sampler = sampler.alg.samplers[1].alg.sampler
+        if length(sampler.alg.samplers) > 1
+            mh_sampler = sampler.alg.samplers[1].alg.sampler
 
-        # TODO - get HMC acceptance rate here?
-        # Is the current method weird, also?
+            # TODO - get HMC acceptance rate here?
+            # Is the current method weird, also?
 
-        println("$iteration, $(mh_sampler_acceptance_rate(mh_sampler))")
+            println("$iteration, $(mh_sampler_acceptance_rate(mh_sampler))")
 
-        mh_sampler.acceptions = 0
-        mh_sampler.rejections = 0
+            mh_sampler.acceptions = 0
+            mh_sampler.rejections = 0
+        else
+            println("$iteration")
+        end
     end
 end

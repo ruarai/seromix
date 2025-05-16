@@ -149,10 +149,29 @@ function chain_infections_matrix(chain, ix_iter, ix_chain, params)
     return infections
 end
 
-
+# TODO add birth year masking
 function chain_sum_infections(chain)
     sums = sum(Array(chain)[:, size(chain, 3):end], dims = 2)
     return [sums[(1:size(chain, 1)) .+ i * size(chain, 1)] for i in 0:(size(chain, 3) - 1)]
+end
+
+
+function chain_sum_infections(chain, params, iterations, ix_t_subset)
+    n_infections = zeros(length(iterations), size(chain)[3])
+
+    Threads.@threads for ix_c in 1:size(chain)[3]
+        for ix_i in eachindex(iterations)
+            for ix_subject in 1:params.n_subjects
+                for ix_t in ix_t_subset
+                    if params.subject_birth_ix[ix_subject] < ix_t
+                        n_infections[ix_i, ix_c] += chain[iterations[ix_i], :, ix_c][Symbol("infections[$ix_t, $ix_subject]")][1]
+                    end
+                end
+            end
+        end
+    end
+
+    return n_infections
 end
 
 

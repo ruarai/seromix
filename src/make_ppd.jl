@@ -24,8 +24,6 @@ chain_filt = filter(:iteration => iteration -> iteration > 2500, chain)
 n_ppd_subjects = 1
 n_draws = 100
 
-n_skip_draws = 250
-
 obs_df = expand_grid(
     ix_t_obs = 1:p.n_t_steps, 
     ix_strain = 1:p.n_t_steps, 

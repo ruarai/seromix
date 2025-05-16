@@ -1,20 +1,31 @@
 ---
 title: "chain_report"
-wd: "../"
+format:
+  pdf:
+    fig-width: 9
+    fig-height: 6
+editor: source
+editor_options: 
+  chunk_output_type: console
+params:
+  model_data_file: runs/sim_study_hanam_2018_3/model_data.hdf5
+  chain_file: runs/sim_study_hanam_2018_3/chain.parquet
 ---
 
 ## Simulation study MCMC fit
 
 ```{r}
 library(targets)
+library(tidyverse)
 suppressMessages(tar_source())
 
-model_data <- read_model_data("runs/sim_study_simple_1/model_data.hdf5")
+model_data <- read_model_data("runs/sim_study_hanam_2018_3/model_data.hdf5")
 
-chain <- read_chain("runs/sim_study_simple_1/chain.parquet")
+chain <- read_chain("runs/sim_study_hanam_2018_3/chain.parquet")
 ```
 
 ```{r}
+
 sample_dates <- model_data$observations %>%
   distinct(ix_subject, year_observed)
 
@@ -72,7 +83,7 @@ ggplot() +
 true_values <- tribble(
   ~name, ~value,
   "mu_long", 2.0,
-  "mu_sum", 2.0 + 2.0,
+  # "mu_sum", 2.0 + 2.0,
   "mu_short", 2.0,
   "sigma_long", 0.15,
   "sigma_short", 0.05,
@@ -81,8 +92,8 @@ true_values <- tribble(
 
 
 
-chain <- chain %>%
-  mutate(mu_short = mu_sum - mu_long)
+# chain <- chain %>%
+#   mutate(mu_short = mu_sum - mu_long)
 
 warmup_steps <- 1500
 
@@ -130,6 +141,10 @@ ggplot() +
 
 mcmc_pairs(chain_filt, pars = colnames(chain)[5:9])
 
+```
+
+```{r}
+
 
 strains_observed <- model_data$observations %>%
   distinct(ix_subject, ix_strain)
@@ -143,7 +158,7 @@ ggplot() +
   scale_fill_viridis_c(option = "B") +
   
   geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, size = 1.0, colour = "white") +
-  geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, size = 0.5, stroke = 0.3, colour = "black") +
+  geom_point(aes(x = ix_t, y = ix_subject), model_data$infections, size = 0.5, stroke = 0.5, colour = "black") +
   
   geom_hline(aes(yintercept = ix_subject + 0.5), sample_dates %>% distinct(ix_subject),
              linewidth = 0.2,

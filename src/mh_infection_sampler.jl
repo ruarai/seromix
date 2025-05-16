@@ -37,9 +37,17 @@ function AbstractMCMC.step(
 )
     d = LogDensityProblems.dimension(model.logdensity)
 
-    theta_init = fill(false, d)
+    
 
-    # theta_init = rand(rng, Bernoulli(0.1), d)
+    theta_init = rand(rng, Bernoulli(0.1), d)
+
+    # if haskey(kwargs, :initial_params)
+    #     println("Setting initial infections matrix to initial_params")
+    #     theta_init = kwargs[:initial_params]
+    # else
+    #     println("Setting initial infections matrix to false")
+    #     theta_init = fill(false, d)
+    # end
 
     transition = InfectionSamplerTransition(theta_init)
     return transition, InfectionSamplerState(transition, theta_init)
@@ -71,10 +79,18 @@ function AbstractMCMC.step(
     # context = DynamicPPL.DefaultContext() ## TODO think about?
 
     for ix_subject in 1:n_subjects
+
+        if rand(rng) < 0.8
+            continue # some chance of doing nothing for each individual
+        end
+
         context = IndividualSubsetContext(ix_subject)
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
-        propose_mask_random!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
+        # propose_mask_random!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
+
+
+        propose_mask_kucharski_literal!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
 
         apply_mask!(theta_new, mask, ix_subject, n_t_steps)
 
@@ -104,12 +120,7 @@ function propose_mask_random!(rng, theta::AbstractVector{Bool}, mask::Vector{Boo
 end
 
 function propose_mask_kucharski!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
-
     mask .= false
-
-    if rand(rng) < 0.5
-        return # 50% chance of doing nothing
-    end
 
     ix_start = (ix_subject - 1) * n_t_steps + 1
     ix_end = ix_start + n_t_steps - 1
@@ -139,6 +150,51 @@ function propose_mask_kucharski!(rng, theta::AbstractVector{Bool}, mask::Vector{
                 mask[ix_t_from] = true
                 mask[ix_t_to] = true
             end
+        end
+    end
+end
+
+
+function propose_mask_kucharski_literal!(rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int, p_swap::Real)
+    mask .= false
+
+    ix_start = (ix_subject - 1) * n_t_steps + 1
+    ix_end = ix_start + n_t_steps - 1
+
+    r_sample = rand(rng)
+
+    if r_sample < 0.33
+        # Case 1 - remove an infection
+
+        inf_indices = findall(@view theta[ix_start:ix_end])
+
+        if length(inf_indices) > 0
+            ix_remove = sample(rng, inf_indices)
+            mask[ix_remove] = true
+        end
+    elseif r_sample < 0.66
+        # Case 2 - add an infection
+
+        not_inf_indices = findall(.!(@view theta[ix_start:ix_end]))
+
+        if length(not_inf_indices) > 0
+            ix_remove = sample(rng, not_inf_indices)
+            mask[ix_remove] = true
+        end
+    else
+        # Case 3 - move an infection
+
+        inf_indices = findall(@view theta[ix_start:ix_end])
+        not_inf_indices = findall(.!(@view theta[ix_start:ix_end]))
+
+        if length(inf_indices) > 0 && length(not_inf_indices) > 0
+            # Maybe just sample randomly and check?
+
+            ix_t_from = sample(rng, inf_indices)
+            ix_t_to = sample(rng, not_inf_indices)
+
+            mask[ix_t_from] = true
+            mask[ix_t_to] = true
         end
     end
 end

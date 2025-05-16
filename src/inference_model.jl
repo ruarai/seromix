@@ -40,19 +40,19 @@ end
 )
     # mu_sum ~ Uniform(3.0, 6.0)
     # mu_sum ~ Uniform(0.0, 6.0)
-    mu_long ~ Uniform(0.0, 6.0)
-    mu_short ~ Uniform(0.0, 6.0)
+    mu_long ~ Uniform(0.0, 10.0)
+    mu_short ~ Uniform(0.0, 10.0)
 
 
     # mu_short = mu_sum - mu_long
 
-    # omega ~ Truncated(LogNormal(-1.0, 0.5), 0, 3)
+    # omega ~ Uniform(0.0, 1.0)
     omega = convert(typeof(mu_long), 0.75)
 
-    sigma_long ~ Uniform(0, 1)
-    sigma_short ~ Uniform(0, 1)
+    sigma_long ~ Uniform(0.0, 10.0)
+    sigma_short ~ Uniform(0.0, 10.0)
 
-    tau ~ Uniform(0, 0.25)
+    tau ~ Uniform(0.0, 10.0)
 
     # infections = Matrix{Bool}(undef, model_parameters.n_t_steps, model_parameters.n_subjects)
 
