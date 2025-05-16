@@ -51,7 +51,7 @@ end
 
     tau ~ Uniform(0.0, 10.0)
 
-    infections ~ MatrixBernoulli(0.5, model_parameters.n_t_steps, model_parameters.n_subjects)
+    infections ~ MatrixBernoulli(0.15, model_parameters.n_t_steps, model_parameters.n_subjects)
 
     obs_sd ~ Uniform(0.0, 10.0)
     obs_min = convert(typeof(mu_long), const_titre_min)

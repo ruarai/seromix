@@ -1,7 +1,7 @@
 include("dependencies.jl")
 
 # data_code = ARGS[1]
-data_code = "hanam_2018"
+data_code = "sim_study_hanam_2018_3"
 
 run_dir = "runs/$(data_code)/"
 
@@ -13,11 +13,11 @@ p = read_model_parameters(model_data)
 
 model = make_waning_model(p, obs_df);
 
-gibbs_sampler = make_gibbs_sampler(model, :infections);
+gibbs_sampler = make_gibbs_sampler(model);
 
 chain = @time sample_chain(
     model, gibbs_sampler;
-    n_sample = 50000, n_thinning = 25, n_chain = 6
+    n_sample = 20000, n_thinning = 10, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')
