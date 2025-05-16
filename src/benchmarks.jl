@@ -21,7 +21,6 @@ infections = rand(Bernoulli(0.5), (n_t_steps, n_subjects))
 infections_df = DataFrame(stack([[i[1], i[2]] for i in findall(infections)])', :auto)
 complete_obs = expand_grid(ix_strain = 1:n_t_steps, ix_t_obs = 1:n_t_steps, ix_subject = 1:n_subjects)
 
-# Ensure dataframe is sorted at this stage
 n_obs = nrow(complete_obs)
 
 obs_views = make_obs_views(complete_obs)
@@ -123,15 +122,14 @@ using Cthulhu
 )
 
 
-a = TitreArrayNormal(rand(300), 0.5, 0.0, 8.0)
 
-y = rand(a)
 
 @descend logpdf(a, y)
 
 using BenchmarkTools
 
 a = TitreArrayNormal(rand(300) .+ 3, 0.5, 0.0, 8.0)
+y = rand(a)
 
 @benchmark logpdf(a, y) setup = (a = a, y = rand(a))
 

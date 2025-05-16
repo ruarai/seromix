@@ -37,17 +37,7 @@ function AbstractMCMC.step(
 )
     d = LogDensityProblems.dimension(model.logdensity)
 
-    
-
     theta_init = rand(rng, Bernoulli(0.1), d)
-
-    # if haskey(kwargs, :initial_params)
-    #     println("Setting initial infections matrix to initial_params")
-    #     theta_init = kwargs[:initial_params]
-    # else
-    #     println("Setting initial infections matrix to false")
-    #     theta_init = fill(false, d)
-    # end
 
     transition = InfectionSamplerTransition(theta_init)
     return transition, InfectionSamplerState(transition, theta_init)
@@ -74,10 +64,9 @@ function AbstractMCMC.step(
     n_t_steps = sampler.n_t_steps
     n_subjects = sampler.n_subjects
 
-    p_swap = 1.5 / n_t_steps
+    p_swap = 0.5 / n_t_steps
 
     mask = zeros(Bool, n_t_steps)
-    # context = DynamicPPL.DefaultContext() ## TODO think about?
 
     for ix_subject in 1:n_subjects
 
@@ -85,11 +74,13 @@ function AbstractMCMC.step(
             continue # Per Kucharski model, some chance of doing nothing for each individual
         end
 
+        # TODO document this context stuff
         context = IndividualSubsetContext(ix_subject)
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
-        # log_hastings_ratio = propose_mask_random!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
+        # TODO reduce the complexity of this step
         log_hastings_ratio = propose_mask_kucharski_literal!(rng, theta_new, mask, ix_subject, n_t_steps, p_swap)
+        log_hastings_ratio = 0.0 # TODO REMOVE
 
         apply_mask!(theta_new, mask, ix_subject, n_t_steps)
 
@@ -110,15 +101,6 @@ function AbstractMCMC.step(
 
     transition = InfectionSamplerTransition(theta_new)
     return transition, InfectionSamplerState(transition, theta_new)
-end
-
-function propose_mask_random!(
-    rng, theta::AbstractVector{Bool}, mask::Vector{Bool}, ix_subject::Int, n_t_steps::Int,
-    p_swap::Real
-)
-    mask .= rand(rng, Bernoulli(p_swap), n_t_steps)
-
-    return 0
 end
 
 function propose_mask_kucharski_literal!(

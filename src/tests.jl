@@ -14,13 +14,6 @@ include("dependencies.jl")
 
 end
 
-@testset "Titre-normal" begin
-    
-
-
-    
-end
-
 t_min = 0.0
 t_max = 8.0
 
@@ -30,10 +23,10 @@ sum([exp.(logpdf(dist, [i])) for i in 0:1:8]) # Should be 1
 
 
 
-dist = TitreArrayNormal(fill(8.5, 10000), 1.5, t_min, t_max)
+dist = TitreArrayNormal(fill(0.75, 10000), 0.5, t_min, t_max)
 y = rand(dist)
 
-model = test_model(y)
+model = test_titre_model(y, t_min, t_max)
 
 chain = sample(model, NUTS(1000, 0.6), 500);
 

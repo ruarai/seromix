@@ -25,8 +25,8 @@ Base.length(d::TitreArrayNormal)::Int = length(d.μ)
 function titre_logpdf_component(x::S, μ::T, σ::T, min::T, max::T) where {T <: Real, S <: Real}
     if x <= min
         return normlogcdf(μ, σ, x + 1)
-    elseif x > min && x < max
-        return log(normcdf(μ, σ, x + 1) - normcdf(μ, σ, x))
+    elseif x < max
+        return logsubexp(normlogcdf(μ, σ, x + 1), normlogcdf(μ, σ, x))
     elseif x >= max
         return normlogccdf(μ, σ, x)
     else
@@ -34,19 +34,9 @@ function titre_logpdf_component(x::S, μ::T, σ::T, min::T, max::T) where {T <: 
     end
 end
 
-# TODO fix this mess of typing, it is not doing anything?
-function apply_logpdf(x::AbstractVector{S}, μ::SubArray{T, }, σ::T, min::T, max::T) where {T <: Real, S <: Real}
-    l_sum::T = zero(T)
 
-    @inbounds for i in eachindex(x)
-        l_sum += titre_logpdf_component(x[i], μ[i], σ, min, max)
-    end
-
-    return l_sum
-end
-
-function apply_logpdf(x::AbstractVector{S}, μ::Vector{T}, σ::T, min::T, max::T) where {T <: Real, S <: Real}
-    l_sum::T = zero(T)
+function apply_logpdf(x, μ, σ, min, max)
+    l_sum = 0
 
     @inbounds for i in eachindex(x)
         l_sum += titre_logpdf_component(x[i], μ[i], σ, min, max)
