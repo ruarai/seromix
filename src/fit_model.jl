@@ -11,13 +11,14 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-model = make_waning_model(p, obs_df);
+model = make_waning_model(p, obs_df; prior_inf_prob = 0.15);
+initial_params = make_initial_params(p, obs_df, 6)
 
-gibbs_sampler = make_gibbs_sampler(model);
+heatmap(initial_params[1].infections')
 
-chain = @time sample_chain(
-    model, gibbs_sampler;
-    n_sample = 2000, n_thinning = 1, n_chain = 6
+chain = sample_chain(
+    model, initial_params, p;
+    n_sample = 200, n_thinning = 1, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')

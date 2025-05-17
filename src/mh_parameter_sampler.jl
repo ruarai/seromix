@@ -28,15 +28,18 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     sampler::MHParameterSampler;
+    initial_params,
     kwargs...
 )
-    d = LogDensityProblems.dimension(model.logdensity)
-
-    theta_init = [2.0, 2.0, 0.75, 0.15, 0.05, 0.05, 1.5] .* rand(rng, Uniform(0.95, 1.05), 7)
+    if !isnothing(initial_params)
+        println("Setting initial parameters to initial_params")
+        theta_init = initial_params
+    else
+        println("Setting initial parameters to random samples")
+        theta_init = rand(rng, Uniform(0, 1.0), 7)
+    end
 
     sigma_covar_0 = 0.001
-
-    println(theta_init)
 
     transition = ParameterSamplerTransition(theta_init)
     return transition, ParameterSamplerState(transition, theta_init, sigma_covar_0, 0, 0)
@@ -94,9 +97,6 @@ function AbstractMCMC.step(
     # For log-normal proposal: H = (PRODUCT theta_new_i) / (PRODUCT theta_current_i)
     # log(H) = sum(log.(theta_new)) - sum(log.(theta_current))
     # which is sum(log_theta_new) - sum(log_theta_current)
-
-    # NOTE: this may only be valid where priors are all uniform?
-
     log_hastings_ratio = sum(log_theta_new) - sum(log_theta_current)
     acceptance_ratio = log_target_ratio + log_hastings_ratio
 

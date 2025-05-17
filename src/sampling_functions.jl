@@ -1,18 +1,20 @@
 
 
 function sample_chain(
-    model, 
-    gibbs_sampler;
+    model,
+    initial_params,
+    p;
     n_sample::Int,
     n_thinning::Int,
     n_chain::Int
 )
     return sample(
-        model, gibbs_sampler, 
+        model, make_gibbs_sampler(model, p), 
         MCMCThreads(), n_sample ÷ n_thinning, n_chain,
 
         thinning = n_thinning,
-        callback = log_callback
+        callback = log_callback,
+        initial_params = initial_params
     )
 end
 
@@ -23,21 +25,8 @@ function model_symbols_apart_from(model, sym)
     return symbols
 end
 
-# function make_gibbs_sampler(model, inf_sym, hmc_step_size, n_leapfrog, params)
-#     symbols_not_inf = model_symbols_apart_from(model, inf_sym)
-    
-#     # Must somehow balance the level of exploration of the MH sampler
-#     # with that of the HMC sampler -- so repeating MH or changing HMC step size
-#     gibbs_sampler = Gibbs(
-#         :infections => make_mh_infection_sampler(params.n_t_steps, params.n_subjects),
-#         symbols_not_inf => HMC(hmc_step_size, n_leapfrog) # Must be reduced with number of individuals?
-#     )
-    
-#     return gibbs_sampler
-# end
 
-
-function make_gibbs_sampler(model)
+function make_gibbs_sampler(model, p)
     symbols_not_inf = model_symbols_apart_from(model, :infections)
     
     gibbs_sampler = Gibbs(
@@ -46,6 +35,61 @@ function make_gibbs_sampler(model)
     )
     
     return gibbs_sampler
+end
+
+function make_initial_params(p, obs_df, n_chain)
+    rng = Random.default_rng()
+
+    return [(
+        mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
+        mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
+        omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
+        sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
+        sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
+        tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
+        obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
+
+        infections = initial_infections_matrix(p, obs_df, rng)
+    ) for i in 1:n_chain]
+end
+
+# Translated from Kucharski model, but not sure that it's necessary.
+function initial_infections_matrix(p, obs_df, rng)
+    infections_0 = zeros(Bool, p.n_t_steps, p.n_subjects)
+
+    obs_df_grouped = groupby(obs_df, :ix_subject)
+
+    for ix_subject in 1:p.n_subjects
+        
+        obs_df_subject = obs_df_grouped[ix_subject]
+
+        # Any observations where titre > 4 start as an infection
+        for obs_row in eachrow(obs_df_subject)
+            if obs_row.observed_titre > 4.0 && rand(rng) > 0.1
+                infections_0[obs_row.ix_strain, ix_subject] = true
+            end
+        end
+
+        # Make sure there is at least one infection in the 5 years preceding a test
+        for obs_row in eachrow(obs_df_subject)
+            t_range = max(1, obs_row.ix_t_obs - 5):obs_row.ix_t_obs
+            if sum(infections_0[t_range, ix_subject]) == 0
+                ix_t_sample = sample(rng, t_range)
+
+                infections_0[ix_t_sample, ix_subject] = true
+            end
+        end
+
+        # Make sure an individual only has a maximum of 10 infections (idk why)
+        while sum(infections_0[:, ix_subject]) > 10
+            ix_inf_drop = sample(rng, findall(infections_0[:, ix_subject]))
+            infections_0[ix_inf_drop, ix_subject] = false
+        end
+    end
+
+    mask_infections_birth_year!(infections_0, p.subject_birth_ix)
+
+    return infections_0
 end
 
 function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)

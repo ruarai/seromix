@@ -111,7 +111,7 @@ sample(model, gibbs_sampler, 2, callback = log_callback);
 @profview sample(model, gibbs_sampler, 500);
 @profview_allocs sample(model, gibbs_sampler, 1000, callback = log_callback);
 
-@time sample(model, gibbs_sampler, 1000, callback = log_callback);
+@time sample(model, gibbs_sampler, 500, callback = log_callback);
 
 using Cthulhu
 

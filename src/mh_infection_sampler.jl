@@ -33,11 +33,18 @@ function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
     sampler::MHInfectionSampler;
+    initial_params,
     kwargs...
 )
     d = LogDensityProblems.dimension(model.logdensity)
 
-    theta_init = rand(rng, Bernoulli(0.1), d)
+    if !isnothing(initial_params)
+        println("Setting initial infections matrix to initial_params")
+        theta_init = initial_params
+    else
+        println("Setting initial infections matrix to false")
+        theta_init = fill(false, d)
+    end
 
     transition = InfectionSamplerTransition(theta_init)
     return transition, InfectionSamplerState(transition, theta_init)
