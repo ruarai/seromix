@@ -31,3 +31,27 @@ model = test_titre_model(y, t_min, t_max)
 chain = sample(model, NUTS(1000, 0.6), 500);
 
 plot(chain, [:mu, :sd], seriestype = :traceplot)
+
+
+@model function test_titre_model_2(y, t_min, t_max)
+    mu ~ Uniform(0, 8)
+    sd ~ LogNormal(0, 1)
+
+    for i in eachindex(y)
+
+        y[i] ~ TitreNormal(
+            mu, sd,
+            convert(typeof(mu), t_min),
+            convert(typeof(mu), t_max)
+        )
+    end
+
+end
+
+dist = TitreArrayNormal(fill(3.75, 10000), 0.5, 0.0, 8.0)
+y = rand(dist)
+model = test_titre_model_2(y, 0.0, 8.0)
+
+chain = sample(model, NUTS(1000, 0.6), 500);
+
+plot(chain, [:mu, :sd], seriestype = :traceplot)
