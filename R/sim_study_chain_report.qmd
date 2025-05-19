@@ -19,9 +19,9 @@ library(targets)
 library(tidyverse)
 suppressMessages(tar_source())
 
-model_data <- read_model_data("runs/sim_study_hanam_2018_3/model_data.hdf5")
+model_data <- read_model_data(params$model_data_file)
 
-chain <- read_chain("runs/sim_study_hanam_2018_3/chain.parquet")
+chain <- read_chain(params$chain_file)
 ```
 
 ```{r}

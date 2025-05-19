@@ -11,14 +11,15 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-model = make_waning_model(p, obs_df; prior_inf_prob = 0.15);
-initial_params = make_initial_params(p, obs_df, 6)
+model = make_waning_model(p, obs_df; prior_inf_prob = 0.5);
+initial_params = make_initial_params_sim_study(p, obs_df, 6)
+gibbs_sampler = make_gibbs_sampler(model, p, propose_swaps_original_no_hastings_ratio!)
 
 heatmap(initial_params[1].infections')
 
 chain = sample_chain(
-    model, initial_params, p;
-    n_sample = 200, n_thinning = 1, n_chain = 6
+    model, initial_params, gibbs_sampler, p;
+    n_sample = 50000, n_thinning = 25, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')
@@ -37,4 +38,6 @@ plot(chain, [:omega], seriestype = :traceplot)
 plot(chain_sum_infections(chain))
 hline!([sum(model_data["infections_matrix"])])
 
-save_draws(chain, "$run_dir/chain.parquet")
+chain_name = "prior_50_uncorrected"
+
+save_draws(chain, "$run_dir/chain_$chain_name.parquet")

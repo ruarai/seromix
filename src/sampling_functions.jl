@@ -3,13 +3,14 @@
 function sample_chain(
     model,
     initial_params,
+    gibbs_sampler,
     p;
     n_sample::Int,
     n_thinning::Int,
     n_chain::Int
 )
     return sample(
-        model, make_gibbs_sampler(model, p), 
+        model, gibbs_sampler, 
         MCMCThreads(), n_sample ÷ n_thinning, n_chain,
 
         thinning = n_thinning,
@@ -26,11 +27,11 @@ function model_symbols_apart_from(model, sym)
 end
 
 
-function make_gibbs_sampler(model, p)
+function make_gibbs_sampler(model, p, step_fn)
     symbols_not_inf = model_symbols_apart_from(model, :infections)
     
     gibbs_sampler = Gibbs(
-        :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects),
+        :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, step_fn),
         symbols_not_inf => make_mh_parameter_sampler()
     )
     
@@ -43,6 +44,23 @@ function make_initial_params(p, obs_df, n_chain)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
+        omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
+        sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
+        sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
+        tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
+        obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
+
+        infections = initial_infections_matrix(p, obs_df, rng)
+    ) for i in 1:n_chain]
+end
+
+
+function make_initial_params_sim_study(p, obs_df, n_chain)
+    rng = Random.default_rng()
+
+    return [(
+        mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
+        mu_short = 2.0 + rand(rng, Uniform(-0.2, 0.2)), 
         omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
         sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
         sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 

@@ -6,9 +6,11 @@ mutable struct MHInfectionSampler <: AbstractMCMC.AbstractSampler
     # TODO move these out of here
     rejections::Int
     acceptions::Int
+
+    step_function
 end
 
-MHInfectionSampler(n_t_step, n_subjects) = MHInfectionSampler(n_t_step, n_subjects, 0, 0)
+MHInfectionSampler(n_t_step, n_subjects, step_fn) = MHInfectionSampler(n_t_step, n_subjects, 0, 0, step_fn)
 
 mh_sampler_acceptance_rate(s::MHInfectionSampler) = s.acceptions / (s.acceptions + s.rejections)
 
@@ -68,19 +70,18 @@ function AbstractMCMC.step(
     n_t_steps = sampler.n_t_steps
     n_subjects = sampler.n_subjects
 
-    for ix_subject in 1:n_subjects
+    # Per Kucharski model, only step for some % of individuals
+    # TODO vary this value as parameter, matching Kucharski
+    subject_indices = sample(rng, 1:n_subjects, floor(Int, 0.4 * n_subjects))
 
-        if rand(rng) < 0.8
-            continue # Per Kucharski model, some chance of doing nothing for each individual
-        end
-
+    for ix_subject in subject_indices
         # Set the context of DynamicPPL to indicate that we are only
         # calculating likelihood over one individual. Note will
         # still calculate prior across the infection history matrix
         context = IndividualSubsetContext(ix_subject)
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
-        swap_indices, log_hastings_ratio = propose_swaps_v2!(rng, theta_new, ix_subject, n_t_steps)
+        swap_indices, log_hastings_ratio = sampler.step_function(rng, theta_new, ix_subject, n_t_steps)
 
         apply_swaps!(theta_new, swap_indices, ix_subject, n_t_steps)
 
@@ -118,6 +119,6 @@ end
 
 DynamicPPL.NodeTrait(context::IndividualSubsetContext) = DynamicPPL.IsLeaf()
 
-function make_mh_infection_sampler(n_t_steps, n_subjects)
-    return externalsampler(MHInfectionSampler(n_t_steps, n_subjects), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
+function make_mh_infection_sampler(n_t_steps, n_subjects, step_fn)
+    return externalsampler(MHInfectionSampler(n_t_steps, n_subjects, step_fn), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
 end
