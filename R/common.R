@@ -124,3 +124,14 @@ render_quarto_sim_study <- function(run_name, chain_name) {
   )
 }
 
+
+render_quarto_data_study <- function(run_name, chain_name) {
+  render_quarto(
+    str_c(run_name, "_", chain_name), 
+    str_c("runs/", run_name, "/"),
+    str_c("runs/", run_name, "/model_data.hdf5"),
+    str_c("runs/", run_name, "/chain_", chain_name, ".parquet"),
+    "R/data_study_chain_report.qmd"
+  )
+}
+

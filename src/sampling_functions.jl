@@ -39,7 +39,7 @@ function make_gibbs_sampler(model, p, step_fn)
     return gibbs_sampler
 end
 
-function make_initial_params(p, obs_df, n_chain, rng)
+function make_initial_params_data_study(n_chain, init_matrix, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -49,7 +49,7 @@ function make_initial_params(p, obs_df, n_chain, rng)
         tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
 
-        infections = initial_infections_matrix(p, obs_df, rng)
+        infections = init_matrix
     ) for i in 1:n_chain]
 end
 

@@ -15,8 +15,12 @@ data_studies <- tibble(run_name = c("hanam_2018"))
 
 list(
   tar_target(hanam_data, read_hanam_data()),
-  
   tar_target(hanam_data_file, save_hdf5(hanam_data, "runs/hanam_2018/model_data.hdf5"), format = "file"),
+  
+  tar_target(hanam_data_no_age, read_hanam_data(ignore_age = TRUE)),
+  tar_target(hanam_data_file_no_age, save_hdf5(hanam_data_no_age, "runs/hanam_2018_no_age/model_data.hdf5"), format = "file"),
+  
+  
   tar_target(hanam_data_plots, plot_model_data(hanam_data, "hanam_2018")),
   
   tar_target(fit_model_jl, "src/fit_model.jl", format = "file"),

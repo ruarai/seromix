@@ -2,7 +2,7 @@
 
 
 
-read_hanam_data <- function() {
+read_hanam_data <- function(ignore_age = FALSE) {
   
   hanam_data_raw <- read_csv("input_data/HaNamCohort.csv", col_types = cols(.default = col_character()))
   
@@ -84,10 +84,19 @@ read_hanam_data <- function() {
     arrange(strain_year) %>% 
     generate_antigenic_distances()
   
-  subject_birth_data <- birth_data_raw %>%
-    mutate(ix_subject = row_number()) %>% 
-    mutate(ix_t_birth = match(year_of_birth, modelled_years),
-           ix_t_birth = replace_na(ix_t_birth, 0))
+  if(ignore_age) {
+    # If ignoring age masking, set all to zero
+    subject_birth_data <- birth_data_raw %>%
+      mutate(ix_subject = row_number()) %>% 
+      mutate(ix_t_birth = 0)
+  } else {
+    subject_birth_data <- birth_data_raw %>%
+      mutate(ix_subject = row_number()) %>% 
+      mutate(ix_t_birth = match(year_of_birth, modelled_years),
+             ix_t_birth = replace_na(ix_t_birth, 0))
+  }
+  
+
   
   # Per Kucharski model, specify initial infections matrix
   initial_infections <- read_csv("input_data/hist_IC_H3.csv") %>%
