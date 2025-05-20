@@ -4,12 +4,13 @@ function sample_chain(
     model,
     initial_params,
     gibbs_sampler,
-    p;
+    rng;
     n_sample::Int,
     n_thinning::Int,
     n_chain::Int
 )
     return sample(
+        rng,
         model, gibbs_sampler, 
         MCMCThreads(), n_sample ÷ n_thinning, n_chain,
 
@@ -38,9 +39,7 @@ function make_gibbs_sampler(model, p, step_fn)
     return gibbs_sampler
 end
 
-function make_initial_params(p, obs_df, n_chain)
-    rng = Random.default_rng()
-
+function make_initial_params(p, obs_df, n_chain, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -55,9 +54,7 @@ function make_initial_params(p, obs_df, n_chain)
 end
 
 
-function make_initial_params_sim_study(p, obs_df, n_chain)
-    rng = Random.default_rng()
-
+function make_initial_params_sim_study(p, obs_df, n_chain, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.0 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -120,7 +117,8 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
             # TODO - get HMC acceptance rate here?
             # Is the current method weird, also?
 
-            println("$iteration, $(mh_sampler_acceptance_rate(mh_sampler))")
+            rate = mh_sampler_acceptance_rate(mh_sampler)
+            println("$iteration, $(round(rate, digits=2))")
 
             mh_sampler.acceptions = 0
             mh_sampler.rejections = 0

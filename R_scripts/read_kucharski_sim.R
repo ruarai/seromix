@@ -1,6 +1,6 @@
 
 
-load("Simulated_data_SIM_1.RData")
+load("input_data/Simulated_data_SIM_1.RData")
 
 modelled_years <- 1968:2012
 
@@ -34,6 +34,9 @@ subject_birth_data <- tibble(ix_subject = 1:n_part, ix_t_birth = 0)
 
 antigenic_distances <- as.matrix(dist(antigenic.map.in))
 
+
+# infections matrix is not valid if below FALSE
+all(modelled_years == inf_years)
 
 infections <- reshape2::melt(historytabSim, varnames = c("ix_subject", "ix_t"), value.name = "infected") %>%
   as_tibble() %>%
@@ -86,6 +89,24 @@ ggplot() +
             strains_observed) +
   geom_point(aes(x = year_observed, y = ix_subject),
              sample_dates) +
+  
+  geom_rug(aes(x = year), tibble(year = modelled_years)) +
+  
+  theme_bw()
+
+
+
+strains_observed_n <- obs_df %>%
+  count(ix_subject, year_observed, strain_year)
+
+
+ggplot() +
+  
+  geom_tile(aes(x = strain_year, y = year_observed, fill = n),
+            alpha = 0.3,
+            strains_observed_n) +
+  
+  scale_fill_viridis_c() +
   
   geom_rug(aes(x = year), tibble(year = modelled_years)) +
   

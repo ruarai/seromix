@@ -89,6 +89,12 @@ read_hanam_data <- function() {
     mutate(ix_t_birth = match(year_of_birth, modelled_years),
            ix_t_birth = replace_na(ix_t_birth, 0))
   
+  # Per Kucharski model, specify initial infections matrix
+  initial_infections <- read_csv("input_data/hist_IC_H3.csv") %>%
+    select(-1) %>%
+    as.matrix() %>%
+    t()
+  
   
   model_data <- list(
     observations = observations_df,
@@ -98,7 +104,9 @@ read_hanam_data <- function() {
     subject_birth_data = subject_birth_data,
     
     fit_strain_coords = fit_strain_coords,
-    raw_strain_coords = raw_strain_coords
+    raw_strain_coords = raw_strain_coords,
+    
+    initial_infections_manual = initial_infections
   )
   
   return(model_data)

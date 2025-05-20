@@ -1,6 +1,7 @@
 include("../dependencies.jl")
 
 data_code = "sim_study_hanam_2018_1"
+rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
 mkpath(run_dir)
@@ -8,7 +9,6 @@ mkpath(run_dir)
 real_model_data = load("runs/hanam_2018/model_data.hdf5")
 
 p = read_model_parameters(real_model_data)
-modelled_years = real_model_data["modelled_years"]
 
 n_t_steps = p.n_t_steps
 n_subjects = p.n_subjects
@@ -21,8 +21,18 @@ sigma_short = 0.05
 tau = 0.05
 obs_sd = 1.5
 
-infections = rand(Bernoulli(0.2), (n_t_steps, n_subjects))
-mask_infections_birth_year!(infections, p.subject_birth_ix)
+modelled_years = real_model_data["modelled_years"]
+
+inf_sd_param = 0.5
+mean_offset = (inf_sd_param / 2) ^ 2 / 2
+
+attack_rates = vcat(
+    rand(rng, LogNormal(log(0.5) - (inf_sd_param / 2) ^ 2 / 2, inf_sd_param / 2)),
+    rand(rng, LogNormal(log(0.15) - inf_sd_param ^ 2 / 2, inf_sd_param), length(modelled_years) - 1)
+)
+infections = Matrix(stack([rand(rng, Bernoulli(a), (n_subjects)) for a in attack_rates])')
+
+mask_infections_birth_year!(infections, p.subject_birth_ix) 
 heatmap(infections')
 
 
@@ -51,11 +61,15 @@ function filt_age(ix_subject, ix_t_obs)
 end
 
 
-# Only include observations from 2007 onwards
-observations = filter(:ix_t_obs => ix_t_obs -> modelled_years[ix_t_obs] % 4 == 0, complete_obs)
-observations = filter([:ix_subject, :ix_t_obs] => filt_age, observations)
+# Only include observations which are available in the study data
+real_obs = DataFrame(real_model_data["observations"])
 
-observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max))
+observations = innerjoin(complete_obs, real_obs[!, [:ix_t_obs, :ix_strain, :ix_subject]], on = [:ix_t_obs, :ix_strain, :ix_subject])
+
+observations.observed_titre = rand(
+    rng,
+    TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max)
+)
 
 model_data = Dict(
     "modelled_years" => modelled_years,

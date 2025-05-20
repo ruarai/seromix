@@ -71,7 +71,6 @@ function AbstractMCMC.step(
     n_subjects = sampler.n_subjects
 
     # Per Kucharski model, only step for some % of individuals
-    # TODO vary this value as parameter, matching Kucharski
     subject_indices = sample(rng, 1:n_subjects, floor(Int, 0.4 * n_subjects))
 
     for ix_subject in subject_indices

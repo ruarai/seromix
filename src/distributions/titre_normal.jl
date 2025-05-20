@@ -1,7 +1,4 @@
 
-using Distributions
-using StatsFuns
-
 struct TitreNormal{T <: Real} <: Distribution{Univariate, Discrete}
     μ::T
     σ::T

@@ -169,6 +169,7 @@ function propose_swaps_v2!(
 
         if length(inf_indices) > 0
             ix_t_from = sample(rng, inf_indices)
+            # TODO this is not quite symmetric. maybe drop instead of clamp?
             ix_t_to = ix_t_from + sample(rng, -5:5)
 
             ix_t_to = clamp(ix_t_to, 1, n_t_steps)

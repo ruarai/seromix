@@ -1,6 +1,7 @@
 include("../dependencies.jl")
 
 data_code = "sim_study_hanam_2018_3"
+rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
 mkpath(run_dir)
@@ -33,10 +34,10 @@ inf_sd_param = 0.5
 mean_offset = (inf_sd_param / 2) ^ 2 / 2
 
 attack_rates = vcat(
-    rand(LogNormal(log(0.5) - (inf_sd_param / 2) ^ 2 / 2, inf_sd_param / 2)),
-    rand(LogNormal(log(0.15) - inf_sd_param ^ 2 / 2, inf_sd_param), length(modelled_years) - 1)
+    rand(rng, LogNormal(log(0.5) - (inf_sd_param / 2) ^ 2 / 2, inf_sd_param / 2)),
+    rand(rng, LogNormal(log(0.15) - inf_sd_param ^ 2 / 2, inf_sd_param), length(modelled_years) - 1)
 )
-infections = Matrix(stack([rand(Bernoulli(a), (n_subjects)) for a in attack_rates])')
+infections = Matrix(stack([rand(rng, Bernoulli(a), (n_subjects)) for a in attack_rates])')
 
 # Disable temporarily to try match Kucharski?
 # mask_infections_birth_year!(infections, p.subject_birth_ix) 
@@ -72,6 +73,7 @@ observations = filter(:ix_strain => ix_strain -> in(ix_strain, observed_strains)
 
 
 observations.observed_titre = rand(
+    rng,
     TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max)
 )
 

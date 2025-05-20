@@ -58,6 +58,7 @@ end
     obs_max = convert(typeof(mu_long), const_titre_max)
 
     infections ~ MatrixBernoulli(prior_inf_prob, model_parameters.n_t_steps, model_parameters.n_subjects)
+    # infections ~ ImproperMatrixBernoulli(prior_inf_prob, model_parameters.n_t_steps, model_parameters.n_subjects)
 
     context = DynamicPPL.leafcontext(__context__)
     if context isa IndividualSubsetContext

@@ -1,6 +1,4 @@
 
-using Distributions
-using StatsFuns
 
 struct TitreArrayNormal{T <: Real} <: DiscreteMultivariateDistribution
     μ::AbstractVector{T}

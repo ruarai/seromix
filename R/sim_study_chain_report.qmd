@@ -8,8 +8,8 @@ editor: source
 editor_options: 
   chunk_output_type: console
 params:
-  model_data_file: runs/sim_study_hanam_2018_3/model_data.hdf5
-  chain_file: runs/sim_study_hanam_2018_3/chain.parquet
+  model_data_file: runs/hanam_ak_1/model_data.hdf5
+  chain_file: runs/hanam_ak_1/chain_prior_50_uncorrected.parquet
 ---
 
 ## Simulation study MCMC fit
@@ -87,7 +87,9 @@ true_values <- tribble(
   "mu_short", 2.0,
   "sigma_long", 0.15,
   "sigma_short", 0.05,
-  "tau", 0.05
+  "tau", 0.05,
+  "omega", 0.75,
+  "obs_sd", 1.5
 )
 
 
@@ -97,7 +99,7 @@ true_values <- tribble(
 
 warmup_steps <- 1500
 
-parnames <- c(colnames(chain)[5:9], "mu_short")
+parnames <- colnames(chain)[5:11]
 
 chain_filt <- chain %>%
   filter(.iteration > warmup_steps)
@@ -179,7 +181,9 @@ ggplot() +
   
   geom_vline(xintercept = warmup_steps) +
 
-  geom_hline(yintercept = sum(model_data$infections_matrix))
+  geom_hline(yintercept = nrow(model_data$infections)) +
+  
+  coord_cartesian(ylim = c(0, NA))
 
 
 ```

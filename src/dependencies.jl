@@ -19,6 +19,8 @@ using Plots, StatsPlots
 
 using LinearAlgebra
 using StatsBase
+using StatsFuns
+
 
 using DataFrames
 using QuackIO

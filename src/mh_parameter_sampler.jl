@@ -90,13 +90,10 @@ function AbstractMCMC.step(
     logprob_proposal = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_proposal, context)))
 
 
+
     log_target_ratio = logprob_proposal - logprob_previous
 
-    # Calculate log of Hastings correction term: log(H)
-    # H = q(theta_current | theta_new) / q(theta_new | theta_current)
-    # For log-normal proposal: H = (PRODUCT theta_new_i) / (PRODUCT theta_current_i)
-    # log(H) = sum(log.(theta_new)) - sum(log.(theta_current))
-    # which is sum(log_theta_new) - sum(log_theta_current)
+    # Correction term for log-normal proposals around theta
     log_hastings_ratio = sum(log_theta_new) - sum(log_theta_current)
     acceptance_ratio = log_target_ratio + log_hastings_ratio
 

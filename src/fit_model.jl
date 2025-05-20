@@ -1,7 +1,8 @@
 include("dependencies.jl")
 
 # data_code = ARGS[1]
-data_code = "sim_study_hanam_2018_3"
+data_code = "hanam_2018"
+rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
 
@@ -11,14 +12,15 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-model = make_waning_model(p, obs_df; prior_inf_prob = 0.5);
-initial_params = make_initial_params_sim_study(p, obs_df, 6)
+model = make_waning_model(p, obs_df; prior_inf_prob = 0.50);
+initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
 gibbs_sampler = make_gibbs_sampler(model, p, propose_swaps_original_no_hastings_ratio!)
 
 heatmap(initial_params[1].infections')
+heatmap(model_data["initial_infections_manual"]')
 
 chain = sample_chain(
-    model, initial_params, gibbs_sampler, p;
+    model, initial_params, gibbs_sampler, rng;
     n_sample = 50000, n_thinning = 25, n_chain = 6
 );
 
@@ -38,6 +40,8 @@ plot(chain, [:omega], seriestype = :traceplot)
 plot(chain_sum_infections(chain))
 hline!([sum(model_data["infections_matrix"])])
 
-chain_name = "prior_50_uncorrected"
+hline!([0.5 * p.n_subjects * p.n_t_steps])
+
+chain_name = "prior_50_corrected"
 
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")
