@@ -32,11 +32,11 @@ sigma_short = 0.05
 tau = 0.05
 obs_sd = 0.5
 
-attack_rates_log_odds = rand(rng, Normal(-1, 1.0), n_t_steps)
-individual_log_odds_ratio = rand(rng, Normal(0.0, 1.0), n_t_steps)
+time_effect = rand(rng, Normal(-1, 1.0), n_t_steps)
+subject_effect = rand(rng, Normal(0.0, 1.0), n_t_steps)
 
 p_inf = [
-    logistic(attack_rates_log_odds[i] + individual_log_odds_ratio[j])
+    logistic(time_effect[i] + subject_effect[j])
     for i in 1:n_t_steps, j in 1:n_subjects
 ]
 infections = [
@@ -46,8 +46,8 @@ infections = [
 
 heatmap(p_inf')
 heatmap(infections')
-plot(attack_rates_log_odds)
-plot(individual_log_odds_ratio)
+plot(time_effect)
+plot(subject_effect)
 
 
 infections_df = DataFrame(stack([[i[1], i[2]] for i in findall(infections)])', :auto)
@@ -85,8 +85,8 @@ model_data = Dict(
     "infections" => df_to_tuple(infections_df),
     "infections_matrix" => Matrix{Float64}(infections),
     "subject_birth_data" => df_to_tuple(subject_birth_data),
-    "attack_rates_log_odds" => attack_rates_log_odds,
-    "individual_log_odds_ratio" => individual_log_odds_ratio
+    "time_effect" => time_effect,
+    "subject_effect" => subject_effect
 )
 
 save("$run_dir/model_data.hdf5", model_data)

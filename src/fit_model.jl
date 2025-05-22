@@ -17,22 +17,27 @@ initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
 
 model = make_waning_model(p, obs_df);
 
-basic_params = model_symbols_apart_from(model, [:infections, :time_effect])
+non_infection_params = model_symbols_apart_from(model, [:infections])
+
+using ADTypes
+import Mooncake
 
 gibbs_sampler = Gibbs(
     :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
     :time_effect => ESS(),
     :subject_effect => ESS(),
     :latent_basic_params => ESS()
+
+    # non_infection_params => HMC(0.002, 10; adtype = AutoMooncake(;config = nothing))
 )
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 2000, n_thinning = 1, n_chain = 6
+    n_sample = 20000, n_thinning = 10, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')
-heatmap(chain_infections_prob(chain[180:end], p)')
+heatmap(chain_infections_prob(chain[1800:end], p)')
 
 @gif for i in 1:20:2000
     heatmap(chain_infections_prob(chain[i], p)')
@@ -49,9 +54,14 @@ plot(chain, [Symbol("time_effect[$i]") for i in 1:10], seriestype = :traceplot, 
 plot(chain, [Symbol("time_effect[$i]") for i in 20:30], seriestype = :traceplot, ylim = (-4, 2))
 plot(20:30, model_data["attack_rates_log_odds"][20:30])
 
-ix_t = 4
+ix_t = 27
 histogram(chain[180:end], Symbol("time_effect[$ix_t]"), bins = -4:0.1:4)
 vline!([model_data["attack_rates_log_odds"][ix_t]], lc = "black", lw = 4)
+
+ix_subject = 16
+histogram(chain[180:end], Symbol("subject_effect[$ix_subject]"), bins = -4:0.1:4)
+vline!([model_data["individual_log_odds_ratio"][ix_subject]], lc = "black", lw = 4)
+
 
 plot(chain_sum_infections(chain, p))
 hline!([nrow(model_data["infections"])])

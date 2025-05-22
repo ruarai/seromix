@@ -92,23 +92,40 @@ M_test = [rand(MatrixBernoulli(rand(Uniform(0.0, 1), (10, 10)))) for i in 1:1000
 t = Matrix{Real}(zeros(Bool, 10, 10))
 
 
-data_code = "sim_study_hanam_2018_3"
+data_code = "sim_study_simple_hierarchical_1"
+rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
-
 model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
+proposal_function = propose_swaps_original_corrected!
+initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
+
 model = make_waning_model(p, obs_df);
 
-gibbs_sampler = make_gibbs_sampler(model)
+non_infection_params = model_symbols_apart_from(model, [:infections])
+
+using ADTypes
+import Mooncake
+
+gibbs_sampler = Gibbs(
+    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
+    non_infection_params => HMC(0.002, 10; adtype = AutoMooncake(;config = nothing))
+)
+
+
+gibbs_sampler = Gibbs(
+    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
+    non_infection_params => ESS()
+)
 
 sample(model, gibbs_sampler, 2, callback = log_callback);
 
-@profview sample(model, gibbs_sampler, 500);
+@profview sample(model, gibbs_sampler, 100);
 @profview_allocs sample(model, gibbs_sampler, 1000, callback = log_callback);
 
 @time sample(model, gibbs_sampler, 500, callback = log_callback);

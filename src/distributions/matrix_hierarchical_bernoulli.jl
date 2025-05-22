@@ -26,14 +26,10 @@ end
 function Distributions._logpdf(d::MatrixHierarchicalBernoulli, x::AbstractMatrix{<:Bool})
     lpdf = 0.0
 
-    for i in 1:d.i, j in 1:d.j
-        p = logistic(d.row_means[i] + d.column_means[j])
-
-        lpdf += logpdf(Bernoulli(p), x[i, j])
+    @inbounds for j in 1:d.j
+        logit_p = d.column_means[j] .+ d.row_means
+        lpdf += sum(x[:, j] .* logit_p .- log1pexp.(logit_p))
     end
 
     return lpdf
 end
-
-
-
