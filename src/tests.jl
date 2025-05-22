@@ -71,9 +71,21 @@ heatmap(y)
 ys = [rand(dist) for i in 1:10000]
 
 
+
 y_lpdf = [logpdf(dist, y) for y in ys]
 
 y_sums = [sum(y) for y in ys]
 
 histogram(y_sums, bins = 0:1:100)
 heatmap(y)
+
+
+N, M = (100, 100)
+row_means = rand(Normal(-1, 2.0), N)
+col_means = rand(Normal(0, 2.0), M)
+dist = MatrixHierarchicalBernoulli(row_means, col_means, N, M)
+
+y = rand(dist)
+heatmap(y)
+
+logpdf(dist, y)

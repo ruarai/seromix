@@ -9,12 +9,7 @@ Base.size(d::MatrixBetaBernoulli) = (d.i, d.j)
 
 function Distributions.rand(rng::AbstractRNG, d::MatrixBetaBernoulli)
     Y = Matrix{Bool}(undef, size(d))
-    p = rand(rng, Beta(d.alpha, d.beta))
-
-    for i in 1:d.i, j in 1:d.j
-        Y[i,j] = rand(rng, Bernoulli(p))
-    end
-
+    Distributions._rand!(rng, d, Y)
     return Y
 end
 

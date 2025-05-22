@@ -1,29 +1,31 @@
 include("dependencies.jl")
 
-# data_code = ARGS[1]
-data_code = "hanam_2018_no_age"
+
+data_code = "sim_study_simple_hierarchical_1"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
-
 model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-model = make_waning_model(p, obs_df; prior_inf_prob = 0.15);
+proposal_function = propose_swaps_original_corrected!
+initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
 
-# initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
-initial_params = make_initial_params_data_study(6, Matrix{Bool}(model_data["initial_infections_manual"]), rng)
+model = make_waning_model(p, obs_df);
 
-gibbs_sampler = make_gibbs_sampler(model, p, propose_swaps_original_corrected!)
+symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
-heatmap(initial_params[1].infections')
+gibbs_sampler = Gibbs(
+    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
+    symbols_not_inf => ESS()
+)
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 50000, n_thinning = 25, n_chain = 6
+    n_sample = 2000, n_thinning = 1, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')
@@ -39,11 +41,14 @@ plot(chain, [:tau], seriestype = :traceplot)
 plot(chain, [:obs_sd], seriestype = :traceplot)
 plot(chain, [:omega], seriestype = :traceplot)
 
+
+plot(chain, [Symbol("row_means[$i]") for i in 1:10], seriestype = :traceplot, ylim = (-4, 2))
+plot(chain, [Symbol("row_means[$i]") for i in 20:30], seriestype = :traceplot, ylim = (-4, 2))
+plot(model_data["attack_rates_log_odds"][20:30])
+
 plot(chain_sum_infections(chain))
-hline!([sum(model_data["infections_matrix"])])
+hline!([nrow(model_data["infections"])])
 
-hline!([0.5 * p.n_subjects * p.n_t_steps])
-
-chain_name = "prior_15_corrected"
+chain_name = "prior_hierarchical"
 
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")

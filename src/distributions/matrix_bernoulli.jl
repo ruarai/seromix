@@ -8,11 +8,7 @@ Base.size(d::MatrixBernoulli) = (d.i, d.j)
 
 function Distributions.rand(rng::AbstractRNG, d::MatrixBernoulli)
     Y = Matrix{Bool}(undef, size(d))
-
-    for i in 1:d.i, j in 1:d.j
-        Y[i,j] = rand(rng, Bernoulli(d.p))
-    end
-
+    Distributions._rand!(rng, d, Y)
     return Y
 end
 
@@ -31,6 +27,3 @@ function Distributions._logpdf(d::MatrixBernoulli, x::AbstractMatrix{<:Bool})
 
     return n_true * log_p + n_false * log_1_minus_p
 end
-
-
-

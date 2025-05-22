@@ -14,8 +14,7 @@ end
 
 function make_waning_model(
     model_parameters::FixedModelParameters,
-    obs_df::DataFrame;
-    prior_infection_dist::Distribution
+    obs_df::DataFrame
 )
     all(diff(obs_df.ix_subject) .>= 0) || throw(ArgumentError("ix_subject in obs_df must be sorted in ascending order."))
 
@@ -24,7 +23,6 @@ function make_waning_model(
     individual_titre_obs = [obs_df.observed_titre[v] for v in make_obs_views(obs_df)]
     return waning_model(
         model_parameters,
-        prior_infection_dist,
 
         make_obs_lookup(obs_df),
         make_obs_views(obs_df),
@@ -35,29 +33,42 @@ end
 
 @model function waning_model(
     model_parameters::FixedModelParameters,
-    prior_infection_dist::Distribution,
 
     obs_lookup, obs_views,
     n_max_ind_obs::Int,
 
     observed_titre::Vector{Vector{Float64}}     
 )
-    mu_long ~ Uniform(0.0, 10.0)
-    mu_short ~ Uniform(0.0, 10.0)
+    param_link_dists = [
+        Uniform(0, 10), Uniform(0, 10),
+        Uniform(0, 1), Uniform(0, 10),
+        Uniform(0, 10), Uniform(0, 10),
+        Uniform(0, 10)
+    ]
+    param_means = [2.0, 2.5, 0.8, 0.15, 0.05, 0.05, 1.0]
+    means = [link(param_link_dists[i], param_means[i]) for i in 1:7]
 
+    params ~ MvNormal(means, I)
 
-    omega ~ Uniform(0.0, 1.0)
-
-    sigma_long ~ Uniform(0.0, 10.0)
-    sigma_short ~ Uniform(0.0, 10.0)
-
-    tau ~ Uniform(0.0, 10.0)
-
-    obs_sd ~ Uniform(0.0, 10.0)
+    mu_long := invlink(param_link_dists[1], params[1])
+    mu_short := invlink(param_link_dists[2], params[2])
+    omega := invlink(param_link_dists[3], params[3])
+    sigma_long := invlink(param_link_dists[4], params[4])
+    sigma_short := invlink(param_link_dists[5], params[5])
+    tau := invlink(param_link_dists[6], params[6])
+    obs_sd := invlink(param_link_dists[7], params[7])
+    
     obs_min = convert(typeof(mu_long), const_titre_min)
     obs_max = convert(typeof(mu_long), const_titre_max)
 
-    infections ~ prior_infection_dist
+    row_means ~ MvNormal(fill(-1.0, p.n_t_steps), I)
+
+    infections ~ MatrixHierarchicalBernoulli(
+        row_means,
+        zeros(typeof(mu_long), p.n_subjects),
+        p.n_t_steps,
+        p.n_subjects
+    )
     
     context = DynamicPPL.leafcontext(__context__)
     if context isa IndividualSubsetContext
