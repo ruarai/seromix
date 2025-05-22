@@ -49,6 +49,7 @@ include("sampling_functions.jl")
 include("distributions/titre_arraynormal.jl")
 include("distributions/matrix_bernoulli.jl")
 include("distributions/matrix_beta_bernoulli.jl")
+include("distributions/matrix_hierarchical_bernoulli.jl")
 
 
 const const_titre_min = 0.0

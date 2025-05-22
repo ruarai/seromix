@@ -1,17 +1,4 @@
 
-
-
-struct FixedModelParameters
-    n_t_steps::Int
-    n_subjects::Int
-
-    antigenic_distances::Matrix{Float64}
-
-    time_diff_matrix::Matrix{Float64}
-
-    subject_birth_ix::Vector{Int}
-end
-
 function make_waning_model(
     model_parameters::FixedModelParameters,
     obs_df::DataFrame
@@ -39,35 +26,30 @@ end
 
     observed_titre::Vector{Vector{Float64}}     
 )
-    param_link_dists = [
-        Uniform(0, 10), Uniform(0, 10),
-        Uniform(0, 1), Uniform(0, 10),
-        Uniform(0, 10), Uniform(0, 10),
-        Uniform(0, 10)
-    ]
-    param_means = [2.0, 2.5, 0.8, 0.15, 0.05, 0.05, 1.0]
-    means = [link(param_link_dists[i], param_means[i]) for i in 1:7]
+    latent_means = [log(2), log(2), 0.0, log(0.5), log(0.5), log(0.1), log(1)]
+    latent_basic_params ~ MvNormal(latent_means, I)
 
-    params ~ MvNormal(means, I)
+    omega_link_dist = Uniform(0, 1)
 
-    mu_long := invlink(param_link_dists[1], params[1])
-    mu_short := invlink(param_link_dists[2], params[2])
-    omega := invlink(param_link_dists[3], params[3])
-    sigma_long := invlink(param_link_dists[4], params[4])
-    sigma_short := invlink(param_link_dists[5], params[5])
-    tau := invlink(param_link_dists[6], params[6])
-    obs_sd := invlink(param_link_dists[7], params[7])
+    mu_long := exp(latent_basic_params[1])
+    mu_short := exp(latent_basic_params[2])
+    omega := invlink(omega_link_dist, latent_basic_params[3])
+    sigma_long := exp(latent_basic_params[4])
+    sigma_short := exp(latent_basic_params[5])
+    tau := exp(latent_basic_params[6])
+    obs_sd := exp(latent_basic_params[7])
     
     obs_min = convert(typeof(mu_long), const_titre_min)
     obs_max = convert(typeof(mu_long), const_titre_max)
 
-    row_means ~ MvNormal(fill(-1.0, p.n_t_steps), I)
+    time_effect ~ MvNormal(fill(-1.0, model_parameters.n_t_steps), I)
+    subject_effect ~ MvNormal(fill(0.0, model_parameters.n_subjects), I)
 
     infections ~ MatrixHierarchicalBernoulli(
-        row_means,
-        zeros(typeof(mu_long), p.n_subjects),
-        p.n_t_steps,
-        p.n_subjects
+        time_effect,
+        subject_effect,
+        model_parameters.n_t_steps,
+        model_parameters.n_subjects
     )
     
     context = DynamicPPL.leafcontext(__context__)
@@ -86,6 +68,7 @@ end
             model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
             model_parameters.subject_birth_ix[ix_subject],
 
+            # TODO remove abstractarray here?
             AbstractArray{Bool}(view(infections, :, ix_subject)),
 
             obs_lookup[ix_subject], 

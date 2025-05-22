@@ -57,18 +57,8 @@ end
 
 function make_initial_params_sim_study(p, obs_df, n_chain, rng)
 
-    param_link_dists = [
-        Uniform(0, 10), Uniform(0, 10),
-        Uniform(0, 1), Uniform(0, 10),
-        Uniform(0, 10), Uniform(0, 10),
-        Uniform(0, 10)
-    ]
-    param_means = [2.0, 2.5, 0.8, 0.15, 0.05, 0.05, 1.0]
-
-
     return [(
-        params = [link(param_link_dists[i], param_means[i]) for i in 1:7], 
-        infections = initial_infections_matrix(p, obs_df, rng)
+        infections = initial_infections_matrix(p, obs_df, rng),
     ) for i in 1:n_chain]
 end
 

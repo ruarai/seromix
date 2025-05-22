@@ -150,8 +150,10 @@ function chain_infections_matrix(chain, ix_iter, ix_chain, params)
 end
 
 # TODO add birth year masking
-function chain_sum_infections(chain)
-    sums = sum(Array(chain)[:, size(chain, 3):end], dims = 2)
+function chain_sum_infections(chain, params)
+    # Assuming infections is at end
+    chain_sub = chain[:,(end - params.n_t_steps * params.n_subjects + 1):end,:]
+    sums = sum(Array(chain_sub)[:, size(chain, 3):end], dims = 2)
     return [sums[(1:size(chain, 1)) .+ i * size(chain, 1)] for i in 0:(size(chain, 3) - 1)]
 end
 

@@ -1,5 +1,6 @@
 include("dependencies.jl")
 
+include("inference_model_hierarchical.jl")
 
 data_code = "sim_study_simple_hierarchical_1"
 rng = Random.Xoshiro(1)
@@ -16,11 +17,13 @@ initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
 
 model = make_waning_model(p, obs_df);
 
-symbols_not_inf = model_symbols_apart_from(model, [:infections])
+basic_params = model_symbols_apart_from(model, [:infections, :time_effect])
 
 gibbs_sampler = Gibbs(
     :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
-    symbols_not_inf => ESS()
+    :time_effect => ESS(),
+    :subject_effect => ESS(),
+    :latent_basic_params => ESS()
 )
 
 chain = sample_chain(
@@ -29,7 +32,7 @@ chain = sample_chain(
 );
 
 heatmap(model_data["infections_matrix"]')
-heatmap(chain_infections_prob(chain[1800:end], p)')
+heatmap(chain_infections_prob(chain[180:end], p)')
 
 @gif for i in 1:20:2000
     heatmap(chain_infections_prob(chain[i], p)')
@@ -42,11 +45,15 @@ plot(chain, [:obs_sd], seriestype = :traceplot)
 plot(chain, [:omega], seriestype = :traceplot)
 
 
-plot(chain, [Symbol("row_means[$i]") for i in 1:10], seriestype = :traceplot, ylim = (-4, 2))
-plot(chain, [Symbol("row_means[$i]") for i in 20:30], seriestype = :traceplot, ylim = (-4, 2))
-plot(model_data["attack_rates_log_odds"][20:30])
+plot(chain, [Symbol("time_effect[$i]") for i in 1:10], seriestype = :traceplot, ylim = (-4, 2))
+plot(chain, [Symbol("time_effect[$i]") for i in 20:30], seriestype = :traceplot, ylim = (-4, 2))
+plot(20:30, model_data["attack_rates_log_odds"][20:30])
 
-plot(chain_sum_infections(chain))
+ix_t = 4
+histogram(chain[180:end], Symbol("time_effect[$ix_t]"), bins = -4:0.1:4)
+vline!([model_data["attack_rates_log_odds"][ix_t]], lc = "black", lw = 4)
+
+plot(chain_sum_infections(chain, p))
 hline!([nrow(model_data["infections"])])
 
 chain_name = "prior_hierarchical"
