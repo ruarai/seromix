@@ -15,7 +15,7 @@ end
 function make_waning_model(
     model_parameters::FixedModelParameters,
     obs_df::DataFrame;
-    prior_inf_prob
+    prior_infection_dist::Distribution
 )
     all(diff(obs_df.ix_subject) .>= 0) || throw(ArgumentError("ix_subject in obs_df must be sorted in ascending order."))
 
@@ -24,7 +24,7 @@ function make_waning_model(
     individual_titre_obs = [obs_df.observed_titre[v] for v in make_obs_views(obs_df)]
     return waning_model(
         model_parameters,
-        prior_inf_prob,
+        prior_infection_dist,
 
         make_obs_lookup(obs_df),
         make_obs_views(obs_df),
@@ -35,7 +35,7 @@ end
 
 @model function waning_model(
     model_parameters::FixedModelParameters,
-    prior_inf_prob,
+    prior_infection_dist::Distribution,
 
     obs_lookup, obs_views,
     n_max_ind_obs::Int,
@@ -57,7 +57,8 @@ end
     obs_min = convert(typeof(mu_long), const_titre_min)
     obs_max = convert(typeof(mu_long), const_titre_max)
 
-    infections ~ MatrixBernoulli(prior_inf_prob, model_parameters.n_t_steps, model_parameters.n_subjects)
+    infections ~ prior_infection_dist
+    # infections ~ MatrixBernoulli(prior_inf_prob, model_parameters.n_t_steps, model_parameters.n_subjects)
     # infections ~ ImproperMatrixBernoulli(prior_inf_prob, model_parameters.n_t_steps, model_parameters.n_subjects)
 
     context = DynamicPPL.leafcontext(__context__)

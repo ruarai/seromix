@@ -1,4 +1,5 @@
 
+
 include("../dependencies.jl")
 
 data_code = "sim_study_simple_2"
@@ -6,16 +7,16 @@ data_code = "sim_study_simple_2"
 run_dir = "runs/$(data_code)/"
 mkpath(run_dir)
 
-modelled_years = collect(2000:2049)
+modelled_years = collect(2000:2009)
 n_t_steps = length(modelled_years)
-n_subjects = 20
+n_subjects = 10
 
 time_diff_matrix = make_time_diff_matrix(modelled_years)
 antigenic_distance = abs.(time_diff_matrix)
 
 subject_birth_data = DataFrame(
     ix_subject = 1:n_subjects, 
-    ix_t_birth = floor.(Int, reverse(1:n_subjects) .* 0.7)
+    ix_t_birth = 0
 )
 
 p = FixedModelParameters(
@@ -63,7 +64,9 @@ function filt_age(ix_subject, ix_t_obs)
 end
 
 observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
-observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max))
+observations.observed_titre = rand(
+    TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max)
+)
 
 model_data = Dict(
     "modelled_years" => modelled_years,

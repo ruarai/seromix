@@ -55,3 +55,25 @@ model = test_titre_model_2(y, 0.0, 8.0)
 chain = sample(model, NUTS(1000, 0.6), 500);
 
 plot(chain, [:mu, :sd], seriestype = :traceplot)
+
+
+
+beta_dist = Beta(1.3, 8)
+mean(beta_dist)
+
+plot(0:0.01:1, pdf.(beta_dist, 0:0.01:1))
+
+dist = MatrixBetaBernoulli(1.3, 8.0, 10, 10)
+
+y = rand(dist)
+heatmap(y)
+
+ys = [rand(dist) for i in 1:10000]
+
+
+y_lpdf = [logpdf(dist, y) for y in ys]
+
+y_sums = [sum(y) for y in ys]
+
+histogram(y_sums, bins = 0:1:100)
+heatmap(y)

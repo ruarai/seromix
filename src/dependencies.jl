@@ -20,7 +20,7 @@ using Plots, StatsPlots
 using LinearAlgebra
 using StatsBase
 using StatsFuns
-
+using SpecialFunctions
 
 using DataFrames
 using QuackIO
