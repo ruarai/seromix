@@ -35,28 +35,6 @@ plot_model_data <- function(model_data, run_name, plot_individuals = FALSE) {
     bg = "white",
     width = 7, height = 5
   )
-  
-  if(!is.null(model_data$raw_strain_coords)) {  
-    ggplot() +
-      geom_point(aes(x = X, y = Y, colour = strain_year), 
-                 model_data$raw_strain_coords) +
-      
-      geom_path(aes(x = x, y = y, colour = strain_year),
-                model_data$fit_strain_coords) +
-      
-      geom_point(aes(x = x, y = y, colour = strain_year),
-                 model_data$fit_strain_coords %>% filter(strain_year %in% model_data$modelled_years)) +
-      
-      theme_bw()
-    
-    
-    ggsave(
-      str_c(plot_dir, "antigenic_map_fit.pdf"),
-      bg = "white",
-      width = 7, height = 5
-    )
-  }
-  
 
   
   if(plot_individuals) {

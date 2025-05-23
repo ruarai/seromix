@@ -1,7 +1,7 @@
 
 
 # Note no difference from this to HaNam_data.Rdata I believe
-load("input_data/HaNam_data_V1.RData")
+load("input_data/kucharski_2018/R_datasets/HaNam_data_V1.RData")
 
 modelled_years <- 1968:2012
 

@@ -135,3 +135,49 @@ render_quarto_data_study <- function(run_name, chain_name) {
   )
 }
 
+
+get_strain_year_from_name <- function(strain_name) {
+  year_part <- strain_name %>%
+    str_split("/") %>%
+    map(last) %>%
+    str_extract("^\\d{2,4}")
+  
+  case_when(
+    nchar(year_part) == 2 & as.numeric(year_part) > 15 ~ str_c("19", year_part),
+    nchar(year_part) == 2 & as.numeric(year_part) <= 15 ~ str_c("20", year_part),
+    nchar(year_part) == 4 ~ year_part
+  ) %>%
+    as.numeric()
+}
+
+
+get_strain_year_from_name <- function(strain_name) {
+  year_part <- strain_name %>%
+    str_split("/") %>%
+    map(last) %>%
+    str_extract("^\\d{2,4}")
+  
+  case_when(
+    nchar(year_part) == 2 & as.numeric(year_part) > 15 ~ str_c("19", year_part),
+    nchar(year_part) == 2 & as.numeric(year_part) <= 15 ~ str_c("20", year_part),
+    nchar(year_part) == 4 ~ year_part
+  ) %>%
+    as.numeric()
+}
+
+make_kucharski_antigenic_distances <- function(modelled_years) {
+  raw_strain_coords <- read_csv("input_data/kucharski_2018/datasets/antigenic_coords.csv") %>%
+    rename(strain_name = viruses, Y = AG_x, X = AG_y) %>%
+    mutate(strain_year = get_strain_year_from_name(strain_name)) %>%
+    arrange(strain_year)
+  
+  fit_strain_coords <- generate_antigenic_map(raw_strain_coords, modelled_years)
+  
+  antigenic_distances <- fit_strain_coords %>%
+    filter(strain_year %in% modelled_years) %>%
+    arrange(strain_year) %>% 
+    generate_antigenic_distances()
+  
+  return(antigenic_distances)
+}
+
