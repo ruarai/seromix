@@ -35,7 +35,9 @@ read_fluscape_data_neuts <- function() {
       strain_name,
       strain_year,
       observed_titre
-    )
+    ) %>%
+    
+    arrange(ix_subject, ix_t_obs, ix_strain)
   
   
   subject_birth_data <- observations_df %>%
@@ -92,7 +94,9 @@ read_fluscape_data_HI <- function() {
       strain_name,
       strain_year,
       observed_titre
-    )
+    ) %>%
+    
+    arrange(ix_subject, ix_t_obs, ix_strain)
   
   subject_birth_data <- observations_df %>%
     distinct(ix_subject, age) %>% 

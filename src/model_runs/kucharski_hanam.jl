@@ -25,7 +25,7 @@ gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
 # Sample 50,000 draws with a thinning factor of 25, with 6 chains each
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 10000, n_thinning = 5, n_chain = 6
+    n_sample = 50000, n_thinning = 25, n_chain = 6
 );
 
 chain_name = "prior_50_uncorrected"

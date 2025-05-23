@@ -31,7 +31,7 @@ end
 
 
 function make_gibbs_sampler(model, p, step_fn)
-    symbols_not_inf = model_symbols_apart_from(model, :infections)
+    symbols_not_inf = model_symbols_apart_from(model, [:infections])
     
     gibbs_sampler = Gibbs(
         :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, step_fn),
@@ -56,9 +56,28 @@ function make_initial_params_data_study(n_chain, init_matrix, rng)
 end
 
 function make_initial_params_sim_study(p, obs_df, n_chain, rng)
-
     return [(
-        infections = initial_infections_matrix(p, obs_df, rng),
+        mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
+        mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
+        omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
+        sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
+        sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
+        tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
+        obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
+
+        infections = initial_infections_matrix(p, obs_df, rng)
+    ) for i in 1:n_chain]
+end
+
+
+function make_initial_params_sim_study_fluscape(p, obs_df, n_chain, rng)
+    return [(
+        mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
+        tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
+        sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
+        obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
+
+        infections = initial_infections_matrix(p, obs_df, rng)
     ) for i in 1:n_chain]
 end
 

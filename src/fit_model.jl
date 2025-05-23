@@ -1,8 +1,7 @@
 include("dependencies.jl")
 
-include("inference_model_hierarchical.jl")
 
-data_code = "sim_study_simple_hierarchical_1"
+data_code = "fluscape_2009_neuts"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
@@ -12,28 +11,16 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-proposal_function = propose_swaps_original_corrected!
+prior_infection_dist = MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)
+proposal_function = propose_swaps_original_no_hastings_ratio!
 initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
 
-model = make_waning_model(p, obs_df);
-
-non_infection_params = model_symbols_apart_from(model, [:infections])
-
-using ADTypes
-import Mooncake
-
-gibbs_sampler = Gibbs(
-    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
-    :time_effect => ESS(),
-    :subject_effect => ESS(),
-    :latent_basic_params => ESS()
-
-    # non_infection_params => HMC(0.002, 10; adtype = AutoMooncake(;config = nothing))
-)
+model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
+gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 20000, n_thinning = 10, n_chain = 6
+    n_sample = 10000, n_thinning = 5, n_chain = 6
 );
 
 heatmap(model_data["infections_matrix"]')
@@ -50,22 +37,9 @@ plot(chain, [:obs_sd], seriestype = :traceplot)
 plot(chain, [:omega], seriestype = :traceplot)
 
 
-plot(chain, [Symbol("time_effect[$i]") for i in 1:10], seriestype = :traceplot, ylim = (-4, 2))
-plot(chain, [Symbol("time_effect[$i]") for i in 20:30], seriestype = :traceplot, ylim = (-4, 2))
-plot(20:30, model_data["attack_rates_log_odds"][20:30])
-
-ix_t = 27
-histogram(chain[180:end], Symbol("time_effect[$ix_t]"), bins = -4:0.1:4)
-vline!([model_data["attack_rates_log_odds"][ix_t]], lc = "black", lw = 4)
-
-ix_subject = 16
-histogram(chain[180:end], Symbol("subject_effect[$ix_subject]"), bins = -4:0.1:4)
-vline!([model_data["individual_log_odds_ratio"][ix_subject]], lc = "black", lw = 4)
-
-
 plot(chain_sum_infections(chain, p))
 hline!([nrow(model_data["infections"])])
 
-chain_name = "prior_hierarchical"
+chain_name = "prior_50_uncorrected"
 
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")

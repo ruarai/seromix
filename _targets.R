@@ -20,5 +20,4 @@ list(
   tar_target(fluscape_data_HI, read_fluscape_data_HI()),
   tar_target(fluscape_data_HI_file, save_hdf5(fluscape_data_HI, "runs/fluscape_2009_HI/model_data.hdf5"), format = "file"),
   tar_target(fluscape_data_HI_plots, plot_model_data(fluscape_data_HI, "fluscape_2009_HI"))
-  
 )
