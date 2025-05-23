@@ -34,17 +34,18 @@ using JLD2
 
 
 
-include("antibody_kinetics.jl")
-include("inference_model.jl")
+include("likelihood_model/antibody_kinetics.jl")
+include("likelihood_model/make_waning_model.jl")
+include("likelihood_model/waning_model_kucharski.jl")
 
 
 import Turing.Inference: isgibbscomponent
-include("mh_parameter_sampler.jl")
-include("mh_infection_sampler.jl")
-include("mh_infection_steps.jl")
+include("inference/mh_parameter_sampler.jl")
+include("inference/mh_infection_sampler.jl")
+include("inference/mh_infection_steps.jl")
+include("inference/sampling_functions.jl")
 
 include("helper_functions.jl")
-include("sampling_functions.jl")
 
 include("distributions/titre_arraynormal.jl")
 include("distributions/matrix_bernoulli.jl")
