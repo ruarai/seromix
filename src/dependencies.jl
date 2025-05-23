@@ -34,8 +34,8 @@ using JLD2
 
 
 
-include("likelihood_model/antibody_kinetics.jl")
 include("likelihood_model/make_waning_model.jl")
+include("likelihood_model/antibody_kinetics_kucharski.jl")
 include("likelihood_model/waning_model_kucharski.jl")
 
 

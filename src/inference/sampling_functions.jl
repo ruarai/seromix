@@ -81,6 +81,19 @@ function make_initial_params_sim_study_fluscape(p, obs_df, n_chain, rng)
     ) for i in 1:n_chain]
 end
 
+function make_initial_params_linear(p, n_chain, rng)
+    return [(
+        mu_long = 2.0 + rand(rng, Uniform(-0.5, 0.5)),
+        mu_short = 2.0 + rand(rng, Uniform(-0.5, 0.5)),
+        dist_scale = 1.0 + rand(rng, Uniform(-0.1, 0.1)),
+        r_waning = 0.25 + rand(rng, Uniform(-0.1, 0.1)),
+        obs_sd = 1.0 + rand(rng, Uniform(-0.1, 0.1)),
+
+        infections = rand(rng, Bernoulli(0.1), (p.n_t_steps, p.n_subjects))
+    ) for i in 1:n_chain]
+end
+
+
 # Translated from Kucharski model, but not sure that it's necessary.
 function initial_infections_matrix(p, obs_df, rng)
     infections_0 = zeros(Bool, p.n_t_steps, p.n_subjects)

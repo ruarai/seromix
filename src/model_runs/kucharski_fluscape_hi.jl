@@ -1,8 +1,8 @@
 include("../dependencies.jl")
 
-# Reproduces the fluscape (neuts) data study from Kucharski (2018)
+# Reproduces the fluscape (HI) data study from Kucharski (2018)
 
-data_code = "fluscape_2009_neuts"
+data_code = "fluscape_2009_HI"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"

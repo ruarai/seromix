@@ -16,8 +16,8 @@ p = read_model_parameters(model_data)
 prior_infection_dist = MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)
 # and a proposal function which omitted the hastings ratio
 proposal_function = propose_swaps_original_no_hastings_ratio!
-# and initial values based on observations (I don't think this is too important though)
-initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
+# and initial infections from sim study.
+initial_params = make_initial_params_data_study(6, model_data["initial_infections_manual"], rng)
 
 model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
 gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
