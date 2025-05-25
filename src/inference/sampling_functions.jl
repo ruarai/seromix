@@ -83,10 +83,11 @@ end
 
 function make_initial_params_linear(p, n_chain, rng)
     return [(
-        mu_long = 2.0 + rand(rng, Uniform(-0.5, 0.5)),
-        mu_short = 2.0 + rand(rng, Uniform(-0.5, 0.5)),
-        dist_scale = 1.0 + rand(rng, Uniform(-0.1, 0.1)),
-        r_waning = 0.25 + rand(rng, Uniform(-0.1, 0.1)),
+        mu_add = 4.0 + rand(rng, Uniform(-0.5, 0.5)),
+        mu_mult = 1.0 + rand(rng, Uniform(-0.5, 0.5)),
+        dist_scale_add = 1.0 + rand(rng, Uniform(-0.1, 0.1)),
+        dist_scale_mult = 1.0 + rand(rng, Uniform(-0.1, 0.1)),
+        
         obs_sd = 1.0 + rand(rng, Uniform(-0.1, 0.1)),
 
         infections = rand(rng, Bernoulli(0.1), (p.n_t_steps, p.n_subjects))

@@ -22,7 +22,7 @@ gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 2000, n_thinning = 1, n_chain = 6
+    n_sample = 8000, n_thinning = 4, n_chain = 6
 );
 
 # heatmap(model_data["infections_matrix"]')
@@ -32,7 +32,8 @@ heatmap(chain_infections_prob(chain[1800:end], p)')
     heatmap(chain_infections_prob(chain[i], p)')
 end
 
-plot(chain, [:mu], seriestype = :traceplot)
+plot(chain, [:mu_add, :mu_mult], seriestype = :traceplot)
+plot(chain, [:dist_scale_add, :dist_scale_mult], seriestype = :traceplot)
 plot(chain, [:obs_sd], seriestype = :traceplot)
 
 

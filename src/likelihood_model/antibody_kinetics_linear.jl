@@ -1,6 +1,6 @@
 
 function waning_curve_individual_linear!(
-    mu_long::T, mu_short::T, dist_scale::T, r_waning::T,
+    mu_add::T, mu_mult::T, dist_scale_add::T, dist_scale_mult::T,
     dist_matrix::Matrix{Float64},
     time_diff_matrix::Matrix{Float64},
     subject_birth_ix::Int,
@@ -11,6 +11,8 @@ function waning_curve_individual_linear!(
     y::AbstractArray{T}
 ) where T <: Real
     n_t_steps = length(infections)
+
+    prior_infections = 0.0
 
     for ix_t in max(1, subject_birth_ix):n_t_steps
         @inbounds if !infections[ix_t]
@@ -27,13 +29,22 @@ function waning_curve_individual_linear!(
             time_diff = time_diff_matrix[ix_t_obs, ix_t]
             
             @inbounds for (ix_obs_strain, ix_obs) in matches
-                distance_scaled = dist_matrix[ix_t, ix_obs_strain] * dist_scale
-
-                long_term_effect = 2 ^ (mu_long - distance_scaled)
-                short_term_effect = 2 ^ (mu_short - distance_scaled - r_waning * time_diff)
+                dist_add = dist_matrix[ix_t, ix_obs_strain] * dist_scale_add
+                dist_mult = dist_matrix[ix_t, ix_obs_strain] * dist_scale_mult
                 
-                y[ix_obs] += 2 ^ long_term_effect + 2 ^ (short_term_effect)
+                additive_effect = mu_add - dist_add
+                multiplicative_effect = mu_mult * max(0.0, 1  - dist_mult)
+
+                if prior_infections > 0
+                    y[ix_obs] *= 2 ^ multiplicative_effect
+                end
+                
+                y[ix_obs] += 2 ^ additive_effect
             end
         end
+
+        prior_infections += 1.0
     end
 end
+
+
