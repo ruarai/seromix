@@ -2,7 +2,7 @@
 tar_source()
 
 run_name <- "hanam_2018"
-chain_name <- "linear_basic"
+chain_name <- "linear_basic_2"
 
 run_dir <- str_c("runs/", run_name, "/")
 model_data <- read_model_data(str_c(run_dir, "/model_data.hdf5"))

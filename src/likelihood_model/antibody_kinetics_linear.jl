@@ -39,12 +39,12 @@ function waning_curve_individual_linear!(
                 distance = dist_matrix[ix_t, ix_obs_strain]
                 
                 long_term_dist = 1.0 - sigma_long * distance
-                short_term_dist = 1.0 - sigma_short * distance
+                # short_term_dist = 1.0 - sigma_short * distance
                 
                 long_term = mu_long * long_term_dist
-                short_term = mu_short * short_term_time_factor * short_term_dist
+                # short_term = mu_short * short_term_time_factor * short_term_dist
                 
-                y[ix_obs] += 2 ^ (seniority * (long_term + short_term))
+                y[ix_obs] += 2 ^ long_term
             end
         end
     end

@@ -27,7 +27,7 @@
     infections ~ prior_infection_dist
 
     # If we're in an "IndividualSubsetContext", only calculate the
-    # likelihood over a subset of the individuals in the study.
+    # likelihood over a single subject
     # Otherwise, calculate across all subjects
     context = DynamicPPL.leafcontext(__context__)
     subjects_to_process = if context isa IndividualSubsetContext
