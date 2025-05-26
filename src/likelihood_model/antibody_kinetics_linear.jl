@@ -32,19 +32,46 @@ function waning_curve_individual_linear!(
             end
 
             matches = obs_lookup_ind[ix_t_obs]
+            
+            @inbounds for (ix_obs_strain, ix_obs) in matches
+                distance = dist_matrix[ix_t, ix_obs_strain]
+                
+                long_term_dist = 1.0 - sigma_long * distance
+                
+                long_term = mu_long * long_term_dist
+                
+                y[ix_obs] += 2 ^ (seniority * long_term)
+            end
+        end
+    end
+
+
+    for ix_t in max(1, subject_birth_ix):n_t_steps
+        @inbounds if !infections[ix_t]
+            continue
+        end
+        
+        seniority = max(0.0, 1.0 - tau * prior_infections)
+        prior_infections += 1.0
+        
+        # Process relevant times after infection
+        for ix_t_obs in ix_t:n_t_steps
+            if !haskey(obs_lookup_ind, ix_t_obs)
+                continue
+            end
+
+            matches = obs_lookup_ind[ix_t_obs]
             time_diff = time_diff_matrix[ix_t_obs, ix_t]
             short_term_time_factor = max(0.0, 1.0 - omega * time_diff)
             
             @inbounds for (ix_obs_strain, ix_obs) in matches
                 distance = dist_matrix[ix_t, ix_obs_strain]
                 
-                long_term_dist = 1.0 - sigma_long * distance
-                # short_term_dist = 1.0 - sigma_short * distance
+                short_term_dist = 1.0 - sigma_short * distance
                 
-                long_term = mu_long * long_term_dist
-                # short_term = mu_short * short_term_time_factor * short_term_dist
+                short_term = mu_short * short_term_time_factor * short_term_dist
                 
-                y[ix_obs] += 2 ^ long_term
+                y[ix_obs] *= 2 ^ (seniority * short_term)
             end
         end
     end

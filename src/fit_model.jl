@@ -23,11 +23,14 @@ gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 10_000, n_thinning = 5, n_chain = 6
+    n_sample = 20_000, n_thinning = 10, n_chain = 6
 );
 
 # heatmap(model_data["infections_matrix"]')
 heatmap(chain_infections_prob(chain[1800:end], p)')
+
+
+heatmap(chain_infections_prob(chain[1800:end], p)[:,15]')
 
 @gif for i in 1:20:2000
     heatmap(chain_infections_prob(chain[i], p)')
@@ -41,5 +44,5 @@ plot(chain, [:tau], seriestype = :traceplot)
 
 plot(chain_sum_infections(chain, p))
 
-chain_name = "linear_basic_2"
+chain_name = "linear_basic_5"
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")
