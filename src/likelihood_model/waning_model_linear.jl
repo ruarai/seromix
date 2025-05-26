@@ -43,7 +43,7 @@
     for ix_subject in subjects_to_process
         n_obs_subject = length(obs_views[ix_subject])
         y_pred = view(y_pred_buffer, 1:n_obs_subject)
-        fill!(y_pred, 1.0) # Default to 1.0 (such that log2 = 0.0)
+        fill!(y_pred, 2e-10)
 
         waning_curve_individual_linear!(
             mu_long, mu_short, omega,
@@ -59,4 +59,55 @@
 
         observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max)
     end
+end
+
+
+function ppd_linear(chain, model_parameters, n_ppd_subjects, n_draws)
+    # TODO can this be refactored over an arbitrary vector of ix_subject?
+    obs_df = expand_grid(
+        ix_t_obs = 1:model_parameters.n_t_steps, 
+        ix_strain = 1:model_parameters.n_t_steps, 
+        ix_subject = 1:n_ppd_subjects,
+        observed_titre = 2e-10, 
+        ix_draw = 1:n_draws,
+    )
+
+    obs_df_grouped = groupby(obs_df, :ix_draw)
+
+
+    col_names = names(chain)
+    ix_infections = findall(s -> startswith(s, "infections"), col_names)
+
+    for ix_draw in 1:n_draws
+        ix_sample = sample(1:nrow(chain)) 
+
+        draw = chain[ix_sample,:]
+        
+        # TODO cache across ix_draw
+        obs_lookup = make_obs_lookup(obs_df_grouped[ix_draw])
+        obs_view = make_obs_views(obs_df_grouped[ix_draw])
+
+        infections = reshape(Vector(chain[ix_sample, ix_infections]), model_parameters.n_t_steps, model_parameters.n_subjects)
+
+        for ix_subject in 1:n_ppd_subjects
+            waning_curve_individual_linear!(
+                draw.mu_long, draw.mu_short, draw.omega,
+                draw.sigma_long, draw.sigma_short, draw.tau,
+
+                model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
+                model_parameters.subject_birth_ix[ix_subject],
+
+                AbstractArray{Bool}(view(infections, :, ix_subject)),
+
+                obs_lookup[ix_subject], 
+                view(obs_df_grouped[ix_draw].observed_titre, obs_view[ix_subject])
+            )
+        end
+    end
+
+    ppd_df = DataFrame(obs_df_grouped)
+
+    ppd_df.observed_titre .= max.(0, log2.(ppd_df.observed_titre))
+
+    return ppd_df
 end

@@ -2,12 +2,13 @@
 tar_source()
 
 run_name <- "hanam_2018"
-chain_name <- "prior_15_corrected"
+chain_name <- "linear_basic"
+
 run_dir <- str_c("runs/", run_name, "/")
 model_data <- read_model_data(str_c(run_dir, "/model_data.hdf5"))
 
 
-ppd <- arrow::read_parquet(str_c(run_dir, "ppd_", chain_name, "_tau_zero.parquet")) %>%
+ppd <- arrow::read_parquet(str_c(run_dir, "ppd_", chain_name, ".parquet")) %>%
   process_data_df(model_data$modelled_years)
 
 
@@ -16,7 +17,7 @@ ix_subject_ex <- 16
 
 subjects <- unique(ppd$ix_subject)
 
-pdf(str_c(run_dir, "ppd_", chain_name, "_tau_zero.pdf"), width = 10, height = 8)
+pdf(str_c(run_dir, "ppd_", chain_name, ".pdf"), width = 10, height = 8)
 for(ix_subject_ex in subjects) {
   plot_data_ppd <- ppd %>% 
     filter(ix_subject == ix_subject_ex,

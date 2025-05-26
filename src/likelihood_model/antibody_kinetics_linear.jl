@@ -38,8 +38,8 @@ function waning_curve_individual_linear!(
             @inbounds for (ix_obs_strain, ix_obs) in matches
                 distance = dist_matrix[ix_t, ix_obs_strain]
                 
-                long_term_dist = max(0.0, 1.0 - sigma_long * distance)
-                short_term_dist = max(0.0, 1.0 - sigma_short * distance)
+                long_term_dist = 1.0 - sigma_long * distance
+                short_term_dist = 1.0 - sigma_short * distance
                 
                 long_term = mu_long * long_term_dist
                 short_term = mu_short * short_term_time_factor * short_term_dist
@@ -49,3 +49,5 @@ function waning_curve_individual_linear!(
         end
     end
 end
+
+

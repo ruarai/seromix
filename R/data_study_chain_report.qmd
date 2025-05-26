@@ -8,8 +8,8 @@ editor: source
 editor_options: 
   chunk_output_type: console
 params:
-  model_data_file: runs/hanam_2018/model_data.hdf5
-  chain_file: runs/hanam_2018/chain_prior_50_uncorrected.parquet
+  model_data_file: runs/fluscape_2009_HI/model_data.hdf5
+  chain_file: runs/fluscape_2009_HI/chain_prior_50_corrected.parquet
 ---
 
 ## Data study MCMC fit
@@ -62,22 +62,23 @@ ggplot() +
 #| echo: false
 
 # True as in reported by Kucharski
-true_values <- tribble(
-  ~name, ~value,
-  "mu_long", 2.02,
-  "mu_short", 2.69,
-  "sigma_long", 0.13,
-  "sigma_short", 0.03,
-  "tau", 0.039,
-  "omega", 0.79,
-  "obs_sd", 1.29
-)
+# true_values <- tribble(
+#   ~name, ~value,
+#   "mu_long", 2.02,
+#   "mu_short", 2.69,
+#   "sigma_long", 0.13,
+#   "sigma_short", 0.03,
+#   "tau", 0.039,
+#   "omega", 0.79,
+#   "obs_sd", 1.29
+# )
 
 
 
 warmup_steps <- min(5000, max(chain$.iteration) - 1)
 
-parnames <- colnames(chain)[5:11]
+# parnames <- colnames(chain)[5:11]
+parnames <- c("mu_long", "mu_short", "sigma_long", "sigma_short", "tau", "obs_sd", "omega")
 
 chain %>%
   select(.iteration, .chain, any_of(parnames)) %>%
@@ -86,7 +87,7 @@ chain %>%
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain))) +
   
   geom_vline(xintercept = warmup_steps) +
-  geom_hline(aes(yintercept = value), true_values) +
+  # geom_hline(aes(yintercept = value), true_values) +
   
   facet_wrap(~name, scales = "free_y")
 
@@ -101,7 +102,7 @@ ggplot() +
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain)),
             chain_filt_wide) +
   
-  geom_hline(aes(yintercept = value), true_values) +
+  # geom_hline(aes(yintercept = value), true_values) +
   
   facet_wrap(~name, scales = "free_y")
 
@@ -109,7 +110,7 @@ ggplot() +
   geom_histogram(aes(x = value), bins = 50,
                  chain_filt_wide) +
   
-  geom_vline(aes(xintercept = value), true_values) +
+  # geom_vline(aes(xintercept = value), true_values) +
   
   facet_wrap(~name, scales = "free")
 
