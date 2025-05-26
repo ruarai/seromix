@@ -1,5 +1,5 @@
 
-
+# The Kucharski (2018) model for waning immunity
 @model function waning_model_kucharski(
     model_parameters::FixedModelParameters,
     prior_infection_dist::Distribution,
@@ -57,4 +57,51 @@
 
          observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max)
     end
+end
+
+
+function ppd_kucharski(chain, model_parameters, n_ppd_subjects, n_draws)
+    # TODO can this be refactored over an arbitrary vector of ix_subject?
+    obs_df = expand_grid(
+        ix_t_obs = 1:model_parameters.n_t_steps, 
+        ix_strain = 1:model_parameters.n_t_steps, 
+        ix_subject = 1:n_ppd_subjects,
+        observed_titre = 0.0,
+        ix_draw = 1:n_draws,
+    )
+
+    obs_df_grouped = groupby(obs_df, :ix_draw)
+
+
+    col_names = names(chain)
+    ix_infections = findall(s -> startswith(s, "infections"), col_names)
+
+    for ix_draw in 1:n_draws
+        ix_sample = sample(1:nrow(chain)) 
+
+        draw = chain[ix_sample,:]
+        
+        # TODO cache across ix_draw
+        obs_lookup = make_obs_lookup(obs_df_grouped[ix_draw])
+        obs_view = make_obs_views(obs_df_grouped[ix_draw])
+
+        infections = reshape(Vector(chain[ix_sample, ix_infections]), model_parameters.n_t_steps, model_parameters.n_subjects)
+
+        for ix_subject in 1:n_ppd_subjects
+            waning_curve_individual!(
+                draw.mu_long, draw.mu_short, draw.omega,
+                draw.sigma_long, draw.sigma_short, draw.tau,
+
+                model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
+                model_parameters.subject_birth_ix[ix_subject],
+
+                AbstractArray{Bool}(view(infections, :, ix_subject)),
+
+                obs_lookup[ix_subject], 
+                view(obs_df_grouped[ix_draw].observed_titre, obs_view[ix_subject])
+            )
+        end
+    end
+
+    return DataFrame(obs_df_grouped)
 end

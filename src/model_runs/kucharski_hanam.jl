@@ -13,9 +13,11 @@ obs_df = DataFrame(model_data["observations"])
 p = read_model_parameters(model_data)
 
 # Kucharski (2018) used an implicit Bernoulli(0.5) prior over infections
-prior_infection_dist = MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)
+# prior_infection_dist = MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)
+prior_infection_dist = MatrixBetaBernoulli(1.3, 8.0, p.n_t_steps, p.n_subjects)
 # and a proposal function which omitted the hastings ratio
-proposal_function = propose_swaps_original_no_hastings_ratio!
+# proposal_function = propose_swaps_original_no_hastings_ratio!
+proposal_function = propose_swaps_original_corrected!
 # and initial infections from sim study.
 initial_params = make_initial_params_data_study(6, model_data["initial_infections_manual"], rng)
 
@@ -28,6 +30,6 @@ chain = sample_chain(
     n_sample = 50000, n_thinning = 25, n_chain = 6
 );
 
-chain_name = "prior_50_uncorrected"
+chain_name = "prior_beta_1.3_8.0_corrected"
 
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")
