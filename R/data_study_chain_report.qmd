@@ -9,7 +9,7 @@ editor_options:
   chunk_output_type: console
 params:
   model_data_file: runs/hanam_2018/model_data.hdf5
-  chain_file: runs/hanam_2018/chain_linear_basic_3.parquet
+  chain_file: runs/hanam_2018/chain_infer_distances_1.parquet
 ---
 
 ## Data study MCMC fit
@@ -75,11 +75,11 @@ ggplot() +
 
 
 
-warmup_steps <- min(8000, max(chain$.iteration) - 1)
+warmup_steps <- min(25000, max(chain$.iteration) - 1)
 
 # parnames <- colnames(chain)[5:11]
-# parnames <- c("mu_long", "mu_short", "sigma_long", "sigma_short", "tau", "obs_sd", "omega")
-parnames <- c("mu_long", "sigma_long", "tau", "obs_sd")
+parnames <- c("mu_long", "mu_short", "sigma_long", "sigma_short", "tau", "obs_sd", "omega")
+# parnames <- c("mu_long", "sigma_long", "tau", "obs_sd")
 
 chain %>%
   select(.iteration, .chain, any_of(parnames)) %>%
