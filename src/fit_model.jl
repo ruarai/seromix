@@ -1,6 +1,6 @@
 include("dependencies.jl")
 
-include("experimental/infer_distances.jl")
+# Reproduces the HaNam data study from Kucharski (2018)
 
 data_code = "hanam_2018"
 rng = Random.Xoshiro(1)
@@ -12,27 +12,19 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
+
 prior_infection_dist = MatrixBetaBernoulli(1.3, 8.0, p.n_t_steps, p.n_subjects)
+
 proposal_function = propose_swaps_original_corrected!
-initial_params = make_initial_params_infer_dist(p, obs_df, 6, rng)
 
-turing_model = waning_model_free
+initial_params = make_initial_params_data_study(6, model_data["initial_infections_manual"], rng)
 
-model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model);
-
-# model = model_full | (sigma_long = 0.13, sigma_short = 0.03);
-
-param_symbols = model_symbols_apart_from(model, [:infections])
-
-gibbs_sampler = Gibbs(
-    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
-    param_symbols => ESS()
-);
-    
+model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
+gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 500, n_thinning = 1, n_chain = 6
+    n_sample = 10000, n_thinning = 5, n_chain = 6
 );
 
 ix_start = 1
@@ -59,5 +51,5 @@ plot(chain_sum_infections(chain, p))
     heatmap(chain_infections_prob(chain[i], p)')
 end
 
-chain_name = "infer_distances_1"
-save_draws(chain, "$run_dir/chain_$chain_name.parquet")
+# chain_name = "infer_distances_1"
+# save_draws(chain, "$run_dir/chain_$chain_name.parquet")
