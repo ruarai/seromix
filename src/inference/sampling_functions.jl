@@ -60,8 +60,8 @@ function make_initial_params_sim_study(p, obs_df, n_chain, rng)
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
         omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
-        sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
-        sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
+        # sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
+        # sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
         tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
 
@@ -91,6 +91,30 @@ function make_initial_params_linear(p, n_chain, rng)
         obs_sd = 1.0 + rand(rng, Uniform(-0.1, 0.1)),
 
         infections = rand(rng, Bernoulli(0.1), (p.n_t_steps, p.n_subjects))
+    ) for i in 1:n_chain]
+end
+
+
+function make_initial_params_infer_dist(p, obs_df, n_chain, rng)
+    return [(
+        latent_basic_params = [
+            2.8 + rand(rng, Uniform(-0.2, 0.2)),
+            4.0 + rand(rng, Uniform(-0.2, 0.2)), 
+            rand(rng, Uniform(-0.05, 0.05)), 
+            rand(rng, Uniform(-0.01, 0.01)), 
+            rand(rng, Uniform(-0.1, 0.1))
+        ],
+
+
+        # mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
+        # mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
+        # omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
+        # # sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
+        # # sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
+        # tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
+        # obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
+
+        infections = initial_infections_matrix(p, obs_df, rng)
     ) for i in 1:n_chain]
 end
 
