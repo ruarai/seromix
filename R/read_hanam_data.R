@@ -3,19 +3,15 @@
 
 
 
-read_hanam_data <- function() {
+read_hanam_data <- function(use_inferred_age = FALSE) {
   
   hanam_data_raw <- read_csv("input_data/kucharski_2018/datasets/HaNamCohort.csv", col_types = cols(.default = col_character()))
-  birth_data_raw <- read_csv("input_data/kucharski_2018/datasets/HaNam_YOB.csv", col_names = "year_of_birth")
   
   # Per Kucharski model, specify initial infections matrix
   initial_infections <- read_csv("input_data/kucharski_2018/R_datasets/hist_IC_H3.csv") %>%
     select(-1) %>%
     as.matrix() %>%
     t()
-  
-  
-  
   
   n_strain <- ncol(hanam_data_raw) - 2
   
@@ -61,16 +57,37 @@ read_hanam_data <- function() {
     mutate(across(c(ix_subject, ix_t_obs, ix_strain), as.integer))
   
   
-  # No age data available for this dataset
-  subject_birth_data <- birth_data_raw %>%
-    mutate(ix_subject = row_number()) %>% 
-    mutate(ix_t_birth = 0)
+  if(use_inferred_age) {
+    subject_birth_data <- read_csv("input_data/kgostic_data_emporium/Fonville_2014/YOB_inferred.csv") %>%
+      select(ix_subject = `Subject number`,
+             year_of_birth = YOB) %>%
+      mutate(ix_t_birth = match(year_of_birth, modelled_years),
+             ix_t_birth = replace_na(ix_t_birth, 0),
+             ix_subject = as.integer(ix_subject)) %>%
+      arrange(ix_subject)
+  } else {
+    n_subjects <- length(unique(observations_df$ix_subject))
+    # As in Kucharski (2018), assume no known ages
+    subject_birth_data <- tibble(
+      ix_subject = as.integer(1:n_subjects),
+      ix_t_birth = 0,
+      year_of_birth = modelled_years[1] - 1 # Necessary for plots
+    )
+  }
+  
+  # Take age distribution
+  # Likely from Fonville (2014)
+  age_distribution <- read_csv(
+    "input_data/kucharski_2018/datasets/HaNam_YOB.csv",
+    col_names = "age", col_types = cols(age = col_integer())
+  )$age
+
   
   antigenic_distances <- make_kucharski_antigenic_distances(modelled_years)
   
-  
   model_data <- list(
     observations = observations_df,
+    age_distribution = age_distribution,
     
     modelled_years = modelled_years,
     antigenic_distances = antigenic_distances,
@@ -78,6 +95,7 @@ read_hanam_data <- function() {
     
     initial_infections_manual = initial_infections
   )
+  
   
   return(model_data)
 }

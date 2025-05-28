@@ -61,8 +61,12 @@ process_data_df <- function(data_df, modelled_years) {
   
   if("ix_t_birth" %in% col_names) {
     data_df <- data_df %>%
-      mutate(ix_t_birth = if_else(ix_t_birth == 0, NA_integer_, ix_t_birth)) %>% 
-      mutate(year_of_birth = modelled_years[ix_t_birth])
+      mutate(ix_t_birth = if_else(ix_t_birth == 0, NA_integer_, ix_t_birth))
+    
+    if(!("year_of_birth" %in% col_names)) {
+      data_df <- data_df %>% 
+        mutate(year_of_birth = modelled_years[ix_t_birth])
+    }
   }
   
   if("ix_t" %in% col_names) {
@@ -172,6 +176,39 @@ make_kucharski_antigenic_distances <- function(modelled_years) {
     arrange(strain_year)
   
   fit_strain_coords <- generate_antigenic_map(raw_strain_coords, modelled_years)
+  
+  antigenic_distances <- fit_strain_coords %>%
+    filter(strain_year %in% modelled_years) %>%
+    arrange(strain_year) %>% 
+    generate_antigenic_distances()
+  
+  return(antigenic_distances)
+}
+
+
+make_gam_antigenic_distances <- function(modelled_years) {
+  
+  strain_coords <- read_csv("input_data/kucharski_2018/datasets/antigenic_coords.csv") %>%
+    rename(strain_name = viruses, y = AG_x, x = AG_y) %>%
+    mutate(strain_year = get_strain_year_from_name(strain_name)) %>%
+    arrange(strain_year) %>%
+    mutate(t = strain_year - min(strain_year))
+  
+  library(mgcv)
+  
+  fit_x <- gam(x ~ s(t, k = 12), data = strain_coords)
+  fit_y <- gam(y ~ s(t, k = 12), data = strain_coords)
+  
+  gratia::draw(fit_x, residuals = TRUE)
+  gratia::draw(fit_y, residuals = TRUE)
+  
+  pred <- tibble(
+    strain_year = modelled_years
+  ) %>%
+    mutate(t = strain_year - min(strain_year)) %>%
+    
+    mutate(x = predict(fit_x, newdata = .),
+           y = predict(fit_y, newdata = .))
   
   antigenic_distances <- fit_strain_coords %>%
     filter(strain_year %in% modelled_years) %>%

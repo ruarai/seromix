@@ -8,8 +8,8 @@ editor: source
 editor_options: 
   chunk_output_type: console
 params:
-  model_data_file: runs/hanam_2018/model_data.hdf5
-  chain_file: runs/hanam_2018/chain_infer_distances_1.parquet
+  model_data_file: runs/hanam_2018_age/model_data.hdf5
+  chain_file: runs/hanam_2018_age/chain_prior_beta_1.3_8.0_corrected.parquet
 ---
 
 ## Data study MCMC fit
@@ -38,7 +38,7 @@ strains_observed <- model_data$observations %>%
 
 ggplot() +
   
-  geom_rect(aes(xmin = -Inf, xmax = year_of_birth - 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
+  geom_rect(aes(xmin = -Inf, xmax = model_data$modelled_years[ix_t_birth] - 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
             fill = "grey90",
             model_data$subject_birth_data) +
   
@@ -61,25 +61,23 @@ ggplot() +
 ```{r}
 #| echo: false
 
-# True as in reported by Kucharski
-# true_values <- tribble(
-#   ~name, ~value,
-#   "mu_long", 2.02,
-#   "mu_short", 2.69,
-#   "sigma_long", 0.13,
-#   "sigma_short", 0.03,
-#   "tau", 0.039,
-#   "omega", 0.79,
-#   "obs_sd", 1.29
-# )
+# Median values reported by Kucharski (2018)
+reported_values <- tribble(
+  ~name, ~value,
+  "mu_long", 2.02,
+  "mu_short", 2.69,
+  "sigma_long", 0.13,
+  "sigma_short", 0.031,
+  "tau", 0.039,
+  "omega", 0.79,
+  "obs_sd", 1.29
+)
 
 
 
-warmup_steps <- min(25000, max(chain$.iteration) - 1)
+warmup_steps <- min(20000, max(chain$.iteration) - 1)
 
-# parnames <- colnames(chain)[5:11]
 parnames <- c("mu_long", "mu_short", "sigma_long", "sigma_short", "tau", "obs_sd", "omega")
-# parnames <- c("mu_long", "sigma_long", "tau", "obs_sd")
 
 chain %>%
   select(.iteration, .chain, any_of(parnames)) %>%
@@ -88,7 +86,7 @@ chain %>%
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain))) +
   
   geom_vline(xintercept = warmup_steps) +
-  # geom_hline(aes(yintercept = value), true_values) +
+  geom_hline(aes(yintercept = value), reported_values) +
   
   facet_wrap(~name, scales = "free_y")
 
@@ -103,7 +101,7 @@ ggplot() +
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain)),
             chain_filt_wide) +
   
-  # geom_hline(aes(yintercept = value), true_values) +
+  geom_hline(aes(yintercept = value), reported_values) +
   
   facet_wrap(~name, scales = "free_y")
 
@@ -111,14 +109,24 @@ ggplot() +
   geom_histogram(aes(x = value), bins = 50,
                  chain_filt_wide) +
   
-  # geom_vline(aes(xintercept = value), true_values) +
+  geom_vline(aes(xintercept = value), reported_values) +
   
   facet_wrap(~name, scales = "free")
 
 
-plot_data_inf <- get_inf_data_data_study(chain_filt, model_data)
+plot_data_inf <- get_inf_data_data_study(chain_filt, model_data) %>%
+  left_join(
+    model_data$subject_birth_data %>%
+      arrange(year_of_birth) %>%
+      mutate(ix_subject_ordered = row_number()) %>%
+      select(ix_subject, ix_subject_ordered)
+  )
 
 ggplot() +
+  
+  annotate("rect", xmin = 0.5, xmax = max(plot_data_inf$ix_t), ymin = 1, ymax = 69,
+           fill = "grey40") +
+  
   geom_tile(aes(x = ix_t, y = ix_subject, fill = p),
             plot_data_inf)  +
   
@@ -128,6 +136,20 @@ ggplot() +
              linewidth = 0.2,
              colour = "white")
 
+ggplot() +
+  
+  annotate("rect", xmin = model_data$modelled_years[1] - 0.5,
+           xmax = tail(model_data$modelled_years, 1), ymin = 1, ymax = 69.5,
+           fill = "grey40") +
+  
+  geom_tile(aes(x = model_data$modelled_years[ix_t], y = ix_subject_ordered, fill = p),
+            plot_data_inf)  +
+  
+  scale_fill_viridis_c(option = "B") +
+  
+  geom_hline(aes(yintercept = ix_subject + 0.5), sample_dates %>% distinct(ix_subject),
+             linewidth = 0.2,
+             colour = "white")
 
 plot_data_inf_count <- get_inf_count(chain, model_data)
 
