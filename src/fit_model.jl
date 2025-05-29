@@ -1,7 +1,7 @@
 include("dependencies.jl")
 
 
-data_code = "hanam_2018_age"
+data_code = "sim_study_hanam_2018_4/5"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
@@ -16,18 +16,18 @@ prior_infection_dist = MatrixBetaBernoulli(1.3, 8.0, p.n_t_steps, p.n_subjects)
 
 proposal_function = propose_swaps_original_corrected!
 
-initial_params = make_initial_params_data_study(6, model_data["initial_infections_manual"], rng)
+initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
 
 model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
 gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 30000, n_thinning = 15, n_chain = 6
+    n_sample = 1000, n_thinning = 1, n_chain = 6
 );
 
 ix_start = 1
-heatmap(chain_infections_prob(chain[ix_start:end], p)')
+heatmap(chain_infections_prob(chain[800:end], p)')
 
 
 plot(chain[ix_start:end], [:mu_long, :mu_short], seriestype = :traceplot)

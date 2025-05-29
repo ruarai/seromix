@@ -1,29 +1,12 @@
+
 include("../dependencies.jl")
+include("sim_study_functions.jl")
 
-pandemic_mean_ar = 0.5
-x_endemic_ar = 0.1:0.1:0.5
-pandemic_sd_ar = 1.0
-endemic_sd_ar = 0.5
-
-
-expand_grid(
-    endemic_ar = x_endemic_ar,
-    ix_sim = 1:5
-)
-
-
-run_name = "sim_study_hanam_2018_4"
 rng = Random.Xoshiro(1)
 
-run_dir = "runs/$(run_name)/"
-mkpath(run_dir)
-
-real_model_data = load("runs/hanam_2018/model_data.hdf5")
-
-p = read_model_parameters(real_model_data)
-
-n_t_steps = p.n_t_steps
-n_subjects = p.n_subjects
+pandemic_mean_ar = 0.5
+x_endemic_mean_ar = 0.1:0.1:0.5
+sd_ar = 0.5
 
 continuous_params = (
     mu_long = 2.0,
@@ -35,65 +18,50 @@ continuous_params = (
     obs_sd = 1.5
 )
 
+real_model_data = load("runs/hanam_2018_age/model_data.hdf5")
+p = read_model_parameters(real_model_data)
 
-
-modelled_years = real_model_data["modelled_years"]
-
-inf_sd_param = 0.5
-mean_offset = (inf_sd_param / 2) ^ 2 / 2
-
-attack_rates = vcat(
-    rand(LogitNormal(logit(pandemic_mean_ar), pandemic_sd_ar)),
-    [
-        rand(LogitNormal(logit(endemic_ar), endemic_sd_ar))
-        for i in 2:n_t_steps
-    ]
+sim_scenarios = expand_grid(
+    ix_sim = 1:3,
+    endemic_mean_ar = x_endemic_mean_ar
 )
+sim_scenarios.ix_row = 1:nrow(sim_scenarios)
 
-infections = Matrix(stack([rand(rng, Bernoulli(a), (n_subjects)) for a in attack_rates])')
+for sim_row in eachrow(sim_scenarios)
+    run_name = "sim_study_hanam_2018_4/$(sim_row.ix_row)"
 
-mask_infections_birth_year!(infections, p.subject_birth_ix) 
-heatmap(infections')
+    run_dir = mkpath("runs/$(run_name)/")
 
+    attack_rates = vcat(
+        rand(rng, LogitNormal(logit(pandemic_mean_ar), sd_ar)),
+        [
+            rand(rng, LogitNormal(logit(sim_row.endemic_mean_ar), sd_ar))
+            for i in 2:n_t_steps
+        ]
+    )
 
-infections_df = DataFrame(stack([[i[1], i[2]] for i in findall(infections)])', :auto)
-rename!(infections_df, ["ix_t", "ix_subject"] )
+    infections = infections_from_attack_rate(attack_rates, p.n_subjects)
+    mask_infections_birth_year!(infections, p.subject_birth_ix) 
 
-complete_obs = expand_grid(
-    ix_t_obs = 1:n_t_steps, ix_strain = 1:n_t_steps, ix_subject = 1:n_subjects,
-    observed_titre = 0.0
-)
+    complete_obs = simulate_latent_titre(continuous_params, p, infections)
 
-waning_curve!(
-    continuous_params.mu_long, continuous_params.mu_short, continuous_params.omega,
-    continuous_params.sigma_long, continuous_params.sigma_short, continuous_params.tau,
+    # Only include observations which are available in the study data
+    real_obs = DataFrame(real_model_data["observations"])
 
-    p.antigenic_distances, p.time_diff_matrix, p.subject_birth_ix,
+    observations = innerjoin(complete_obs, real_obs[!, [:ix_t_obs, :ix_strain, :ix_subject]], on = [:ix_t_obs, :ix_strain, :ix_subject])
 
-    infections,
+    apply_titre_obs_noise(observations, rng, continuous_params.obs_sd)
 
-    make_obs_lookup(complete_obs), make_obs_views(complete_obs),
-    complete_obs.observed_titre
-)
+    simulation_metadata = (
+        pandemic_mean_ar = pandemic_mean_ar,
+        endemic_mean_ar = sim_row.endemic_mean_ar
+    )
 
-# Only include observations which are available in the study data
-real_obs = DataFrame(real_model_data["observations"])
+    model_data = collect_model_data(
+        complete_obs, observations,
+        infections, continuous_params, 
+        real_model_data, simulation_metadata
+    )
 
-observations = innerjoin(complete_obs, real_obs[!, [:ix_t_obs, :ix_strain, :ix_subject]], on = [:ix_t_obs, :ix_strain, :ix_subject])
-
-observations.observed_titre = rand(
-    rng,
-    TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max)
-)
-
-model_data = Dict(
-    "modelled_years" => modelled_years,
-    "antigenic_distances" => real_model_data["antigenic_distances"],
-    "observations" => df_to_tuple(observations),
-    "complete_obs" => df_to_tuple(complete_obs),
-    "infections" => df_to_tuple(infections_df),
-    "infections_matrix" => Matrix{Float64}(infections),
-    "subject_birth_data" => real_model_data["subject_birth_data"]
-)
-
-save("$run_dir/model_data.hdf5", model_data)
+    save("$run_dir/model_data.hdf5", model_data)
+end
