@@ -62,8 +62,8 @@ function make_initial_params_sim_study(p, obs_df, n_chain, rng)
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
         omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
-        # sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
-        # sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
+        sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
+        sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
         tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
 
@@ -163,12 +163,8 @@ end
 function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
     
     if iteration % 50 == 0
-        # print("$iteration,")
         if length(sampler.alg.samplers) > 1
             mh_sampler = sampler.alg.samplers[1].alg.sampler
-
-            # TODO - get HMC acceptance rate here?
-            # Is the current method weird, also?
 
             rate = mh_sampler_acceptance_rate(mh_sampler)
             println("$iteration, $(round(rate, digits=2))")
