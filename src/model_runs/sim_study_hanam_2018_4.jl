@@ -14,17 +14,14 @@ exps = DataFrame(ix_run = Int[], dist = Distribution[])
 
 for ix_run in run_indices
     push!(exps, (ix_run, MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)))
-    # push!(exps, (ix_run, MatrixBernoulli(0.4, p.n_t_steps, p.n_subjects)))
     push!(exps, (ix_run, MatrixBernoulli(0.3, p.n_t_steps, p.n_subjects)))
-    # push!(exps, (ix_run, MatrixBernoulli(0.2, p.n_t_steps, p.n_subjects)))
     push!(exps, (ix_run, MatrixBernoulli(0.1, p.n_t_steps, p.n_subjects)))
 
     push!(exps, (ix_run, MatrixBetaBernoulli(1.0, 1.0, p.n_t_steps, p.n_subjects)))
     push!(exps, (ix_run, MatrixBetaBernoulli(1.0, 8.0, p.n_t_steps, p.n_subjects)))
-    push!(exps, (ix_run, MatrixBetaBernoulli(8.0, 1.0, p.n_t_steps, p.n_subjects)))
 end
 
-n_parallel = Threads.nthreads() ÷ n_chains
+n_parallel = Threads.nthreads() ÷ n_chains * 2
 println("Expected sampling time of $(round(10 / 60 * ceil(nrow(exps) / n_parallel); digits = 2)) hr")
 jobs = split_vector_indices(nrow(exps), n_parallel)
 
@@ -46,7 +43,7 @@ Threads.@threads for row_ix_job in jobs
 
         chain = sample_chain(
             model, initial_params, gibbs_sampler, rng;
-            n_sample = 50_000, n_thinning = 25, n_chain = n_chains,
+            n_sample = 100_000, n_thinning = 50, n_chain = n_chains,
             progress = false
         );
 
