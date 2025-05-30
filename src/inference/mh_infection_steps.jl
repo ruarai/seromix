@@ -113,7 +113,7 @@ function propose_swaps_original_no_hastings_ratio!(
     return SVector{0, Int}(), 0.0 # Nothing has occurred, no hastings ratio
 end
 
-function propose_swaps_v2!(
+function propose_swaps_improved!(
     rng, theta::AbstractVector{Bool}, ix_subject::Int, n_t_steps::Int
 )
     ix_start = (ix_subject - 1) * n_t_steps + 1
@@ -124,7 +124,6 @@ function propose_swaps_v2!(
 
     if r_sample < 1/3
         # Case 1 - remove an infection
-
         inf_indices = findall(theta_view)
 
         if length(inf_indices) > 0
@@ -144,7 +143,6 @@ function propose_swaps_v2!(
         end
     elseif r_sample < 2/3
         # Case 2 - add an infection
-
         not_inf_indices = findall(.!theta_view)
 
         if length(not_inf_indices) > 0
@@ -164,17 +162,13 @@ function propose_swaps_v2!(
         end
     else
         # Case 3 - move an infection
-
         inf_indices = findall(theta_view)
 
         if length(inf_indices) > 0
             ix_t_from = sample(rng, inf_indices)
-            # TODO this is not quite symmetric. maybe drop instead of clamp?
-            ix_t_to = ix_t_from + sample(rng, -5:5)
+            ix_t_to = ix_t_from + (rand(Bool) ? -1 : 1)
 
-            ix_t_to = clamp(ix_t_to, 1, n_t_steps)
-
-            if theta_view[ix_t_to]
+            if ix_t_to > 0 && ix_t_to <= n_t_steps && !theta_view[ix_t_to]
                 # Forward and reverse transition probabilities are equal
                 log_hastings_ratio = 0.0
                 
