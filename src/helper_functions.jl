@@ -190,3 +190,37 @@ function chain_infections_prob(chain, params)
     return infections
 end
 
+
+function drop_nothing(vec)
+    filter(x -> !isnothing(x), vec)
+end
+
+function split_vector_indices(N::Int, M::Int)
+    if N <= 0
+        error("N must be a positive integer.")
+    end
+    if M <= 0
+        error("M must be a positive integer.")
+    end
+
+    if N < M
+        error("Function is constrained to work only when N >= M. Received N=$N, M=$M.")
+    end
+
+    result_ranges = Vector{UnitRange{Int}}(undef, M)
+    current_start_index = 1
+
+    for i = 1:M
+        base_chunk_size = N ÷ M
+        remainder_chunks = N % M
+
+        chunk_size = base_chunk_size + (i <= remainder_chunks ? 1 : 0)
+        
+        current_end_index = current_start_index + chunk_size - 1
+
+        result_ranges[i] = current_start_index:current_end_index
+        current_start_index = current_end_index + 1
+    end
+
+    return result_ranges
+end

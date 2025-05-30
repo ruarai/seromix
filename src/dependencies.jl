@@ -14,6 +14,7 @@ using Turing
 using AbstractMCMC
 using DynamicPPL
 using StaticArrays
+using ProgressMeter
 
 using Plots, StatsPlots
 

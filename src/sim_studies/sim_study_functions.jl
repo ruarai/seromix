@@ -70,3 +70,8 @@ function collect_model_data(
         "continuous_params" => [continuous_params]
     )
 end
+
+_round(x) = round(x; digits = 2)
+
+describe_prior_dist(dist::MatrixBernoulli) = "bernoulli_$(_round(dist.p))"
+describe_prior_dist(dist::MatrixBetaBernoulli) = "beta_bernoulli_$(_round(dist.alpha))_$(_round(dist.beta))"

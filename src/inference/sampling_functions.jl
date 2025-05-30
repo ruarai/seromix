@@ -7,7 +7,8 @@ function sample_chain(
     rng;
     n_sample::Int,
     n_thinning::Int,
-    n_chain::Int
+    n_chain::Int,
+    progress=true
 )
     return sample(
         rng,
@@ -16,7 +17,8 @@ function sample_chain(
 
         thinning = n_thinning,
         callback = log_callback,
-        initial_params = initial_params
+        initial_params = initial_params,
+        progress = progress
     )
 end
 

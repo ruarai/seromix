@@ -36,7 +36,7 @@ for sim_row in eachrow(sim_scenarios)
         rand(rng, LogitNormal(logit(pandemic_mean_ar), sd_ar)),
         [
             rand(rng, LogitNormal(logit(sim_row.endemic_mean_ar), sd_ar))
-            for i in 2:n_t_steps
+            for i in 2:p.n_t_steps
         ]
     )
 

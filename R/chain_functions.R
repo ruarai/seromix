@@ -1,5 +1,5 @@
 
-get_inf_data <- function(chain, model_data) {
+get_inf_data_accuracy <- function(chain, model_data) {
   chain %>%
     
     spread_draws(infections[ix_t, ix_subject]) %>%
@@ -15,7 +15,7 @@ get_inf_data <- function(chain, model_data) {
 }
 
 
-get_inf_data_data_study <- function(chain, model_data) {
+get_inf_data <- function(chain, subject_birth_data) {
   chain %>%
     
     spread_draws(infections[ix_t, ix_subject]) %>%
@@ -23,9 +23,23 @@ get_inf_data_data_study <- function(chain, model_data) {
     group_by(ix_t, ix_subject) %>%
     summarise(p = 1 - sum(infections == 0) / n()) %>%
     
-    left_join(model_data$subject_birth_data) %>%
+    left_join(subject_birth_data) %>%
     mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>% 
     filter(ix_t >= ix_t_birth)
+}
+
+get_attack_rate <- function(chain, subject_birth_data) {
+  chain %>%
+    
+    spread_draws(infections[ix_t, ix_subject]) %>%
+    
+    group_by(ix_t, ix_subject) %>%
+    summarise(p = 1 - sum(infections == 0) / n(), .groups = "drop") %>%
+    
+    left_join(subject_birth_data, by = join_by(ix_subject)) %>%
+    mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>% 
+    group_by(ix_t) %>%
+    summarise(p = sum(p[ix_t >= ix_t_birth]) / sum(ix_t >= ix_t_birth))
 }
 
 
