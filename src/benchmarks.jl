@@ -92,7 +92,7 @@ M_test = [rand(MatrixBernoulli(rand(Uniform(0.0, 1), (10, 10)))) for i in 1:1000
 t = Matrix{Real}(zeros(Bool, 10, 10))
 
 
-data_code = "sim_study_simple_hierarchical_1"
+data_code = "sim_study_hanam_2018_1"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
@@ -102,37 +102,27 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
+
+prior_infection_dist = MatrixBetaBernoulli(1.3, 8.0, p.n_t_steps, p.n_subjects)
+# prior_infection_dist = MatrixBernoulli(0.15, p.n_t_steps, p.n_subjects)
+
 proposal_function = propose_swaps_original_corrected!
-initial_params = make_initial_params_sim_study(p, obs_df, 6, rng)
 
-model = make_waning_model(p, obs_df);
+initial_params = make_initial_params_sim_study(p, obs_df, 8, rng)
 
-non_infection_params = model_symbols_apart_from(model, [:infections])
-
-using ADTypes
-import Mooncake
-
-gibbs_sampler = Gibbs(
-    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
-    non_infection_params => HMC(0.002, 10; adtype = AutoMooncake(;config = nothing))
-)
+model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
 
 
-gibbs_sampler = Gibbs(
-    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
-    non_infection_params => ESS()
-)
+# sample(model, gibbs_sampler, 2);
 
-sample(model, gibbs_sampler, 2, callback = log_callback);
+# @profview sample(model, gibbs_sampler, 100);
+# @profview_allocs sample(model, gibbs_sampler, 1000, callback = log_callback);
 
-@profview sample(model, gibbs_sampler, 100);
-@profview_allocs sample(model, gibbs_sampler, 1000, callback = log_callback);
+# @time sample(model, gibbs_sampler, 500, callback = log_callback);
 
-@time sample(model, gibbs_sampler, 500, callback = log_callback);
+# using Cthulhu
 
-using Cthulhu
-
-@descend model.f(
+@code_warntype model.f(
     model,
     Turing.VarInfo(model),
     Turing.SamplingContext(

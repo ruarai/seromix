@@ -40,7 +40,7 @@ function waning_curve_individual!(
     mu_short::T, omega::T,
     sigma_long::T, sigma_short::T,
     tau::T,
-    dist_matrix::Matrix{T},
+    dist_matrix::Matrix{Float64},
     time_diff_matrix::Matrix{Float64},
     subject_birth_ix::Int,
     infections::AbstractArray{Bool},
