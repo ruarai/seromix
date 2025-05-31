@@ -31,22 +31,22 @@ simulation_metadata <- model_data_ls %>%
   bind_rows(.id = "ix_run") %>%
   mutate(ix_run = as.numeric(ix_run))
 
-n_alive <- model_data_ls[[1]]$subject_birth_data %>%
-  mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>%
-  expand_grid(ix_t = 1:length(model_data_ls[[1]]$modelled_years)) %>%
-  group_by(ix_t) %>%
-  summarise(n_alive = sum(ix_t >= ix_t_birth))
-
-simulation_metadata_sim_ar <- model_data_ls %>% 
-  map(function(x) {
-    x$infections %>%
-      left_join(n_alive, by = join_by(ix_t)) %>%
-      group_by(ix_t) %>% 
-      summarise(p_inf = n() / n_alive[1])
-  }) %>%
-  bind_rows(.id = "ix_run") %>%
-  mutate(ix_run = as.numeric(ix_run)) %>%
-  left_join(simulation_metadata)
+# n_alive <- model_data_ls[[1]]$subject_birth_data %>%
+#   mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>%
+#   expand_grid(ix_t = 1:length(model_data_ls[[1]]$modelled_years)) %>%
+#   group_by(ix_t) %>%
+#   summarise(n_alive = sum(ix_t >= ix_t_birth))
+# 
+# simulation_metadata_sim_ar <- model_data_ls %>% 
+#   map(function(x) {
+#     x$infections %>%
+#       left_join(n_alive, by = join_by(ix_t)) %>%
+#       group_by(ix_t) %>% 
+#       summarise(p_inf = n() / n_alive[1])
+#   }) %>%
+#   bind_rows(.id = "ix_run") %>%
+#   mutate(ix_run = as.numeric(ix_run)) %>%
+#   left_join(simulation_metadata)
 
 
 continuous_params <- model_data_ls[[1]]$continuous_params %>%
@@ -81,6 +81,8 @@ draw_summaries <- tibble(
   ix_run = get_ix_run(chain_files, base_run_dir),
   chain_name = get_chain_name(chain_files)
 ) %>%
+  filter(str_detect(chain_name, "bernoulli_0.5")) %>% 
+  
   pmap(summarise_chain) %>%
   bind_rows()
 
@@ -88,8 +90,8 @@ plot_data_summaries <- simulation_metadata %>%
   right_join(draw_summaries)
 
 plot_data_summaries %>%
-  filter(endemic_mean_ar == 0.5,
-         variable == "mu_long") %>% 
+  filter(endemic_mean_ar == 0.1,
+         variable == "tau") %>% 
   ggplot() +
   
   geom_linerange(aes(xmin = q5, xmax = q95, y = factor(ix_run), colour = factor(.chain)),
@@ -99,9 +101,11 @@ plot_data_summaries %>%
   
   geom_vline(aes(xintercept = true_value),
              linetype = "dashed",
-             continuous_params %>% filter(variable == "mu_long")) +
+             continuous_params %>% filter(variable == "tau")) +
   
   facet_wrap(~chain_name, ncol = 1, scales = "free_y") +
+  
+  xlab("Value") + ylab("Run") +
   
   theme(legend.position = "none")
 
@@ -109,8 +113,7 @@ plot_data_summaries %>%
 
 plot_data_summaries %>%
   ggplot() +
-  geom_linerange(aes(ymin = 1, ymax = ess_bulk, x = endemic_mean_ar),
-                 position = position_dodge2(width = 0.5)) +
+  geom_point(aes(y = ess_bulk, x = endemic_mean_ar)) +
   
   facet_grid(cols = vars(chain_name), rows = vars(variable), scales = "free_y")
 
@@ -138,7 +141,6 @@ draw_summaries_ar <- tibble(
 
 plot_data_summaries_ar <- simulation_metadata %>%
   right_join(draw_summaries_ar)
-
 
 ggplot() +
   geom_line(aes(x = ix_t, y = p, group = interaction(ix_run, chain_name)),
