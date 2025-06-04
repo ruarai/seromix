@@ -8,8 +8,8 @@ editor: source
 editor_options: 
   chunk_output_type: console
 params:
-  model_data_file: runs/hanam_ak_1/model_data.hdf5
-  chain_file: runs/hanam_ak_1/chain_prior_50_uncorrected.parquet
+  model_data_file: runs/sim_study_hanam_2018_4/1/model_data.hdf5
+  chain_file: runs/sim_study_hanam_2018_4/1/chain_bernoulli_0.5_uncorrected.parquet
 ---
 
 ## Simulation study MCMC fit
@@ -53,22 +53,28 @@ ggplot() +
   
   theme_bw()
 
+strains_observed <- model_data$observations %>%
+  count(ix_subject, strain_year)
+
+
 ggplot() +
   
   geom_rect(aes(xmin = -Inf, xmax = year_of_birth - 0.5, ymin = ix_subject - 0.5, ymax = ix_subject + 0.5),
             fill = "grey90",
             model_data$subject_birth_data) +
   
-  geom_tile(aes(x = year, y = ix_subject),
-            fill = "lightblue",
-            model_data$infections)  +
+  # geom_tile(aes(x = year, y = ix_subject),
+  #           fill = "lightblue",
+  #           model_data$infections)  +
   
-  geom_tile(aes(x = strain_year, y = ix_subject),
-             fill = "red", alpha = 0.3,
+  geom_tile(aes(x = strain_year, y = ix_subject, fill = n),
+            alpha = 0.5,
              strains_observed) +
   geom_point(aes(x = year_observed, y = ix_subject),
              size = 0.5,
              sample_dates) +
+  
+  scale_fill_viridis_c() +
   
   geom_hline(aes(yintercept = ix_subject + 0.5), sample_dates %>% distinct(ix_subject),
              colour = "white") +

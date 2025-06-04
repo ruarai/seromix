@@ -134,9 +134,6 @@ function mask_infections_birth_year!(infections, subject_birth_ix)
 end
 
 
-
-
-
 function chain_infections_matrix(chain, ix_iter, ix_chain, params)
     infections = zeros(Bool, params.n_t_steps, params.n_subjects)
 
@@ -223,4 +220,13 @@ function split_vector_indices(N::Int, M::Int)
     end
 
     return result_ranges
+end
+
+function list_files(base_dir, regex)
+    [
+        joinpath(current_path, file_name)  
+        for (current_path, _, files_in_dir) in walkdir(base_dir) 
+        for file_name in files_in_dir
+        if occursin(regex, file_name)
+    ]
 end

@@ -22,7 +22,6 @@ initial_params = make_initial_params_sim_study(p, obs_df, 8, rng)
 model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
 
 
-
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
 gibbs_sampler = Gibbs(

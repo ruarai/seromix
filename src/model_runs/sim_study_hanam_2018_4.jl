@@ -4,7 +4,7 @@ rng = Random.Xoshiro(1)
 
 
 run_dir_base = "sim_study_hanam_2018_4"
-name_suffix = "_no_age_uncorrected"
+name_suffix = "_uncorrected"
 
 run_indices = drop_nothing(tryparse.(Int, readdir("runs/$(run_dir_base)/")))
 n_chains = 4
@@ -12,9 +12,8 @@ n_chains = 4
 # Assumed same across all scenarios
 p = read_model_parameters(load("runs/$(run_dir_base)/1/model_data.hdf5"))
 
-# NOTE REMOVING AGES HERE
-p.subject_birth_ix .= 0
-println("Setting all birth_ix to zero")
+# p.subject_birth_ix .= 0
+# println("Setting all birth_ix to zero")
 
 exps = DataFrame(ix_run = Int[], dist = Distribution[])
 
