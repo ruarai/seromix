@@ -86,7 +86,7 @@ clean_chain <- function(chain_df) {
     mutate(Chain = .chain, # Copy for whatever reason.
            .draw = (.iteration - min(.iteration)) + (.chain - 1) * (max(.iteration) - min(.iteration) + 1),
            .before = 3) %>%
-    rename_with(function(x) str_remove(x, " ")) 
+    rename_with(function(x) str_remove(x, " ")) # Remove spaces from array indexing
 }
 
 read_fit_data <- function(filename, modelled_years) {

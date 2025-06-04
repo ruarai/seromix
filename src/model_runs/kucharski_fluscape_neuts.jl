@@ -17,7 +17,7 @@ prior_infection_dist = MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)
 # and a proposal function which omitted the hastings ratio
 proposal_function = proposal_original_uncorrected
 # and initial values with some variance (but infections initialised as in sim study)
-initial_params = make_initial_params_sim_study_fluscape(p, obs_df, 6, rng)
+initial_params = make_initial_params_kucharski_data_study_fluscape(p, obs_df, 6, rng)
 
 model_free = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
 

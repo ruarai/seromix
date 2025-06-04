@@ -39,7 +39,7 @@ Threads.@threads for row_ix_job in jobs
         obs_df = DataFrame(model_data["observations"])
         chain_name = describe_prior_dist(exp_row.dist)
 
-        initial_params = make_initial_params_sim_study(p, obs_df, n_chains, rng)
+        initial_params = make_initial_params_kucharski_sim_study(p, obs_df, n_chains, rng)
 
         model = make_waning_model(p, obs_df; prior_infection_dist = exp_row.dist);
         gibbs_sampler = make_gibbs_sampler(model, p, proposal_original_uncorrected)

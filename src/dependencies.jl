@@ -16,7 +16,7 @@ using DynamicPPL
 using StaticArrays
 using ProgressMeter
 
-using Plots, StatsPlots
+# using Plots, StatsPlots
 
 using LinearAlgebra
 using StatsBase
@@ -45,13 +45,13 @@ include("inference/mh_parameter_sampler.jl")
 include("inference/mh_infection_sampler.jl")
 include("inference/mh_infection_steps.jl")
 include("inference/sampling_functions.jl")
+include("inference/initial_params.jl")
 
 include("helper_functions.jl")
 
 include("distributions/titre_arraynormal.jl")
 include("distributions/matrix_bernoulli.jl")
 include("distributions/matrix_beta_bernoulli.jl")
-include("distributions/matrix_hierarchical_bernoulli.jl")
 
 
 const const_titre_min = 0.0

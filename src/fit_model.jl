@@ -17,7 +17,7 @@ prior_infection_dist = MatrixBetaBernoulli(1.3, 8.0, p.n_t_steps, p.n_subjects)
 
 proposal_function = proposal_jitter
 
-initial_params = make_initial_params_sim_study(p, obs_df, 8, rng)
+initial_params = make_initial_params_kucharski_sim_study(p, obs_df, 8, rng)
 
 model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
 
