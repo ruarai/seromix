@@ -106,7 +106,7 @@ end
 function apply_swaps!(theta, swap_indices, ix_subject, n_t_steps)
     ix_start = (ix_subject - 1) * n_t_steps
 
-    for ix_swap in swap_indices
+    @inbounds for ix_swap in swap_indices
         theta[ix_start + ix_swap] = !theta[ix_start + ix_swap]
     end
 end

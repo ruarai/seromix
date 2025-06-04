@@ -4,10 +4,10 @@ include("../dependencies.jl")
 
 
 function fit_model(
-    run_dir;
+    model_data_R;
 
-    infection_prior = (name = "MatrixBetaBernoulli", alpha = 1.0, beta = 1.0),
-    proposal_name = "original_corrected",
+    infection_prior = (name = "BetaBernoulli", alpha = 1.0, beta = 1.0),
+    proposal_name = "corrected",
     initial_params_name = "kucharski_sim_study",
 
     n_samples = 2_000,
@@ -20,7 +20,10 @@ function fit_model(
 )
     rng = Random.Xoshiro(rng_seed)
 
-    model_data = load("$run_dir/model_data.hdf5")
+    model_data = OrderedDict{String, Any}(String(k) => v for (k, v) in model_data_R)
+    println(typeof(model_data))
+
+    # model_data = load("runs/$run_name/model_data.hdf5")
 
     obs_df = DataFrame(model_data["observations"])
 
@@ -57,9 +60,9 @@ function select_infection_prior(infection_prior, p)
     infection_prior = NamedTuple(infection_prior)
     prior_name = infection_prior.name
 
-    if prior_name == "MatrixBernoulli"
+    if prior_name == "Bernoulli"
         return MatrixBernoulli(infection_prior.p, p.n_t_steps, p.n_subjects)
-    elseif prior_name == "MatrixBetaBernoulli"
+    elseif prior_name == "BetaBernoulli"
         return MatrixBetaBernoulli(infection_prior.alpha, infection_prior.beta, p.n_t_steps, p.n_subjects)
     end
 
@@ -67,9 +70,9 @@ function select_infection_prior(infection_prior, p)
 end
 
 function select_proposal_function(proposal_name)
-    if proposal_name == "original_uncorrected"
+    if proposal_name == "uncorrected"
         return proposal_original_uncorrected
-    elseif proposal_name == "original_corrected"
+    elseif proposal_name == "corrected"
         return proposal_original_corrected
     elseif proposal_name == "jitter"
         return proposal_jitter
