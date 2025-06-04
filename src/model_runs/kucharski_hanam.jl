@@ -15,7 +15,7 @@ p = read_model_parameters(model_data)
 # Kucharski (2018) used an implicit Bernoulli(0.5) prior over infections
 prior_infection_dist = MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)
 # and a proposal function which omitted the hastings ratio
-proposal_function = propose_swaps_original_no_hastings_ratio!
+proposal_function = proposal_original_uncorrected
 # and initial infections from sim study.
 initial_params = make_initial_params_data_study(6, model_data["initial_infections_manual"], rng)
 

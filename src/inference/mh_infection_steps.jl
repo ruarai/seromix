@@ -1,4 +1,4 @@
-function propose_swaps_original_corrected!(
+function proposal_original_corrected(
     rng, theta::AbstractVector{Bool}, ix_subject::Int, n_t_steps::Int
 )
     ix_start = (ix_subject - 1) * n_t_steps + 1
@@ -67,7 +67,7 @@ function propose_swaps_original_corrected!(
     return SVector{0, Int}(), 0.0 # Nothing has occurred, no hastings ratio
 end
 
-function propose_swaps_original_no_hastings_ratio!(
+function proposal_original_uncorrected(
     rng, theta::AbstractVector{Bool}, ix_subject::Int, n_t_steps::Int
 )
     ix_start = (ix_subject - 1) * n_t_steps + 1
@@ -113,7 +113,7 @@ function propose_swaps_original_no_hastings_ratio!(
     return SVector{0, Int}(), 0.0 # Nothing has occurred, no hastings ratio
 end
 
-function propose_swaps_improved!(
+function proposal_jitter(
     rng, theta::AbstractVector{Bool}, ix_subject::Int, n_t_steps::Int
 )
     ix_start = (ix_subject - 1) * n_t_steps + 1
@@ -166,7 +166,7 @@ function propose_swaps_improved!(
 
         if length(inf_indices) > 0
             ix_t_from = sample(rng, inf_indices)
-            ix_t_to = ix_t_from + (rand(Bool) ? -1 : 1)
+            ix_t_to = ix_t_from + (rand(rng, Bool) ? -1 : 1)
 
             if ix_t_to > 0 && ix_t_to <= n_t_steps && !theta_view[ix_t_to]
                 # Forward and reverse transition probabilities are equal

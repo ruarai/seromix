@@ -6,6 +6,8 @@ end
 
 Base.size(d::MatrixBernoulli) = (d.i, d.j)
 
+Base.eltype(d::MatrixBernoulli) = Bool
+
 function Distributions.rand(rng::AbstractRNG, d::MatrixBernoulli)
     Y = Matrix{Bool}(undef, size(d))
     Distributions._rand!(rng, d, Y)

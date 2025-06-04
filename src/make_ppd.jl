@@ -25,8 +25,7 @@ chain_filt = filter(:iteration => iteration -> iteration > 30_000, chain_df)
 n_draws = 30
 n_subjects = p.n_subjects
 
-# ppd_df = ppd_kucharski(chain_filt, p, n_subjects, n_draws)
-ppd_df = ppd_infer_distances(chain_filt, p, n_subjects, n_draws)
+ppd_df = ppd_kucharski(chain_filt, p, n_subjects, n_draws)
 
 save_draws(ppd_df, "$run_dir/ppd_$(chain_name).parquet")
 

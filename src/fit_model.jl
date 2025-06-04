@@ -15,7 +15,7 @@ p = read_model_parameters(model_data)
 prior_infection_dist = MatrixBetaBernoulli(1.3, 8.0, p.n_t_steps, p.n_subjects)
 # prior_infection_dist = MatrixBernoulli(0.15, p.n_t_steps, p.n_subjects)
 
-proposal_function = propose_swaps_improved!
+proposal_function = proposal_jitter
 
 initial_params = make_initial_params_sim_study(p, obs_df, 8, rng)
 

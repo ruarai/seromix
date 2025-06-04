@@ -15,7 +15,7 @@ p = read_model_parameters(model_data)
 # Kucharski (2018) used an implicit Bernoulli(0.5) prior over infections
 prior_infection_dist = MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)
 # and a proposal function which omitted the hastings ratio
-proposal_function = propose_swaps_original_no_hastings_ratio!
+proposal_function = proposal_original_uncorrected
 # and initial values with some variance (but infections initialised as in sim study)
 initial_params = make_initial_params_sim_study_fluscape(p, obs_df, 6, rng)
 
@@ -32,21 +32,6 @@ chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
     n_sample = 50000, n_thinning = 25, n_chain = 6
 );
-
-heatmap(model_data["infections_matrix"]')
-heatmap(chain_infections_prob(chain[1800:end], p)', size = (500, 1000))
-
-@gif for i in 1:20:2000
-    heatmap(chain_infections_prob(chain[i], p)')
-end
-
-plot(chain, [:mu_long], seriestype = :traceplot)
-plot(chain, [:sigma_long], seriestype = :traceplot)
-plot(chain, [:tau], seriestype = :traceplot)
-plot(chain, [:obs_sd], seriestype = :traceplot)
-
-
-plot(chain_sum_infections(chain, p))
 
 chain_name = "prior_50_uncorrected"
 

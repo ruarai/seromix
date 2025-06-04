@@ -42,7 +42,7 @@ Threads.@threads for row_ix_job in jobs
         initial_params = make_initial_params_sim_study(p, obs_df, n_chains, rng)
 
         model = make_waning_model(p, obs_df; prior_infection_dist = exp_row.dist);
-        gibbs_sampler = make_gibbs_sampler(model, p, propose_swaps_original_no_hastings_ratio!)
+        gibbs_sampler = make_gibbs_sampler(model, p, proposal_original_uncorrected)
 
         println("Running $run_dir, $chain_name$name_suffix")
 
