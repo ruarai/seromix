@@ -4,8 +4,7 @@ suppressMessages(library(arrow))
 
 suppressMessages(library(tidybayes))
 suppressMessages(library(bayesplot))
-
-theme_set(theme_minimal())
+suppressMessages(library(ggtext))
 
 save_hdf5 <- function(data_list, filename) {
   if(file.exists(filename)) {
@@ -83,7 +82,7 @@ process_data_df <- function(data_df, modelled_years) {
 clean_chain <- function(chain_df) {
   chain_df %>%
     rename(.chain = chain, .iteration = iteration) %>% 
-    mutate(Chain = .chain, # Copy for whatever reason.
+    mutate(#Chain = .chain, # Copy for whatever reason.
            .draw = (.iteration - min(.iteration)) + (.chain - 1) * (max(.iteration) - min(.iteration) + 1),
            .before = 3) %>%
     rename_with(function(x) str_remove(x, " ")) # Remove spaces from array indexing
@@ -217,4 +216,3 @@ make_gam_antigenic_distances <- function(modelled_years) {
   
   return(antigenic_distances)
 }
-

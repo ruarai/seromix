@@ -1,8 +1,6 @@
 
 library(targets)
 library(tarchetypes)
-# library(quarto)
-library(arrow)
 library(crew)
 
 suppressMessages(tar_source())
@@ -53,19 +51,17 @@ runs <- tar_map(
   ),
   tar_target(
     chain_summary,
-    chain %>%
-      clean_chain() %>% 
-      select(-starts_with("infections")) %>% 
-      filter(.iteration > 75000) %>% 
-      group_by(.chain) %>% 
-      summarise_draws() %>%
-      mutate(name = name, run_name = run_name, proposal_name = proposal_name, prior_description = prior_description)
+    summarise_chain(chain, 75000, run_data) %>%
+      mutate(name = name, 
+             run_name = run_name, 
+             proposal_name = proposal_name, 
+             prior_description = prior_description)
   )
 )
 
 combine <- tar_combine(
   combined_summaries,
-  runs[["fit_summary"]],
+  runs[["chain_summary"]],
   command = dplyr::bind_rows(!!!.x)
 )
 

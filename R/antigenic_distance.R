@@ -1,3 +1,11 @@
+
+# Code taken from serosolver
+# Hay, J. A., Minter, A., Ainslie, K. E. C., et al.
+# An open source tool to infer epidemiological and
+# immunological dynamics from serological data: serosolver. (2020).
+# https://github.com/seroanalytics/serosolver
+
+
 generate_antigenic_map <- function(antigenic_distances, modelled_years) {
   
   fit <- smooth.spline(antigenic_distances$X, antigenic_distances$Y)

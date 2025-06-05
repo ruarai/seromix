@@ -20,10 +20,7 @@ function fit_model(
 )
     rng = Random.Xoshiro(rng_seed)
 
-    model_data = OrderedDict{String, Any}(String(k) => v for (k, v) in model_data_R)
-    println(typeof(model_data))
-
-    # model_data = load("runs/$run_name/model_data.hdf5")
+    model_data = convert_model_data(model_data_R)
 
     obs_df = DataFrame(model_data["observations"])
 
@@ -66,7 +63,7 @@ function select_infection_prior(infection_prior, p)
         return MatrixBetaBernoulli(infection_prior.alpha, infection_prior.beta, p.n_t_steps, p.n_subjects)
     end
 
-    error("Incorrect infection prior specified")
+    error("Invalid infection prior specified")
 end
 
 function select_proposal_function(proposal_name)
@@ -78,7 +75,7 @@ function select_proposal_function(proposal_name)
         return proposal_jitter
     end
 
-    error("Incorrect proposal function specified")
+    error("Invalid proposal function specified")
 end
 
 function select_initial_params(initial_params_name, n_chain, p, model_data, obs_df, rng)
@@ -91,5 +88,10 @@ function select_initial_params(initial_params_name, n_chain, p, model_data, obs_
     end
 
 
-    error("Incorrect initial params specified")
+    error("Invalid initial params specified")
+end
+
+
+function convert_model_data(model_data_R)
+    return OrderedDict{String, Any}(String(k) => v for (k, v) in model_data_R)
 end

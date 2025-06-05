@@ -16,8 +16,9 @@ mh_sampler_acceptance_rate(s::MHInfectionSampler) = s.acceptions / (s.acceptions
 
 isgibbscomponent(::MHInfectionSampler) = true
 
-struct InfectionSamplerTransition{T}
+struct InfectionSamplerTransition{T, L <: Real}
     θ::AbstractVector{T}
+    lp::L
 end
 
 struct InfectionSamplerState{P<:InfectionSamplerTransition, T}
@@ -27,7 +28,7 @@ end
 
 AbstractMCMC.getparams(state::InfectionSamplerState) = state.θ
 function AbstractMCMC.setparams!!(state::InfectionSamplerState, θ)
-    return InfectionSamplerState(InfectionSamplerTransition(θ), θ)
+    return InfectionSamplerState(InfectionSamplerTransition(θ, state.transition.lp), θ)
 end
 
 
@@ -48,7 +49,10 @@ function AbstractMCMC.step(
         theta_init = fill(false, d)
     end
 
-    transition = InfectionSamplerTransition(theta_init)
+    varinfo_init = DynamicPPL.unflatten(model.logdensity.varinfo, theta_init)
+    logprob_init = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(model.logdensity.model, varinfo_init, DynamicPPL.DefaultContext())))
+
+    transition = InfectionSamplerTransition(theta_init, logprob_init)
     return transition, InfectionSamplerState(transition, theta_init)
 end
 
@@ -73,6 +77,8 @@ function AbstractMCMC.step(
     # Per Kucharski model, only step for some % of individuals
     subject_indices = sample(rng, 1:n_subjects, floor(Int, 0.4 * n_subjects))
 
+    logprob_final = 0.0
+
     for ix_subject in subject_indices
         # Set the context of DynamicPPL to indicate that we are only
         # calculating likelihood over one individual. Note will
@@ -90,16 +96,20 @@ function AbstractMCMC.step(
         if -Random.randexp(rng) <= logprob_proposal - logprob_previous + log_hastings_ratio
             # Accept, do nothing
 
+            logprob_final = logprob_proposal
             sampler.acceptions += 1
         else
             # Reject, re-apply swaps to undo
+
+            logprob_final = logprob_previous
+
             apply_swaps!(theta_new, swap_indices, ix_subject, n_t_steps)
             sampler.rejections += 1
         end
     end
 
 
-    transition = InfectionSamplerTransition(theta_new)
+    transition = InfectionSamplerTransition(theta_new, logprob_final)
     return transition, InfectionSamplerState(transition, theta_new)
 end
 

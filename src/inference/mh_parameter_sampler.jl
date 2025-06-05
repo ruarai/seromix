@@ -5,8 +5,9 @@ end
 
 isgibbscomponent(::MHParameterSampler) = true
 
-struct ParameterSamplerTransition{T}
+struct ParameterSamplerTransition{T, L <: Real}
     θ::AbstractVector{T}
+    lp::L
 end
 
 struct ParameterSamplerState{P<:ParameterSamplerTransition, T}
@@ -20,7 +21,7 @@ end
 
 AbstractMCMC.getparams(state::ParameterSamplerState) = state.θ
 function AbstractMCMC.setparams!!(state::ParameterSamplerState, θ)
-    return ParameterSamplerState(ParameterSamplerTransition(θ), θ, state.sigma_covar, state.n_accepted, state.n_rejected)
+    return ParameterSamplerState(ParameterSamplerTransition(θ, state.transition.lp), θ, state.sigma_covar, state.n_accepted, state.n_rejected)
 end
 
 
@@ -41,7 +42,10 @@ function AbstractMCMC.step(
 
     sigma_covar_0 = 0.001
 
-    transition = ParameterSamplerTransition(theta_init)
+    varinfo_init = DynamicPPL.unflatten(model.logdensity.varinfo, theta_init)
+    logprob_init = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(model.logdensity.model, varinfo_init, DynamicPPL.DefaultContext())))
+
+    transition = ParameterSamplerTransition(theta_init, logprob_init)
     return transition, ParameterSamplerState(transition, theta_init, sigma_covar_0, 0, 0)
 end
 
@@ -99,12 +103,12 @@ function AbstractMCMC.step(
 
     if -Random.randexp(rng) <= acceptance_ratio
         # Accept theta_new
-        transition = ParameterSamplerTransition(theta_new)
+        transition = ParameterSamplerTransition(theta_new, logprob_proposal)
         n_accepted += 1
         return transition, ParameterSamplerState(transition, theta_new, sigma_covar_adapted, n_accepted, n_rejected)
     else
         # Reject theta_new, return theta_current
-        transition = ParameterSamplerTransition(theta_current)
+        transition = ParameterSamplerTransition(theta_current, logprob_previous)
         n_rejected += 1
         return transition, ParameterSamplerState(transition, theta_current, sigma_covar_adapted, n_accepted, n_rejected)
     end

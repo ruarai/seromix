@@ -60,3 +60,14 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
         end
     end
 end
+
+
+# Hack to make sure logprob is carried through the Gibbs sampler
+function Turing.Inference.varinfo(state::Turing.Inference.TuringState)
+    θ = Turing.Inference.getparams(state.ldf.model, state.state)
+    vi = DynamicPPL.unflatten(state.ldf.varinfo, θ)
+
+    vi = setlogp!!(vi, state.state.transition.lp)
+
+    return vi
+end

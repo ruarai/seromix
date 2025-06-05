@@ -1,65 +1,29 @@
 
-get_inf_data_accuracy <- function(chain, model_data) {
+
+summarise_chain <- function(chain, drop_iterations, model_data) {
   chain %>%
+    clean_chain() %>%
+    filter(.iteration > drop_iterations) %>%
+    add_total_infections(model_data) %>% 
+    select(-starts_with("infections")) %>%
     
-    spread_draws(infections[ix_t, ix_subject]) %>%
+    pivot_longer(-c(.iteration, .chain, .draw),
+                 names_to = "variable") %>%
     
-    group_by(ix_t, ix_subject) %>%
-    summarise(p = 1 - sum(infections == 0) / n()) %>%
-    left_join(model_data$infections %>% mutate(inf = TRUE)) %>%
-    mutate(inf = replace_na(inf, FALSE)) %>%
+    group_by(.chain, variable) %>% 
     
-    left_join(model_data$subject_birth_data) %>%
-    mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>% 
-    filter(ix_t >= ix_t_birth)
+    summarise(
+      mean = mean(value),
+      median = median(value),
+      sd = sd(value),
+      q95_lower = quantile(value, 0.05 / 2),
+      q95_upper = quantile(value, 1 - 0.05 / 2),
+      ess_bulk = posterior::ess_bulk(value),
+      ess_bulk = posterior::ess_tail(value)
+    )
 }
 
-
-get_inf_data <- function(chain, subject_birth_data) {
-  chain %>%
-    
-    spread_draws(infections[ix_t, ix_subject]) %>%
-    
-    group_by(ix_t, ix_subject) %>%
-    summarise(p = 1 - sum(infections == 0) / n()) %>%
-    
-    left_join(subject_birth_data) %>%
-    mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>% 
-    filter(ix_t >= ix_t_birth)
-}
-
-get_attack_rate <- function(chain, subject_birth_data) {
-  chain %>%
-    
-    spread_draws(infections[ix_t, ix_subject]) %>%
-    
-    group_by(ix_t, ix_subject) %>%
-    summarise(p = 1 - sum(infections == 0) / n(), .groups = "drop") %>%
-    
-    left_join(subject_birth_data, by = join_by(ix_subject)) %>%
-    mutate(ix_t_birth = replace_na(ix_t_birth, 0)) %>% 
-    group_by(ix_t) %>%
-    summarise(p = sum(p[ix_t >= ix_t_birth]) / sum(ix_t >= ix_t_birth))
-}
-
-
-get_inf_accuracy <- function(chain, model_data) {
-  chain %>%
-    filter((.iteration - 1) %% 5 == 0) %>% 
-    
-    spread_draws(infections[ix_t, ix_subject]) %>%
-    
-    left_join(model_data$infections %>% mutate(inf = TRUE)) %>%
-    mutate(inf = replace_na(inf, FALSE),
-           infection = infections > 0) %>%
-    
-    left_join(model_data$subject_birth_data) %>% 
-    filter(ix_t >= ix_t_birth) %>%
-    group_by(.iteration, .chain) %>%
-    summarise(accuracy = sum(inf == infection) / n())
-}
-
-get_inf_count <- function(chain, model_data) {
+add_total_infections <- function(chain, model_data) {
   n_t_steps <- length(model_data$modelled_years)
   
   valid_inf_cols <- model_data$subject_birth_data %>%
@@ -72,6 +36,5 @@ get_inf_count <- function(chain, model_data) {
     pull(col_name)
   
   chain %>%
-    select(.iteration, .chain, any_of(valid_inf_cols)) %>% 
     mutate(total_inf = rowSums(across(starts_with("infections"))))
 }
