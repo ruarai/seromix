@@ -59,6 +59,10 @@ const const_titre_min = 0.0
 # Note that the code matches a value of 9.0 here better
 # despite the original paper reporting a max of 8.0
 # i.e. line 197 in sero_functions, where a > is present
-# instead of a >=
+# instead of a >=, i.e:
+
 # largett=(titredat > 8)  # Identify censored titres in data (>=8)
+
+# TODO make this a specified parameter of the model
+
 const const_titre_max = 9.0

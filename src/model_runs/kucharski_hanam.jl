@@ -28,6 +28,6 @@ chain = sample_chain(
     n_sample = 50_000, n_thinning = 25, n_chain = 6
 );
 
-chain_name = "prior_beta_1.3_8.0_corrected"
+chain_name = "prior_bernoulli_0.5_uncorrected"
 
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")

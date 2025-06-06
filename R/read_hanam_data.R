@@ -83,7 +83,10 @@ read_hanam_data <- function(use_inferred_age = FALSE) {
   )$age
 
   
-  antigenic_distances <- make_kucharski_antigenic_distances(modelled_years)
+  # antigenic_distances <- make_kucharski_antigenic_distances(modelled_years)
+  
+  # Manually copy across, so that they are identical
+  antigenic_distances <- read_rds("input_data/kucharski_2018/antigenic_distances_kucharski.rds")
   
   model_data <- list(
     observations = observations_df,
