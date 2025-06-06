@@ -12,7 +12,7 @@ obs_df = DataFrame(model_data["observations"])
 p = read_model_parameters(model_data)
 
 
-prior_infection_dist = MatrixBernoulli(0.15, p.n_t_steps, p.n_subjects)
+prior_infection_dist = MatrixBernoulli(0.5, p.n_t_steps, p.n_subjects)
 
 proposal_function = proposal_jitter
 

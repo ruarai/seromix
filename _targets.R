@@ -42,6 +42,7 @@ runs <- tar_map(
       proposal_name = proposal_name,
       infection_prior = infection_prior,
       fixed_params = fixed_params,
+      initial_params_name = "kucharski_data_study",
       
       n_samples = as.integer(100000),
       n_thinning = as.integer(50),
@@ -51,7 +52,7 @@ runs <- tar_map(
   ),
   tar_target(
     chain_summary,
-    summarise_chain(chain, 75000, run_data) %>%
+    summarise_chain(chain, 70000, run_data) %>%
       mutate(name = name, 
              run_name = run_name, 
              proposal_name = proposal_name, 

@@ -20,15 +20,16 @@ Distributions.minimum(d::TitreArrayNormal) = d.minimum
 Distributions.maximum(d::TitreArrayNormal) = d.maximum
 Base.length(d::TitreArrayNormal)::Int = length(d.μ)
 
+
+# A more direct translation of Kucharski
+# Note that this treats max a bit weird.
 function titre_logpdf_component(x::S, μ::T, σ::T, min::T, max::T) where {T <: Real, S <: Real}
     if x <= min
-        return normlogcdf(μ, σ, x + 1)
-    elseif x < max
-        return logsubexp(normlogcdf(μ, σ, x + 1), normlogcdf(μ, σ, x))
-    elseif x >= max
-        return normlogccdf(μ, σ, x)
+        return normlogcdf(μ, σ, min + 1) # P(Y <= 1) for x <= min
+    elseif x > max
+        return normlogccdf(μ, σ, max) # P(Y > 8) for x > 8
     else
-        return typemax(T)
+        return logsubexp(normlogcdf(μ, σ, x + 1), normlogcdf(μ, σ, x)) # P(x < Y <= x+1)
     end
 end
 
