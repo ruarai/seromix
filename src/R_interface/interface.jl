@@ -85,8 +85,9 @@ function select_initial_params(initial_params_name, n_chain, p, model_data, obs_
         return make_initial_params_kucharski_data_study(n_chain, model_data["initial_infections_manual"], rng)
     elseif initial_params_name == "kucharski_data_study_fluscape"
         return make_initial_params_kucharski_data_study_fluscape(p, obs_df, n_chain, rng)
+    elseif initial_params_name == "broad"
+        return make_initial_params_broad(p, n_chain, rng)
     end
-
 
     error("Invalid initial params specified")
 end

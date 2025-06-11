@@ -73,9 +73,17 @@ ggplot(plot_data) +
         panel.grid.major.y = element_gridline)
 
 
-df <- tar_read(chain_hanam_2018_uncorrected_Bernoulli_0.5) %>%
+
+df <- tar_read(chain_hanam_2018_uncorrected_Bernoulli_0.5_kucharski_data_study) %>%
+  clean_chain()
+
+df <- tar_read(chain_hanam_2018_uncorrected_Bernoulli_0.5_broad) %>%
   clean_chain()
 
 ggplot(df) +
   geom_line(aes(x = .iteration, y = mu_long, colour = factor(.chain)))
+
+
+
+
 

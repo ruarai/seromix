@@ -1,9 +1,18 @@
+
+
+# A re-implementation of the adaptive Metropolis-Hastings sampler
+# used in Kucharski (2018)
+
+# It is a Metropolis-Hastings sampler with a log-normal proposal distribution
+# The proposal distribution is adapted based on the acceptance rate
+
+# In the code of Kucharski (2018), parameters are constrained during the MH sampling
+# step. Here, we constrain parameters using the prior defined in the model itself.
+
+
 mutable struct MHParameterSampler <: AbstractMCMC.AbstractSampler
 
 end
-
-
-isgibbscomponent(::MHParameterSampler) = true
 
 struct ParameterSamplerTransition{T, L <: Real}
     θ::AbstractVector{T}
@@ -19,12 +28,10 @@ struct ParameterSamplerState{P<:ParameterSamplerTransition, T}
     n_rejected::Int
 end
 
-AbstractMCMC.getparams(state::ParameterSamplerState) = state.θ
-function AbstractMCMC.setparams!!(state::ParameterSamplerState, θ)
-    return ParameterSamplerState(ParameterSamplerTransition(θ, state.transition.lp), θ, state.sigma_covar, state.n_accepted, state.n_rejected)
-end
 
-
+# Initial step for the sampler
+# If initial parameters are provided, use them. Otherwise, 
+# sample initial parameters from a uniform distribution.
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
@@ -33,10 +40,8 @@ function AbstractMCMC.step(
     kwargs...
 )
     if !isnothing(initial_params)
-        println("Setting initial parameters to initial_params")
         theta_init = initial_params
     else
-        println("Setting initial parameters to random samples")
         theta_init = rand(rng, Uniform(0, 1.0), 7)
     end
 
@@ -49,7 +54,8 @@ function AbstractMCMC.step(
     return transition, ParameterSamplerState(transition, theta_init, sigma_covar_0, 0, 0)
 end
 
-
+# Step function for the sampler
+# Proposes a new set of parameters using a log-normal proposal distribution.
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
@@ -114,6 +120,17 @@ function AbstractMCMC.step(
     end
 end
 
+
+# Below is necessary framework for use in Turing
+
+# Puts the sampler into an external sampler for use in Turing
 function make_mh_parameter_sampler()
     return externalsampler(MHParameterSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
+end
+
+isgibbscomponent(::MHParameterSampler) = true
+
+AbstractMCMC.getparams(state::ParameterSamplerState) = state.θ
+function AbstractMCMC.setparams!!(state::ParameterSamplerState, θ)
+    return ParameterSamplerState(ParameterSamplerTransition(θ, state.transition.lp), θ, state.sigma_covar, state.n_accepted, state.n_rejected)
 end

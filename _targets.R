@@ -6,7 +6,7 @@ library(crew)
 suppressMessages(tar_source())
 
 tar_option_set(
-  controller = crew_controller_local(workers = 8)
+  controller = crew_controller_local(workers = 2)
 )
 
 source("_targets_studies.R")
@@ -42,11 +42,11 @@ runs <- tar_map(
       proposal_name = proposal_name,
       infection_prior = infection_prior,
       fixed_params = fixed_params,
-      initial_params_name = "kucharski_data_study",
+      initial_params_name = initial_params_name,
       
       n_samples = as.integer(100000),
       n_thinning = as.integer(50),
-      n_chain = as.integer(4)
+      n_chain = as.integer(12)
     ),
     format = "parquet"
   ),

@@ -14,6 +14,21 @@ function make_initial_params_kucharski_data_study(n_chain, init_matrix, rng)
     ) for i in 1:n_chain]
 end
 
+
+function make_initial_params_broad(p, n_chain, rng)
+    return [(
+        mu_long = rand(rng, Uniform(0.5, 5.0)),
+        mu_short = rand(rng, Uniform(0.5, 5.0)), 
+        omega = rand(rng, Uniform(0.5, 1.0)), 
+        sigma_long = rand(rng, Uniform(0.0, 0.5)),
+        sigma_short = rand(rng, Uniform(0.0, 0.5)), 
+        tau = rand(rng, Uniform(0.0, 0.2)), 
+        obs_sd = rand(rng, Uniform(1.0, 2.5)), 
+
+        infections = rand(Bernoulli(0.5), p.n_t_steps, p.n_subjects)
+    ) for i in 1:n_chain]
+end
+
 function make_initial_params_kucharski_sim_study(p, obs_df, n_chain, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),

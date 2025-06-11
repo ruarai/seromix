@@ -1,20 +1,19 @@
+
+
+# A re-implementation of the infection history sampler as
+# used in Kucharski (2018)
+
+# For each individual, samples a new history using step_function
+
 mutable struct MHInfectionSampler <: AbstractMCMC.AbstractSampler
     # Ideally these would just be in the model but not sure how to do that.
     n_t_steps::Int
     n_subjects::Int
-    
-    # TODO move these out of here
-    rejections::Int
-    acceptions::Int
+
+    prop_sample::Float64
 
     step_function
 end
-
-MHInfectionSampler(n_t_step, n_subjects, step_fn) = MHInfectionSampler(n_t_step, n_subjects, 0, 0, step_fn)
-
-mh_sampler_acceptance_rate(s::MHInfectionSampler) = s.acceptions / (s.acceptions + s.rejections)
-
-isgibbscomponent(::MHInfectionSampler) = true
 
 struct InfectionSamplerTransition{T, L <: Real}
     θ::AbstractVector{T}
@@ -24,13 +23,15 @@ end
 struct InfectionSamplerState{P<:InfectionSamplerTransition, T}
     transition::P
     θ::AbstractVector{T}
+
+    n_accepted::Int
+    n_rejected::Int
+
+    time_A::Float64
+    time_B::Float64
 end
 
-AbstractMCMC.getparams(state::InfectionSamplerState) = state.θ
-function AbstractMCMC.setparams!!(state::InfectionSamplerState, θ)
-    return InfectionSamplerState(InfectionSamplerTransition(θ, state.transition.lp), θ)
-end
-
+MHInfectionSampler(n_t_step, n_subjects, step_fn) = MHInfectionSampler(n_t_step, n_subjects, 1.0, step_fn)
 
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
@@ -53,7 +54,7 @@ function AbstractMCMC.step(
     logprob_init = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(model.logdensity.model, varinfo_init, DynamicPPL.DefaultContext())))
 
     transition = InfectionSamplerTransition(theta_init, logprob_init)
-    return transition, InfectionSamplerState(transition, theta_init)
+    return transition, InfectionSamplerState(transition, theta_init, 0, 0, time(), time())
 end
 
 function AbstractMCMC.step(
@@ -75,9 +76,13 @@ function AbstractMCMC.step(
     n_subjects = sampler.n_subjects
 
     # Per Kucharski model, only step for some % of individuals
-    subject_indices = sample(rng, 1:n_subjects, ceil(Int, 0.4 * n_subjects))
+    # subject_indices = sample(rng, 1:n_subjects, ceil(Int, 0.4 * n_subjects))
+    # TODO add as option.
 
-    logprob_final = 0.0
+    subject_indices = 1:n_subjects
+
+    accepted = 0
+    rejected = 0
 
     for ix_subject in subject_indices
         # Set the context of DynamicPPL to indicate that we are only
@@ -96,21 +101,20 @@ function AbstractMCMC.step(
         if -Random.randexp(rng) <= logprob_proposal - logprob_previous + log_hastings_ratio
             # Accept, do nothing
 
-            logprob_final = logprob_proposal
-            sampler.acceptions += 1
+            accepted += 1
         else
             # Reject, re-apply swaps to undo
 
-            logprob_final = logprob_previous
+            rejected += 1
 
             apply_swaps!(theta_new, swap_indices, ix_subject, n_t_steps)
-            sampler.rejections += 1
         end
     end
 
 
-    transition = InfectionSamplerTransition(theta_new, logprob_final)
-    return transition, InfectionSamplerState(transition, theta_new)
+    transition = InfectionSamplerTransition(theta_new, -Inf)
+
+    return transition, InfectionSamplerState(transition, theta_new, accepted, rejected, state.time_B, time())
 end
 
 function apply_swaps!(theta, swap_indices, ix_subject, n_t_steps)
@@ -122,12 +126,25 @@ function apply_swaps!(theta, swap_indices, ix_subject, n_t_steps)
 end
 
 
+# Below is necessary framework for use in Turing
+
+# Puts the sampler into an external sampler for use in Turing
+function make_mh_infection_sampler(n_t_steps, n_subjects, step_fn)
+    return externalsampler(MHInfectionSampler(n_t_steps, n_subjects, step_fn), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
+end
+
+isgibbscomponent(::MHInfectionSampler) = true
+
+AbstractMCMC.getparams(state::InfectionSamplerState) = state.θ
+function AbstractMCMC.setparams!!(state::InfectionSamplerState, θ)
+    return InfectionSamplerState(InfectionSamplerTransition(θ, state.transition.lp), θ, state.n_accepted, state.n_rejected, state.time_A, state.time_B)
+end
+
+
+# A DynamicPPL context that indicates to the model that we are only
+# calculating likelihood over one individual (subject)
 struct IndividualSubsetContext <: DynamicPPL.AbstractContext
     ix::Int
 end
 
 DynamicPPL.NodeTrait(context::IndividualSubsetContext) = DynamicPPL.IsLeaf()
-
-function make_mh_infection_sampler(n_t_steps, n_subjects, step_fn)
-    return externalsampler(MHInfectionSampler(n_t_steps, n_subjects, step_fn), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
-end

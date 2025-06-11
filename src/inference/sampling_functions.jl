@@ -45,29 +45,44 @@ end
 
 
 function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
-    
     if iteration % 50 == 0
         if length(sampler.alg.samplers) > 1
-            mh_sampler = sampler.alg.samplers[1].alg.sampler
 
-            rate = mh_sampler_acceptance_rate(mh_sampler)
-            println("$iteration, $(round(rate, digits=2))")
+            sampler_state = state.states[1].state
 
-            mh_sampler.acceptions = 0
-            mh_sampler.rejections = 0
+            rate = sampler_state.n_accepted / (sampler_state.n_accepted + sampler_state.n_rejected)
+
+            time_elapsed = (sampler_state.time_B - sampler_state.time_A) * 1000
+
+            time_for_thousand =  time_elapsed / 60
+
+            # println("$iteration; $(round(rate, digits=2)); $(round(time_elapsed, digits=2))ms.")
+
+            @printf("%6d; %6.2f; %7.2fms;%7.2fmin/1,000\n", iteration, rate, time_elapsed, time_for_thousand)
         else
-            println("$iteration")
+            @printf("%5d;\n", iteration)
         end
     end
 end
 
 
 # Hack to make sure logprob is carried through the Gibbs sampler
-function Turing.Inference.varinfo(state::Turing.Inference.TuringState)
-    θ = Turing.Inference.getparams(state.ldf.model, state.state)
-    vi = DynamicPPL.unflatten(state.ldf.varinfo, θ)
+# function Turing.Inference.varinfo(state::Turing.Inference.TuringState)
+#     if state.state.transition isa InfectionSamplerState
+#         θ = state.state.transition.θ
+#         vi = DynamicPPL.unflatten(state.ldf.varinfo, θ)
+#         vi = setlogp!!(vi, state.state.transition.lp)
+#     else
+#         θ = Turing.Inference.getparams(state.ldf.model, state.state)
+#         vi = DynamicPPL.unflatten(state.ldf.varinfo, θ)
+#         return vi
+#     end
+# end
 
-    vi = setlogp!!(vi, state.state.transition.lp)
-
-    return vi
-end
+# Hack to reduce model evaluations
+# will likely break anything with other samplers, bijection
+# function Turing.Inference.transition_to_turing(f::DynamicPPL.LogDensityFunction, transition)
+#     θ = transition.θ
+#     varinfo = DynamicPPL.unflatten(f.varinfo, θ)
+#     return Turing.Inference.Transition(θ, transition.lp, Turing.Inference.getstats(transition))
+# end
