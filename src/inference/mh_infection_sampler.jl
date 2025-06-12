@@ -76,10 +76,9 @@ function AbstractMCMC.step(
     n_subjects = sampler.n_subjects
 
     # Per Kucharski model, only step for some % of individuals
-    # subject_indices = sample(rng, 1:n_subjects, ceil(Int, 0.4 * n_subjects))
+    subject_indices = sample(rng, 1:n_subjects, ceil(Int, sampler.prop_sample * n_subjects))
     # TODO add as option.
-
-    subject_indices = 1:n_subjects
+    # subject_indices = 1:n_subjects
 
     accepted = 0
     rejected = 0
@@ -129,9 +128,10 @@ end
 # Below is necessary framework for use in Turing
 
 # Puts the sampler into an external sampler for use in Turing
-function make_mh_infection_sampler(n_t_steps, n_subjects, step_fn)
-    return externalsampler(MHInfectionSampler(n_t_steps, n_subjects, step_fn), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
+function make_mh_infection_sampler(n_t_steps, n_subjects, step_fn; prop_sample = 0.4)
+    return externalsampler(MHInfectionSampler(n_t_steps, n_subjects, prop_sample, step_fn), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
 end
+
 
 isgibbscomponent(::MHInfectionSampler) = true
 
