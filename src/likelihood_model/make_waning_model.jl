@@ -14,6 +14,7 @@ function make_waning_model(
     model_parameters::FixedModelParameters,
     obs_df::DataFrame;
     prior_infection_dist::Distribution,
+    use_corrected_titre = true,
     turing_model = waning_model_kucharski
 )
     all(diff(obs_df.ix_subject) .>= 0) || throw(ArgumentError("ix_subject in obs_df must be sorted in ascending order."))
@@ -24,6 +25,7 @@ function make_waning_model(
     return turing_model(
         model_parameters,
         prior_infection_dist,
+        use_corrected_titre,
 
         make_obs_lookup(obs_df),
         make_obs_views(obs_df),

@@ -16,6 +16,8 @@ function fit_model(
 
     fixed_params = nothing,
 
+    use_corrected_titre = true,
+
     rng_seed = 1
 )
     rng = Random.Xoshiro(rng_seed)
@@ -31,7 +33,11 @@ function fit_model(
 
     initial_params = select_initial_params(initial_params_name, n_chain, p, model_data, obs_df, rng)
 
-    model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
+    model = make_waning_model(
+        p, obs_df;
+        prior_infection_dist = prior_infection_dist,
+        use_corrected_titre = use_corrected_titre
+    );
 
     if !isnothing(fixed_params)
         fixed_params_tuple = NamedTuple(fixed_params)

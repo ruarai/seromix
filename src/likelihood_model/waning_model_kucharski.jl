@@ -3,6 +3,7 @@
 @model function waning_model_kucharski(
     model_parameters::FixedModelParameters,
     prior_infection_dist::Distribution,
+    use_corrected_titre::Bool,
 
     obs_lookup, obs_views,
     n_max_ind_obs::Int,
@@ -55,7 +56,7 @@
             y_pred
         )
 
-         observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max)
+         observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max, use_corrected_titre)
     end
 end
 
