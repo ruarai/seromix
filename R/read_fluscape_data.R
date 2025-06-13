@@ -105,10 +105,8 @@ read_fluscape_data_HI <- function() {
            ix_t_birth = replace_na(ix_t_birth, 0)) %>%
     select(ix_subject, year_of_birth, ix_t_birth)
   
-  # antigenic_distances <- make_kucharski_antigenic_distances(modelled_years)
-  
   # Manually copy across, so that they are identical
-  antigenic_distances <- read_rds("input_data/kucharski_2018/antigenic_distances_kucharski.rds")
+  antigenic_distances <- read_rds("input_data/kucharski_2018/antigenic_distances_kucharski_fluscape.rds")
   
   model_data <- list(
     observations = observations_df,

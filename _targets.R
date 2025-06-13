@@ -6,7 +6,7 @@ library(crew)
 suppressMessages(tar_source())
 
 tar_option_set(
-  controller = crew_controller_local(workers = 2)
+  controller = crew_controller_local(workers = 8)
 )
 
 source("_targets_studies.R")
@@ -43,31 +43,65 @@ runs <- tar_map(
       infection_prior = infection_prior,
       fixed_params = fixed_params,
       initial_params_name = initial_params_name,
+      use_corrected_titre = use_corrected_titre,
       
-      n_samples = as.integer(100000),
+      n_samples = as.integer(200000),
       n_thinning = as.integer(50),
-      n_chain = as.integer(12)
+      n_chain = as.integer(4)
     ),
     format = "parquet"
   ),
   tar_target(
-    chain_summary,
-    summarise_chain(chain, 70000, run_data) %>%
+    chain_subset,
+    chain %>%
+      select(-starts_with("infections")) %>% 
+      clean_chain() %>% # TODO make this reuseable somehow
       mutate(name = name, 
              run_name = run_name, 
              proposal_name = proposal_name, 
-             prior_description = prior_description)
+             prior_description = prior_description,
+             initial_params_name = initial_params_name,
+             use_corrected_titre = use_corrected_titre)
+  ),
+  tar_target(
+    chain_summary,
+    summarise_chain(chain, 150000, run_data, by_chain = TRUE) %>%
+      mutate(name = name, 
+             run_name = run_name, 
+             proposal_name = proposal_name, 
+             prior_description = prior_description,
+             initial_params_name = initial_params_name,
+             use_corrected_titre = use_corrected_titre)
+  ),
+  tar_target(
+    chain_summary_singular,
+    summarise_chain(chain, 150000, run_data, by_chain = FALSE) %>%
+      mutate(name = name, 
+             run_name = run_name, 
+             proposal_name = proposal_name, 
+             prior_description = prior_description,
+             initial_params_name = initial_params_name,
+             use_corrected_titre = use_corrected_titre)
   )
 )
 
-combine <- tar_combine(
-  combined_summaries,
-  runs[["chain_summary"]],
-  command = dplyr::bind_rows(!!!.x)
-)
 
 list(
   preprocessing,
   runs,
-  combine
+  tar_combine(
+    combined_summaries,
+    runs[["chain_summary"]],
+    command = dplyr::bind_rows(!!!.x)
+  ),
+  tar_combine(
+    combined_singular_summaries,
+    runs[["chain_summary_singular"]],
+    command = dplyr::bind_rows(!!!.x)
+  ),
+  tar_combine(
+    combined_chains,
+    runs[["chain_subset"]],
+    command = dplyr::bind_rows(!!!.x)
+  )
 )

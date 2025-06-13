@@ -14,12 +14,13 @@ data_runs <- bind_rows(
 ) %>% expand_grid(
   proposal_name = c("uncorrected", "corrected"),
   infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1),
-  initial_params_name = c("kucharski_data_study", "broad")
+  initial_params_name = c("kucharski_data_study"),
+  use_corrected_titre = c(TRUE, FALSE)
 ) %>%
   rowwise() %>%
   mutate(prior_description = str_c(unlist(infection_prior), collapse = "_")) %>%
   ungroup() %>%
-  mutate(name = str_c(run_name, proposal_name, prior_description, initial_params_name, sep = "_"),
+  mutate(name = str_c(run_name, "_", row_number()),
          run_data = rlang::syms(run_name))
 
 

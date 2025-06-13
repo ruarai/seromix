@@ -1,22 +1,10 @@
 
 library(targets)
-library(tidyverse)
-
 tar_source()
 
-summary <- tar_read(combined_summaries)
+source("replication_paper/common.R")
 
-var_names <- c("mu_long", "mu_short", "sigma_long", "sigma_short",  "tau", "omega", "obs_sd", "total_inf")
-var_labels <- c(
-  "<i>μ</i><sub>long</sub> (long-term boost)", 
-  "<i>μ</i><sub>short</sub> (short-term boost)",
-  "<i>σ</i><sub>long</sub> (short-term cross.)", 
-  "<i>σ</i><sub>short</sub> (long-term cross.)",
-  "<i>τ</i> (seniority)",
-  "<i>ω</i> (waning)",
-  "obs sd.", 
-  "Total inf."
-)
+summary <- tar_read(combined_summaries)
 
 name_order <- c(
   "kucharski_2018", 
@@ -37,16 +25,15 @@ name_labels <- c(
 )
 
 
-
 plot_data <- summary %>%
   mutate(name = str_c(prior_description, "_", proposal_name)) %>% 
+  filter(initial_params_name == "kucharski_data_study",
+         use_corrected_titre) %>% 
   bind_rows(summaries_previous %>% filter(name == "kucharski_2018")) %>% 
   filter(run_name == "hanam_2018",
          variable %in% var_names) %>%
   mutate(name = fct_rev(factor(name, name_order, name_labels)),
          variable = factor(variable, var_names, var_labels))
-
-
 
 ggplot(plot_data) +
   annotate("rect", ymin = 0.5, ymax = 1.5,
@@ -62,6 +49,10 @@ ggplot(plot_data) +
   geom_linerange(aes(xmin = q95_lower, xmax = q95_upper, y = name),
                  position = position_dodge2(width = 0.3)) +
   
+  geom_vline(aes(xintercept = median),
+             linetype = "14",
+             plot_data %>% filter(name == "Kucharski 2018")) +
+  
   facet_wrap(~variable,
              ncol = 4, scales = "free_x") +
   
@@ -70,20 +61,17 @@ ggplot(plot_data) +
   plot_theme_paper +
   
   theme(strip.text = element_markdown(size = 12, family = "Utopia"),
-        panel.grid.major.y = element_gridline)
+        panel.grid.major.y = element_gridline) +
+  
+  ggtitle("Ha Nam study inference results")
 
 
-
-df <- tar_read(chain_hanam_2018_uncorrected_Bernoulli_0.5_kucharski_data_study) %>%
-  clean_chain()
-
-df <- tar_read(chain_hanam_2018_uncorrected_Bernoulli_0.5_broad) %>%
-  clean_chain()
-
-ggplot(df) +
-  geom_line(aes(x = .iteration, y = mu_long, colour = factor(.chain)))
-
-
+ggsave(
+  "replication_paper/results/prior_and_proposal.png",
+  device = png,
+  width = 12,
+  height = 6, bg = "white"
+)
 
 
 
