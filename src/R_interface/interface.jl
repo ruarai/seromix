@@ -67,6 +67,11 @@ function select_infection_prior(infection_prior, p)
         return MatrixBernoulli(infection_prior.p, p.n_t_steps, p.n_subjects)
     elseif prior_name == "BetaBernoulli"
         return MatrixBetaBernoulli(infection_prior.alpha, infection_prior.beta, p.n_t_steps, p.n_subjects)
+    elseif prior_name == "BetaBernoulliTimeVarying"
+        # Infection matrix is indexed inf[time, subject]; so time-varying is row-varying
+        return MatrixBetaBernoulliRow(infection_prior.alpha, infection_prior.beta, p.n_t_steps, p.n_subjects)
+    elseif prior_name == "BetaBernoulliSubjectVarying"
+        return MatrixBetaBernoulliColumn(infection_prior.alpha, infection_prior.beta, p.n_t_steps, p.n_subjects)
     end
 
     error("Invalid infection prior specified")

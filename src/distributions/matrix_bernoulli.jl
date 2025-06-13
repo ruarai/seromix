@@ -1,18 +1,22 @@
-struct MatrixBernoulli{T} <: DiscreteMatrixDistribution
+
+abstract type AbstractMatrixBernoulli <: DiscreteMatrixDistribution end
+Base.size(d::AbstractMatrixBernoulli) = (d.i, d.j)
+Base.eltype(d::AbstractMatrixBernoulli) = Bool
+
+
+function Distributions.rand(rng::AbstractRNG, d::AbstractMatrixBernoulli)
+    Y = Matrix{Bool}(undef, size(d))
+    Distributions._rand!(rng, d, Y)
+    return Y
+end
+
+
+struct MatrixBernoulli{T} <: AbstractMatrixBernoulli
     p::T
     i::Int
     j::Int
 end
 
-Base.size(d::MatrixBernoulli) = (d.i, d.j)
-
-Base.eltype(d::MatrixBernoulli) = Bool
-
-function Distributions.rand(rng::AbstractRNG, d::MatrixBernoulli)
-    Y = Matrix{Bool}(undef, size(d))
-    Distributions._rand!(rng, d, Y)
-    return Y
-end
 
 function Distributions._rand!(rng::AbstractRNG, d::MatrixBernoulli, Y::AbstractMatrix)
     for i in 1:d.i, j in 1:d.j

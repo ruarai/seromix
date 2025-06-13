@@ -36,6 +36,15 @@ function titre_logpdf_component(x::S, μ::T, σ::T, min::T, max::T) where {T <: 
     end
 end
 
+
+function apply_logpdf(x, μ, σ, min, max)
+    l_sum = 0
+    @inbounds for i in eachindex(x)
+        l_sum += titre_logpdf_component(x[i], μ[i], σ, min, max)
+    end
+    return l_sum
+end
+
 # A more direct translation of Kucharski
 # note the treatment of max
 function titre_logpdf_component_uncorrected(x::S, μ::T, σ::T, min::T, max::T) where {T <: Real, S <: Real}
@@ -46,14 +55,6 @@ function titre_logpdf_component_uncorrected(x::S, μ::T, σ::T, min::T, max::T) 
     else
         return logsubexp(normlogcdf(μ, σ, x + 1), normlogcdf(μ, σ, x)) # P(x < Y <= x+1)
     end
-end
-
-function apply_logpdf(x, μ, σ, min, max)
-    l_sum = 0
-    @inbounds for i in eachindex(x)
-        l_sum += titre_logpdf_component(x[i], μ[i], σ, min, max)
-    end
-    return l_sum
 end
 
 function apply_logpdf_uncorrected(x, μ, σ, min, max)
