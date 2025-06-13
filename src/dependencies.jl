@@ -53,6 +53,8 @@ include("helper_functions.jl")
 include("distributions/titre_arraynormal.jl")
 include("distributions/matrix_bernoulli.jl")
 include("distributions/matrix_beta_bernoulli.jl")
+include("distributions/matrix_beta_bernoulli_column.jl")
+include("distributions/matrix_beta_bernoulli_row.jl")
 
 
 const const_titre_min = 0.0

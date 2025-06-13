@@ -33,6 +33,10 @@ preprocessing <- list(
   tar_target(fluscape_2009_HI_plots, plot_model_data(fluscape_2009_HI, "fluscape_2009_HI"))
 )
 
+n_iterations <- 50000
+n_warmup <- 35000
+n_chain <- 4
+
 runs <- tar_map(
   data_runs, names = name,
   tar_target(
@@ -45,9 +49,9 @@ runs <- tar_map(
       initial_params_name = initial_params_name,
       use_corrected_titre = use_corrected_titre,
       
-      n_samples = as.integer(200000),
-      n_thinning = as.integer(50),
-      n_chain = as.integer(4)
+      n_samples = as.integer(n_iterations),
+      n_thinning = as.integer(round(n_iterations / 2000)),
+      n_chain = as.integer(n_chain)
     ),
     format = "parquet"
   ),
@@ -55,33 +59,18 @@ runs <- tar_map(
     chain_subset,
     chain %>%
       select(-starts_with("infections")) %>% 
-      clean_chain() %>% # TODO make this reuseable somehow
-      mutate(name = name, 
-             run_name = run_name, 
-             proposal_name = proposal_name, 
-             prior_description = prior_description,
-             initial_params_name = initial_params_name,
-             use_corrected_titre = use_corrected_titre)
+      clean_chain() %>%
+      mutate(name = name)
   ),
   tar_target(
     chain_summary,
-    summarise_chain(chain, 150000, run_data, by_chain = TRUE) %>%
-      mutate(name = name, 
-             run_name = run_name, 
-             proposal_name = proposal_name, 
-             prior_description = prior_description,
-             initial_params_name = initial_params_name,
-             use_corrected_titre = use_corrected_titre)
+    summarise_chain(chain, n_warmup, run_data, by_chain = TRUE) %>%
+      mutate(name = name)
   ),
   tar_target(
     chain_summary_singular,
-    summarise_chain(chain, 150000, run_data, by_chain = FALSE) %>%
-      mutate(name = name, 
-             run_name = run_name, 
-             proposal_name = proposal_name, 
-             prior_description = prior_description,
-             initial_params_name = initial_params_name,
-             use_corrected_titre = use_corrected_titre)
+    summarise_chain(chain, n_warmup, run_data, by_chain = FALSE) %>%
+      mutate(name = name)
   )
 )
 
@@ -93,15 +82,15 @@ list(
     combined_summaries,
     runs[["chain_summary"]],
     command = dplyr::bind_rows(!!!.x)
-  ),
+  ) %>% left_join(data_runs_meta, by = "name"),
   tar_combine(
     combined_singular_summaries,
     runs[["chain_summary_singular"]],
     command = dplyr::bind_rows(!!!.x)
-  ),
+  ) %>% left_join(data_runs_meta, by = "name"),
   tar_combine(
     combined_chains,
     runs[["chain_subset"]],
     command = dplyr::bind_rows(!!!.x)
-  )
+  ) %>% left_join(data_runs_meta, by = "name")
 )
