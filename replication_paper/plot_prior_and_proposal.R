@@ -15,10 +15,6 @@ name_order <- c(
   "Bernoulli_0.5_corrected",
   "BetaBernoulli_1_1_uncorrected",
   "BetaBernoulli_1_1_corrected"
-  # "BetaBernoulliTimeVarying_1_1_uncorrected",
-  # "BetaBernoulliTimeVarying_1_1_corrected",
-  # "BetaBernoulliSubjectVarying_1_1_uncorrected",
-  # "BetaBernoulliSubjectVarying_1_1_corrected"  
 )
 
 name_labels <- c(
@@ -28,10 +24,6 @@ name_labels <- c(
   "Bernoulli(0.5) (corrected)", 
   "BetaBernoulli(1,1) (uncorrected)", 
   "BetaBernoulli(1,1) (corrected)"
-  # "BetaBernoulliTV(1,1) (uncorrected)", 
-  # "BetaBernoulliTV(1,1) (corrected)",
-  # "BetaBernoulliSV(1,1) (uncorrected)", 
-  # "BetaBernoulliSV(1,1) (corrected)"
 )
 
 

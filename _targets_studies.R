@@ -1,10 +1,16 @@
 
 
 # Infection prior definitions (see src/R_interface/interface.jl)
+matrix_bernoulli_10 <- list(name = "Bernoulli", p = 0.1)
+matrix_bernoulli_30 <- list(name = "Bernoulli", p = 0.3)
 matrix_bernoulli_50 <- list(name = "Bernoulli", p = 0.5)
 matrix_beta_bernoulli_1_1 <- list(name = "BetaBernoulli", alpha = 1.0, beta = 1.0)
 matrix_beta_bernoulli_1_1_tv <- list(name = "BetaBernoulliTimeVarying", alpha = 1.0, beta = 1.0)
 matrix_beta_bernoulli_1_1_sv <- list(name = "BetaBernoulliSubjectVarying", alpha = 1.0, beta = 1.0)
+
+matrix_beta_bernoulli_2.5_8 <- list(name = "BetaBernoulli", alpha = 2.5, beta = 8.0)
+matrix_beta_bernoulli_2.5_8_tv <- list(name = "BetaBernoulliTimeVarying", alpha = 2.5, beta = 8.0)
+matrix_beta_bernoulli_2.5_8_sv <- list(name = "BetaBernoulliSubjectVarying", alpha = 2.5, beta = 8.0)
 
 data_runs <- bind_rows(
   # Compare prior/proposal choices on Ha Nam (2018) study:
@@ -56,13 +62,16 @@ data_runs <- bind_rows(
     exp_group = "prior_comparison",
     
     run_name = "hanam_2018",
-    infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1, matrix_beta_bernoulli_1_1_tv, matrix_beta_bernoulli_1_1_sv),
+    infection_prior = list(
+      matrix_bernoulli_10, matrix_bernoulli_30, matrix_bernoulli_50,
+      matrix_beta_bernoulli_1_1, matrix_beta_bernoulli_1_1_tv, matrix_beta_bernoulli_1_1_sv,
+      matrix_beta_bernoulli_2.5_8, matrix_beta_bernoulli_2.5_8_tv, matrix_beta_bernoulli_2.5_8_sv),
     initial_params_name = "kucharski_data_study"
   ),
   
   # Compare effect of initial conditions:
   expand_grid(
-    exp_group = "prior_proposal",
+    exp_group = "initial_conditions",
     
     run_name = "hanam_2018",
     infection_prior = list(matrix_beta_bernoulli_1_1),

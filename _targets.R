@@ -62,6 +62,7 @@ runs <- tar_map(
     chain %>%
       select(-starts_with("infections")) %>% 
       clean_chain() %>%
+      add_total_infections(run_data) %>%
       mutate(name = name)
   ),
   tar_target(

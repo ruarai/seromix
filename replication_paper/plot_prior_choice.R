@@ -9,7 +9,6 @@ summary <- tar_read(combined_summaries) %>%
 
 plot_data <- summary %>%
   mutate(name = str_c(prior_description, "_", proposal_name)) %>% 
-  # bind_rows(summaries_previous %>% filter(name == "kucharski_2018")) %>% 
   filter(run_name == "hanam_2018",
          variable %in% var_names) %>%
   mutate(#name = fct_rev(factor(name, name_order, name_labels)),
