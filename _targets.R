@@ -6,8 +6,13 @@ library(crew)
 suppressMessages(tar_source())
 
 tar_option_set(
-  controller = crew_controller_local(workers = 8)
+  controller = crew_controller_local(workers = 3)
 )
+
+n_iterations <- 200000
+n_warmup <- 150000
+n_chain <- 8
+
 
 source("_targets_studies.R")
 
@@ -33,10 +38,6 @@ preprocessing <- list(
   tar_target(fluscape_2009_HI_plots, plot_model_data(fluscape_2009_HI, "fluscape_2009_HI"))
 )
 
-n_iterations <- 50000
-n_warmup <- 35000
-n_chain <- 4
-
 runs <- tar_map(
   data_runs, names = name,
   tar_target(
@@ -53,6 +54,7 @@ runs <- tar_map(
       n_thinning = as.integer(round(n_iterations / 2000)),
       n_chain = as.integer(n_chain)
     ),
+    garbage_collection = TRUE,
     format = "parquet"
   ),
   tar_target(
@@ -81,16 +83,16 @@ list(
   tar_combine(
     combined_summaries,
     runs[["chain_summary"]],
-    command = dplyr::bind_rows(!!!.x)
-  ) %>% left_join(data_runs_meta, by = "name"),
+    command = dplyr::bind_rows(!!!.x) %>% left_join(data_runs_meta, by = "name")
+  ),
   tar_combine(
     combined_singular_summaries,
     runs[["chain_summary_singular"]],
-    command = dplyr::bind_rows(!!!.x)
-  ) %>% left_join(data_runs_meta, by = "name"),
+    command = dplyr::bind_rows(!!!.x) %>% left_join(data_runs_meta, by = "name")
+  ),
   tar_combine(
     combined_chains,
     runs[["chain_subset"]],
-    command = dplyr::bind_rows(!!!.x)
-  ) %>% left_join(data_runs_meta, by = "name")
+    command = dplyr::bind_rows(!!!.x) %>% left_join(data_runs_meta, by = "name")
+  )
 )

@@ -5,7 +5,7 @@ tar_source()
 source("replication_paper/common.R")
 
 summary <- tar_read(combined_summaries) %>%
-  filter(exp_group == "prior_proposal")
+  filter(exp_group == "prior_proposal_fluscape")
 
 name_order <- c(
   "kucharski_2018", 
@@ -15,10 +15,6 @@ name_order <- c(
   "Bernoulli_0.5_corrected",
   "BetaBernoulli_1_1_uncorrected",
   "BetaBernoulli_1_1_corrected"
-  # "BetaBernoulliTimeVarying_1_1_uncorrected",
-  # "BetaBernoulliTimeVarying_1_1_corrected",
-  # "BetaBernoulliSubjectVarying_1_1_uncorrected",
-  # "BetaBernoulliSubjectVarying_1_1_corrected"  
 )
 
 name_labels <- c(
@@ -26,31 +22,27 @@ name_labels <- c(
   "Hay 2024",
   "Bernoulli(0.5) (uncorrected)", 
   "Bernoulli(0.5) (corrected)", 
-  "BetaBernoulli(1,1) (uncorrected)", 
+  "BetaBernoulli(1,1) (uncorrected)",
   "BetaBernoulli(1,1) (corrected)"
-  # "BetaBernoulliTV(1,1) (uncorrected)", 
-  # "BetaBernoulliTV(1,1) (corrected)",
-  # "BetaBernoulliSV(1,1) (uncorrected)", 
-  # "BetaBernoulliSV(1,1) (corrected)"
 )
 
 
 plot_data <- summary %>%
   mutate(name = str_c(prior_description, "_", proposal_name)) %>% 
+  filter(name %in% name_order) %>% 
   bind_rows(summaries_previous %>% filter(name == "kucharski_2018")) %>% 
-  filter(run_name == "hanam_2018",
-         variable %in% var_names,
-         name %in% name_order) %>%
+  filter(variable %in% var_names,
+         name %in% name_order,
+         run_name %in% c("fluscape_2009_neuts", "fluscape_2009_HI")) %>%
   mutate(name = fct_rev(factor(name, name_order, name_labels)),
          variable = factor(variable, var_names, var_labels))
 
 ggplot(plot_data) +
-  annotate("rect", ymin = 0.5, ymax = 1.5,
-           xmin = -Inf, xmax = Inf, fill = "grey50", alpha = 0.1) +
-  annotate("rect", ymin = 2.5, ymax = 3.5,
-           xmin = -Inf, xmax = Inf, fill = "grey50", alpha = 0.1) +
-  annotate("rect", ymin = 4.5, ymax = 5.5,
-           xmin = -Inf, xmax = Inf, fill = ggokabeito::palette_okabe_ito(5), alpha = 0.1) +
+  # annotate("rect", ymin = 0.5, ymax = 2.5,
+  #          xmin = -Inf, xmax = Inf, fill = "grey50", alpha = 0.1) +
+  # 
+  # annotate("rect", ymin = 3.5, ymax = 4.5,
+  #          xmin = -Inf, xmax = Inf, fill = ggokabeito::palette_okabe_ito(5), alpha = 0.1) +
   
   geom_point(aes(x = median, y = name),
              size = 0.8,
@@ -62,8 +54,8 @@ ggplot(plot_data) +
              linetype = "14",
              plot_data %>% filter(name == "Kucharski 2018")) +
   
-  facet_wrap(~variable,
-             ncol = 4, scales = "free_x") +
+  facet_grid(cols = vars(variable), rows = vars(run_name),
+             scales = "free_x") +
   
   xlab("Value (median, 95% CrI)") + ylab(NULL) +
   
@@ -72,15 +64,4 @@ ggplot(plot_data) +
   theme(strip.text = element_markdown(size = 12, family = "Utopia"),
         panel.grid.major.y = element_gridline) +
   
-  ggtitle("Ha Nam study inference results")
-
-
-ggsave(
-  "replication_paper/results/prior_and_proposal.png",
-  device = png,
-  width = 12,
-  height = 6, bg = "white"
-)
-
-
-
+  ggtitle("Fluscape study inference results")
