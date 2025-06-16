@@ -3,10 +3,10 @@
 
 tar_source()
 
-strain_coords <- read_csv("input_data/kucharski_2018/datasets/antigenic_coords.csv") %>%
-  rename(strain_name = viruses, y = AG_x, x = AG_y) %>%
-  mutate(strain_year = get_strain_year_from_name(strain_name)) %>%
-  arrange(strain_year) %>%
+strain_coords <- read_csv("input_data/kucharski_2018/datasets/antigenic_coords.csv") |>
+  rename(strain_name = viruses, y = AG_x, x = AG_y) |>
+  mutate(strain_year = get_strain_year_from_name(strain_name)) |>
+  arrange(strain_year) |>
   mutate(t = strain_year - min(strain_year))
 
 library(mgcv)
@@ -19,20 +19,20 @@ gratia::draw(fit_y, residuals = TRUE)
 
 pred <- tibble(
   strain_year = 1968:2012
-) %>%
-  mutate(t = strain_year - min(strain_year)) %>%
+) |>
+  mutate(t = strain_year - min(strain_year)) |>
   
   mutate(x = predict(fit_x, newdata = .),
          y = predict(fit_y, newdata = .))
 
 
-antigenic_distances <- pred %>%
-  arrange(strain_year) %>% 
+antigenic_distances <- pred |>
+  arrange(strain_year) |> 
   generate_antigenic_distances()
 
 
-antigenic_distances <- fit_strain_coords %>%
-  arrange(strain_year) %>% 
+antigenic_distances <- fit_strain_coords |>
+  arrange(strain_year) |> 
   generate_antigenic_distances()
 
 ggplot() +

@@ -8,9 +8,9 @@ read_hanam_data <- function(use_inferred_age = FALSE) {
   hanam_data_raw <- read_csv("input_data/kucharski_2018/datasets/HaNamCohort.csv", col_types = cols(.default = col_character()))
   
   # Per Kucharski model, specify initial infections matrix
-  initial_infections <- read_csv("input_data/kucharski_2018/R_datasets/hist_IC_H3.csv") %>%
-    select(-1) %>%
-    as.matrix() %>%
+  initial_infections <- read_csv("input_data/kucharski_2018/R_datasets/hist_IC_H3.csv") |>
+    select(-1) |>
+    as.matrix() |>
     t()
   
   n_strain <- ncol(hanam_data_raw) - 2
@@ -22,18 +22,18 @@ read_hanam_data <- function(use_inferred_age = FALSE) {
     )
   }
   
-  hanam_data_processed <- hanam_data_raw %>%
+  hanam_data_processed <- hanam_data_raw |>
     rename(ix_subject = `Subject number`,
-           year_observed = `Sample year`) %>%
+           year_observed = `Sample year`) |>
     mutate(ix_subject = as.integer(ix_subject),
-           year_observed = as.integer(year_observed)) %>%
+           year_observed = as.integer(year_observed)) |>
     
     pivot_longer(cols = -c(ix_subject, year_observed),
                  names_to = "strain_name",
-                 values_to = "observed_titre") %>%
+                 values_to = "observed_titre") |>
     
     mutate(observed_titre = clean_hi_titer(observed_titre),
-           strain_year = get_strain_year_from_name(strain_name)) %>%
+           strain_year = get_strain_year_from_name(strain_name)) |>
     
     drop_na(observed_titre)
   
@@ -41,7 +41,7 @@ read_hanam_data <- function(use_inferred_age = FALSE) {
   unique_sample_years <- sort(unique(hanam_data_processed$year_observed))
   unique_strain_years <- sort(unique(hanam_data_processed$strain_year))
   
-  sample_or_strain_years <- sort(unique(c(unique_sample_years, unique_strain_years))) %>%
+  sample_or_strain_years <- sort(unique(c(unique_sample_years, unique_strain_years))) |>
     as.integer()
   
   modelled_years <- min(sample_or_strain_years):max(sample_or_strain_years)
@@ -49,21 +49,21 @@ read_hanam_data <- function(use_inferred_age = FALSE) {
   baseline_year <- modelled_years[1]
   
   
-  observations_df <- hanam_data_processed %>%
+  observations_df <- hanam_data_processed |>
     
     mutate(ix_t_obs = match(year_observed, modelled_years),
-           ix_strain = match(strain_year, modelled_years)) %>%
+           ix_strain = match(strain_year, modelled_years)) |>
     
     mutate(across(c(ix_subject, ix_t_obs, ix_strain), as.integer))
   
   
   if(use_inferred_age) {
-    subject_birth_data <- read_csv("input_data/kgostic_data_emporium/Fonville_2014/YOB_inferred.csv") %>%
+    subject_birth_data <- read_csv("input_data/kgostic_data_emporium/Fonville_2014/YOB_inferred.csv") |>
       select(ix_subject = `Subject number`,
-             year_of_birth = YOB) %>%
+             year_of_birth = YOB) |>
       mutate(ix_t_birth = match(year_of_birth, modelled_years),
              ix_t_birth = replace_na(ix_t_birth, 0),
-             ix_subject = as.integer(ix_subject)) %>%
+             ix_subject = as.integer(ix_subject)) |>
       arrange(ix_subject)
   } else {
     n_subjects <- length(unique(observations_df$ix_subject))

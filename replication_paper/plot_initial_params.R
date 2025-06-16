@@ -4,10 +4,10 @@ tar_source()
 
 source("replication_paper/common.R")
 
-summary <- tar_read(combined_summaries) %>%
+summary <- tar_read(combined_summaries) |>
   filter(exp_group == "initial_conditions")
 
-chains <- tar_read(combined_chains) %>%
+chains <- tar_read(combined_chains) |>
   filter(exp_group == "initial_conditions")
 
 name_order <- c(
@@ -20,11 +20,11 @@ name_labels <- c(
   "Broad"
 )
 
-plot_data <- summary %>%
-  mutate(name = initial_params_name) %>% 
+plot_data <- summary |>
+  mutate(name = initial_params_name) |> 
   filter(run_name == "hanam_2018",
          prior_description == "BetaBernoulli_1_1",
-         variable %in% var_names) %>%
+         variable %in% var_names) |>
   mutate(name = fct_rev(factor(name, name_order, name_labels)),
          variable = factor(variable, var_names, var_labels))
 
@@ -38,7 +38,7 @@ ggplot(plot_data) +
   
   geom_vline(aes(xintercept = median),
              linetype = "14",
-             plot_data %>% filter(name == "Kucharski 2018")) +
+             plot_data |> filter(name == "Kucharski 2018")) +
   
   facet_wrap(~variable,
              ncol = 4, scales = "free_x") +
@@ -50,11 +50,11 @@ ggplot(plot_data) +
   theme(strip.text = element_markdown(size = 12, family = "Utopia"),
         panel.grid.major.y = element_gridline)
 
-plot_data <- chains %>%
-  mutate(name = initial_params_name) %>% 
+plot_data <- chains |>
+  mutate(name = initial_params_name) |> 
   filter(run_name == "hanam_2018",
-         prior_description == "BetaBernoulli_1_1") %>%
-  mutate(name = fct_rev(factor(name, name_order, name_labels))) %>% 
+         prior_description == "BetaBernoulli_1_1") |>
+  mutate(name = fct_rev(factor(name, name_order, name_labels))) |> 
   filter(.iteration > 150000)
 
 
@@ -70,12 +70,12 @@ ggplot(plot_data) +
 
 chain <- tar_read(chain_hanam_2018_11)
 
-chain_inf <- chain %>%
-  clean_chain() %>% 
+chain_inf <- chain |>
+  clean_chain() |> 
   add_total_infections(tar_read(hanam_2018))
 
-chain_inf %>% 
-  filter(.iteration > 50000) %>%
+chain_inf |> 
+  filter(.iteration > 50000) |>
   ggplot() +
   geom_point(aes(x = total_inf, y = obs_sd, colour = factor(.chain)),
              size = 0.5) +
@@ -84,8 +84,8 @@ chain_inf %>%
   theme(panel.grid.major = element_gridline)
 
 
-chain_inf %>% 
-  filter(.iteration > 50000) %>%
+chain_inf |> 
+  filter(.iteration > 50000) |>
   ggplot() +
   geom_point(aes(x = total_inf, y = mu_long, colour = factor(.chain)),
              size = 0.5) +
@@ -100,14 +100,14 @@ col_names <- colnames(chain)
 inf_names <- col_names[str_starts(col_names, "infections")]
 
 
-results <- chain %>% 
-  clean_chain() %>% 
+results <- chain |> 
+  clean_chain() |> 
   filter(.iteration > 50000,
          # .chain %in% c(6, 3, 2)
-         ) %>% 
-  group_by(.chain) %>% 
-  summarise(across(starts_with("infections"), mean)) %>%
-  pivot_longer(starts_with("infections")) %>%
+         ) |> 
+  group_by(.chain) |> 
+  summarise(across(starts_with("infections"), mean)) |>
+  pivot_longer(starts_with("infections")) |>
   
   mutate(index = str_remove(name, "infections\\["),
          index = str_remove(index, "\\]"),
@@ -124,10 +124,10 @@ ggplot(results) +
   facet_wrap(~.chain)
 
 
-results %>% 
-  group_by(.chain, ix_t) %>% 
-  summarise(value = sum(value)) %>%
-  mutate(value_cumulative = cumsum(value)) %>% 
+results |> 
+  group_by(.chain, ix_t) |> 
+  summarise(value = sum(value)) |>
+  mutate(value_cumulative = cumsum(value)) |> 
 
   ggplot() +
   geom_step(aes(x = ix_t, y = value_cumulative, colour = factor(.chain))) +

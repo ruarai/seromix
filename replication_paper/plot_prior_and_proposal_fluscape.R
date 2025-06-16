@@ -4,7 +4,7 @@ tar_source()
 
 source("replication_paper/common.R")
 
-summary <- tar_read(combined_summaries) %>%
+summary <- tar_read(combined_summaries) |>
   filter(exp_group == "prior_proposal_fluscape")
 
 name_order <- c(
@@ -27,13 +27,13 @@ name_labels <- c(
 )
 
 
-plot_data <- summary %>%
-  mutate(name = str_c(prior_description, "_", proposal_name)) %>% 
-  filter(name %in% name_order) %>% 
-  bind_rows(summaries_previous %>% filter(name == "kucharski_2018")) %>% 
+plot_data <- summary |>
+  mutate(name = str_c(prior_description, "_", proposal_name)) |> 
+  filter(name %in% name_order) |> 
+  bind_rows(summaries_previous |> filter(name == "kucharski_2018")) |> 
   filter(variable %in% var_names,
          name %in% name_order,
-         run_name %in% c("fluscape_2009_neuts", "fluscape_2009_HI")) %>%
+         run_name %in% c("fluscape_2009_neuts", "fluscape_2009_HI")) |>
   mutate(name = fct_rev(factor(name, name_order, name_labels)),
          variable = factor(variable, var_names, var_labels))
 
@@ -52,7 +52,7 @@ ggplot(plot_data) +
   
   geom_vline(aes(xintercept = median),
              linetype = "14",
-             plot_data %>% filter(name == "Kucharski 2018")) +
+             plot_data |> filter(name == "Kucharski 2018")) +
   
   facet_grid(cols = vars(variable), rows = vars(run_name),
              scales = "free_x") +

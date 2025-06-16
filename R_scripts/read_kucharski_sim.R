@@ -5,9 +5,9 @@ load("input_data/Simulated_data_SIM_1.RData")
 modelled_years <- 1968:2012
 
 process_individual_year <- function(data) {
-  data %>% 
-    t() %>%
-    as_tibble() %>%
+  data |> 
+    t() |>
+    as_tibble() |>
     
     rename(year_observed = test.year,
            observed_titre = titredat,
@@ -17,15 +17,15 @@ process_individual_year <- function(data) {
 }
 
 obs_df <- map(1:length(test.listSim), function(i) {
-  map(test.listSim[[i]], process_individual_year) %>%
-    bind_rows() %>% 
+  map(test.listSim[[i]], process_individual_year) |>
+    bind_rows() |> 
     mutate(ix_subject = i)
-}) %>%
-  bind_rows() %>%
+}) |>
+  bind_rows() |>
   
   mutate(ix_subject = as.integer(ix_subject),
          ix_t_obs = match(year_observed, modelled_years),
-         ix_strain = match(strain_year, modelled_years)) %>%
+         ix_strain = match(strain_year, modelled_years)) |>
   
   select(ix_subject, ix_t_obs, ix_strain, year_observed, strain_year, observed_titre)
 
@@ -38,9 +38,9 @@ antigenic_distances <- as.matrix(dist(antigenic.map.in))
 # infections matrix is not valid if below FALSE
 all(modelled_years == inf_years)
 
-infections <- reshape2::melt(historytabSim, varnames = c("ix_subject", "ix_t"), value.name = "infected") %>%
-  as_tibble() %>%
-  mutate(year = modelled_years[ix_t]) %>%
+infections <- reshape2::melt(historytabSim, varnames = c("ix_subject", "ix_t"), value.name = "infected") |>
+  as_tibble() |>
+  mutate(year = modelled_years[ix_t]) |>
   filter(infected == 1)
 
 model_data <- list(
@@ -58,10 +58,10 @@ tar_source()
 save_hdf5(model_data, "runs/hanam_ak_1/model_data.hdf5")
 
 
-sample_dates <- obs_df %>%
+sample_dates <- obs_df |>
   distinct(ix_subject, year_observed)
 
-strains_observed <- obs_df %>%
+strains_observed <- obs_df |>
   distinct(ix_subject, strain_year)
 
 ggplot() +
@@ -96,7 +96,7 @@ ggplot() +
 
 
 
-strains_observed_n <- obs_df %>%
+strains_observed_n <- obs_df |>
   count(ix_subject, year_observed, strain_year)
 
 

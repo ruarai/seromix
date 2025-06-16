@@ -4,13 +4,13 @@ tar_source()
 
 source("replication_paper/common.R")
 
-summary <- tar_read(combined_summaries) %>%
+summary <- tar_read(combined_summaries) |>
   filter(exp_group == "prior_comparison")
 
-plot_data <- summary %>%
-  mutate(name = str_c(prior_description, "_", proposal_name)) %>% 
+plot_data <- summary |>
+  mutate(name = str_c(prior_description, "_", proposal_name)) |> 
   filter(run_name == "hanam_2018",
-         variable %in% var_names) %>%
+         variable %in% var_names) |>
   mutate(#name = fct_rev(factor(name, name_order, name_labels)),
          variable = factor(variable, var_names, var_labels))
 
@@ -24,7 +24,7 @@ ggplot(plot_data) +
   
   geom_vline(aes(xintercept = median),
              linetype = "14",
-             plot_data %>% filter(name == "Kucharski 2018")) +
+             plot_data |> filter(name == "Kucharski 2018")) +
   
   facet_wrap(~variable,
              ncol = 4, scales = "free_x") +

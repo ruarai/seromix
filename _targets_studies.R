@@ -77,23 +77,23 @@ data_runs <- bind_rows(
     infection_prior = list(matrix_beta_bernoulli_1_1),
     initial_params_name = c("broad", "kucharski_data_study")
   )
-) %>%
-  rowwise() %>% 
+) |>
+  rowwise() |> 
   # Fill in defaults
   mutate(
     use_corrected_titre = replace_na(use_corrected_titre, TRUE),
     proposal_name = replace_na(proposal_name, "corrected")
-  ) %>%
+  ) |>
   # Add a description of the prior
-  mutate(prior_description = str_c(unlist(infection_prior), collapse = "_")) %>%
-  ungroup() %>%
+  mutate(prior_description = str_c(unlist(infection_prior), collapse = "_")) |>
+  ungroup() |>
   # Create a unique name and add in the run data (should probably be model_data)
   mutate(name = str_c(run_name, "_", row_number()),
          run_data = rlang::syms(run_name))
 
 
 # Data which will be added to summarised outputs from each run
-data_runs_meta <- data_runs %>%
+data_runs_meta <- data_runs |>
   select(name, exp_group, run_name, proposal_name, initial_params_name, use_corrected_titre, prior_description)
 
 

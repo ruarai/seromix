@@ -9,12 +9,12 @@ chain_files <- list.files(path = run_dir, pattern = "chain_prior_*", full.names 
 
 col_vars <- c("mu_long", "mu_short", "omega", "sigma_long", "sigma_short", "tau", "obs_sd")
 
-chain_data <- chain_files %>%
+chain_data <- chain_files |>
   map(
     function(x) {
-      x %>% 
-        read_chain() %>%
-        filter(.iteration > 40000) %>%
+      x |> 
+        read_chain() |>
+        filter(.iteration > 40000) |>
         select(any_of(c(".iteration", ".chain", col_vars)))
     }
   )
@@ -42,19 +42,19 @@ reported_values <- tribble(
   "sigma_long", 0.130, "fluscape_2009_neuts",
   "tau", 0.02, "fluscape_2009_neuts",
   "obs_sd", 1.69, "fluscape_2009_neuts"
-) %>%
+) |>
   filter(run_name == !!run_name)
 
 
-plot_data_chain <- chain_data %>%
-  bind_rows(.id = "chain_file") %>%
+plot_data_chain <- chain_data |>
+  bind_rows(.id = "chain_file") |>
   mutate(chain_file = chain_files[as.numeric(chain_file)],
          chain_name = str_match(chain_file, "chain_(.+)\\.parquet")[,2],
-         chain_name = fct_rev(factor(chain_name, chain_name_order))) %>%
+         chain_name = fct_rev(factor(chain_name, chain_name_order))) |>
   pivot_longer(any_of(col_vars))
 
 if(str_starts(run_name, "fluscape_2009")) {
-  plot_data_chain <- plot_data_chain %>%
+  plot_data_chain <- plot_data_chain |>
     filter(name != "sigma_short")
 }
 

@@ -59,20 +59,20 @@ runs <- tar_map(
   ),
   tar_target(
     chain_subset,
-    chain %>%
-      select(-starts_with("infections")) %>% 
-      clean_chain() %>%
-      add_total_infections(run_data) %>%
+    chain |>
+      select(-starts_with("infections")) |> 
+      clean_chain() |>
+      add_total_infections(run_data) |>
       mutate(name = name)
   ),
   tar_target(
     chain_summary,
-    summarise_chain(chain, n_warmup, run_data, by_chain = TRUE) %>%
+    summarise_chain(chain, n_warmup, run_data, by_chain = TRUE) |>
       mutate(name = name)
   ),
   tar_target(
     chain_summary_singular,
-    summarise_chain(chain, n_warmup, run_data, by_chain = FALSE) %>%
+    summarise_chain(chain, n_warmup, run_data, by_chain = FALSE) |>
       mutate(name = name)
   )
 )
@@ -84,16 +84,16 @@ list(
   tar_combine(
     combined_summaries,
     runs[["chain_summary"]],
-    command = dplyr::bind_rows(!!!.x) %>% left_join(data_runs_meta, by = "name")
+    command = dplyr::bind_rows(!!!.x) |> left_join(data_runs_meta, by = "name")
   ),
   tar_combine(
     combined_singular_summaries,
     runs[["chain_summary_singular"]],
-    command = dplyr::bind_rows(!!!.x) %>% left_join(data_runs_meta, by = "name")
+    command = dplyr::bind_rows(!!!.x) |> left_join(data_runs_meta, by = "name")
   ),
   tar_combine(
     combined_chains,
     runs[["chain_subset"]],
-    command = dplyr::bind_rows(!!!.x) %>% left_join(data_runs_meta, by = "name")
+    command = dplyr::bind_rows(!!!.x) |> left_join(data_runs_meta, by = "name")
   )
 )

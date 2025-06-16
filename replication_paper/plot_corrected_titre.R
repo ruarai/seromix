@@ -4,17 +4,17 @@ tar_source()
 
 source("replication_paper/common.R")
 
-summary <- tar_read(combined_summaries) %>% 
+summary <- tar_read(combined_summaries) |> 
   filter(exp_group == "titre_correction")
 
-plot_data <- summary %>%
-  mutate(name = str_c(prior_description, "_", proposal_name)) %>% 
+plot_data <- summary |>
+  mutate(name = str_c(prior_description, "_", proposal_name)) |> 
   filter(initial_params_name == "kucharski_data_study",
          prior_description == "BetaBernoulli_1_1",
-         proposal_name == "corrected") %>% 
+         proposal_name == "corrected") |> 
   
   filter(run_name == "hanam_2018",
-         variable %in% var_names) %>%
+         variable %in% var_names) |>
   mutate(name = factor(if_else(use_corrected_titre, "Corrected", "Uncorrected")),
          variable = factor(variable, var_names, var_labels))
 

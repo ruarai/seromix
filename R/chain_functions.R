@@ -1,24 +1,24 @@
 
 
 summarise_chain <- function(chain, drop_iterations, model_data, by_chain = TRUE) {
-  chain_long <- chain %>%
-    clean_chain() %>%
-    filter(.iteration > drop_iterations) %>%
-    add_total_infections(model_data) %>% 
-    select(-starts_with("infections")) %>%
+  chain_long <- chain |>
+    clean_chain() |>
+    filter(.iteration > drop_iterations) |>
+    add_total_infections(model_data) |> 
+    select(-starts_with("infections")) |>
     
     pivot_longer(-c(.iteration, .chain, .draw),
                  names_to = "variable")
   
   if(by_chain) {
-    chain_long <- chain_long %>% 
+    chain_long <- chain_long |> 
       group_by(.chain, variable)
   } else {
-    chain_long <- chain_long %>% 
+    chain_long <- chain_long |> 
       group_by(variable)
   }
   
-  chain_long %>% 
+  chain_long |> 
     
     summarise(
       mean = mean(value),
@@ -34,6 +34,6 @@ summarise_chain <- function(chain, drop_iterations, model_data, by_chain = TRUE)
 add_total_infections <- function(chain, model_data) {
   n_t_steps <- length(model_data$modelled_years)
   
-  chain %>%
+  chain |>
     mutate(total_inf = rowSums(across(starts_with("infections"))))
 }

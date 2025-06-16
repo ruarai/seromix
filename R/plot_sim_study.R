@@ -12,7 +12,7 @@ plot_sim_study <- function(
   infections <- model_data$infections
   
   
-  sample_dates <- model_data$observations %>%
+  sample_dates <- model_data$observations |>
     distinct(ix_subject, year_observed)
   
   ggplot() +

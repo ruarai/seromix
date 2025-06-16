@@ -8,10 +8,10 @@ plot_model_data <- function(model_data, run_name, plot_individuals = FALSE) {
   
   
   
-  sample_dates <- observations %>%
+  sample_dates <- observations |>
     distinct(ix_subject, year_observed)
   
-  strains_observed <- observations %>%
+  strains_observed <- observations |>
     distinct(ix_subject, strain_year)
   
   ggplot() +
@@ -41,8 +41,8 @@ plot_model_data <- function(model_data, run_name, plot_individuals = FALSE) {
     n_pages <- floor(max(observations$ix_subject) / 5)
     pdf(str_c(plot_dir, "data_by_year_observed.pdf"), width = 10, height = 6)
     for(i in 1:n_pages) {
-      p <- observations %>%
-        filter(ix_subject %in% (i * 5):((i + 1) * 5 - 1)) %>% 
+      p <- observations |>
+        filter(ix_subject %in% (i * 5):((i + 1) * 5 - 1)) |> 
         ggplot() +
         geom_point(aes(x = strain_year, y = observed_titre),
                    size = 0.7) +
@@ -60,8 +60,8 @@ plot_model_data <- function(model_data, run_name, plot_individuals = FALSE) {
     
     pdf(str_c(plot_dir, "data_by_strain_year.pdf"), width = 10, height = 6)
     for(i in 1:max(observations$ix_subject)) {
-      p <- observations %>%
-        filter(ix_subject == i) %>% 
+      p <- observations |>
+        filter(ix_subject == i) |> 
         ggplot() +
         geom_point(aes(x = year_observed, y = observed_titre),
                    size = 0.7) +

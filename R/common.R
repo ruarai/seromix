@@ -25,7 +25,7 @@ read_hdf5 <- function(filename) {
   l <- map(item_names,
            function(item_name) {
              rhdf5::h5read(filename, item_name)
-           }) %>%
+           }) |>
     `names<-`(item_names)
   
   return(l)
@@ -49,42 +49,42 @@ process_data_df <- function(data_df, modelled_years) {
   col_names <- colnames(data_df)
   
   if("ix_t_obs" %in% col_names) {
-    data_df <- data_df %>%
+    data_df <- data_df |>
       mutate(year_observed = modelled_years[ix_t_obs])
   }
   
   if("ix_strain" %in% col_names) {
-    data_df <- data_df %>%
+    data_df <- data_df |>
       mutate(strain_year = modelled_years[ix_strain])
   }
   
   if("ix_t_birth" %in% col_names) {
-    data_df <- data_df %>%
+    data_df <- data_df |>
       mutate(ix_t_birth = if_else(ix_t_birth == 0, NA_integer_, ix_t_birth))
     
     if(!("year_of_birth" %in% col_names)) {
-      data_df <- data_df %>% 
+      data_df <- data_df |> 
         mutate(year_of_birth = modelled_years[ix_t_birth])
     }
   }
   
   if("ix_t" %in% col_names) {
-    data_df <- data_df %>%
+    data_df <- data_df |>
       mutate(year = modelled_years[ix_t])
   }
   
-  data_df <- data_df %>%
+  data_df <- data_df |>
     as_tibble()
   
   return(data_df)
 }
 
 clean_chain <- function(chain_df) {
-  chain_df %>%
-    rename(.chain = chain, .iteration = iteration) %>% 
+  chain_df |>
+    rename(.chain = chain, .iteration = iteration) |> 
     mutate(#Chain = .chain, # Copy for whatever reason.
            .draw = (.iteration - min(.iteration)) + (.chain - 1) * (max(.iteration) - min(.iteration) + 1),
-           .before = 3) %>%
+           .before = 3) |>
     rename_with(function(x) str_remove(x, " ")) # Remove spaces from array indexing
 }
 
@@ -140,45 +140,45 @@ render_quarto_data_study <- function(run_name, chain_name) {
 
 
 get_strain_year_from_name <- function(strain_name) {
-  year_part <- strain_name %>%
-    str_split("/") %>%
-    map(last) %>%
+  year_part <- strain_name |>
+    str_split("/") |>
+    map(last) |>
     str_extract("^\\d{2,4}")
   
   case_when(
     nchar(year_part) == 2 & as.numeric(year_part) > 15 ~ str_c("19", year_part),
     nchar(year_part) == 2 & as.numeric(year_part) <= 15 ~ str_c("20", year_part),
     nchar(year_part) == 4 ~ year_part
-  ) %>%
+  ) |>
     as.numeric()
 }
 
 
 get_strain_year_from_name <- function(strain_name) {
-  year_part <- strain_name %>%
-    str_split("/") %>%
-    map(last) %>%
+  year_part <- strain_name |>
+    str_split("/") |>
+    map(last) |>
     str_extract("^\\d{2,4}")
   
   case_when(
     nchar(year_part) == 2 & as.numeric(year_part) > 15 ~ str_c("19", year_part),
     nchar(year_part) == 2 & as.numeric(year_part) <= 15 ~ str_c("20", year_part),
     nchar(year_part) == 4 ~ year_part
-  ) %>%
+  ) |>
     as.numeric()
 }
 
 make_kucharski_antigenic_distances <- function(modelled_years) {
-  raw_strain_coords <- read_csv("input_data/kucharski_2018/datasets/antigenic_coords.csv") %>%
-    rename(strain_name = viruses, Y = AG_x, X = AG_y) %>%
-    mutate(strain_year = get_strain_year_from_name(strain_name)) %>%
+  raw_strain_coords <- read_csv("input_data/kucharski_2018/datasets/antigenic_coords.csv") |>
+    rename(strain_name = viruses, Y = AG_x, X = AG_y) |>
+    mutate(strain_year = get_strain_year_from_name(strain_name)) |>
     arrange(strain_year)
   
   fit_strain_coords <- generate_antigenic_map(raw_strain_coords, modelled_years)
   
-  antigenic_distances <- fit_strain_coords %>%
-    filter(strain_year %in% modelled_years) %>%
-    arrange(strain_year) %>% 
+  antigenic_distances <- fit_strain_coords |>
+    filter(strain_year %in% modelled_years) |>
+    arrange(strain_year) |> 
     generate_antigenic_distances()
   
   return(antigenic_distances)
@@ -187,10 +187,10 @@ make_kucharski_antigenic_distances <- function(modelled_years) {
 
 make_gam_antigenic_distances <- function(modelled_years) {
   
-  strain_coords <- read_csv("input_data/kucharski_2018/datasets/antigenic_coords.csv") %>%
-    rename(strain_name = viruses, y = AG_x, x = AG_y) %>%
-    mutate(strain_year = get_strain_year_from_name(strain_name)) %>%
-    arrange(strain_year) %>%
+  strain_coords <- read_csv("input_data/kucharski_2018/datasets/antigenic_coords.csv") |>
+    rename(strain_name = viruses, y = AG_x, x = AG_y) |>
+    mutate(strain_year = get_strain_year_from_name(strain_name)) |>
+    arrange(strain_year) |>
     mutate(t = strain_year - min(strain_year))
   
   library(mgcv)
@@ -203,15 +203,15 @@ make_gam_antigenic_distances <- function(modelled_years) {
   
   pred <- tibble(
     strain_year = modelled_years
-  ) %>%
-    mutate(t = strain_year - min(strain_year)) %>%
+  ) |>
+    mutate(t = strain_year - min(strain_year)) |>
     
     mutate(x = predict(fit_x, newdata = .),
            y = predict(fit_y, newdata = .))
   
-  antigenic_distances <- fit_strain_coords %>%
-    filter(strain_year %in% modelled_years) %>%
-    arrange(strain_year) %>% 
+  antigenic_distances <- fit_strain_coords |>
+    filter(strain_year %in% modelled_years) |>
+    arrange(strain_year) |> 
     generate_antigenic_distances()
   
   return(antigenic_distances)

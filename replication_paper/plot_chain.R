@@ -14,16 +14,16 @@ name_order <- c(
   # "BetaBernoulli_1_1_corrected"
 )
 
-plot_data <- chains %>%
-  mutate(name = str_c(prior_description, "_", proposal_name)) %>%
+plot_data <- chains |>
+  mutate(name = str_c(prior_description, "_", proposal_name)) |>
   
   filter(exp_group == "prior_proposal_fluscape",
-         name %in% name_order) %>% 
+         name %in% name_order) |> 
   
   pivot_longer(any_of(var_names),
                names_to = "variable")
 
-plot_data %>%
+plot_data |>
   ggplot() +
   geom_line(aes(x = .iteration, y = value, colour = factor(.chain))) +
   
