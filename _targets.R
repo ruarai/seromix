@@ -6,7 +6,7 @@ library(crew)
 suppressMessages(tar_source())
 
 tar_option_set(
-  controller = crew_controller_local(workers = 3)
+  controller = crew_controller_local(workers = 4)
 )
 
 n_iterations <- 200000
@@ -43,12 +43,13 @@ runs <- tar_map(
   tar_target(
     chain,
     get_julia_fit_model()(
-      run_data,
+      model_data,
       proposal_name = proposal_name,
       infection_prior = infection_prior,
       fixed_params = fixed_params,
       initial_params_name = initial_params_name,
       use_corrected_titre = use_corrected_titre,
+      sampler_name = sampler_name,
       
       n_samples = as.integer(n_iterations),
       n_thinning = as.integer(round(n_iterations / 2000)),
@@ -59,20 +60,20 @@ runs <- tar_map(
   ),
   tar_target(
     chain_subset,
-    chain |>
-      select(-starts_with("infections")) |> 
+    chain |> 
       clean_chain() |>
-      add_total_infections(run_data) |>
+      add_total_infections(model_data) |>
+      select(-starts_with("infections")) |>
       mutate(name = name)
   ),
   tar_target(
     chain_summary,
-    summarise_chain(chain, n_warmup, run_data, by_chain = TRUE) |>
+    summarise_chain(chain, n_warmup, model_data, by_chain = TRUE) |>
       mutate(name = name)
   ),
   tar_target(
     chain_summary_singular,
-    summarise_chain(chain, n_warmup, run_data, by_chain = FALSE) |>
+    summarise_chain(chain, n_warmup, model_data, by_chain = FALSE) |>
       mutate(name = name)
   )
 )

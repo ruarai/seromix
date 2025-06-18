@@ -34,6 +34,7 @@ using JLD2
 
 using Printf
 
+using SliceSampling
 
 
 include("likelihood_model/make_waning_model.jl")

@@ -10,6 +10,17 @@ summary <- tar_read(combined_summaries) |>
 chains <- tar_read(combined_chains) |>
   filter(exp_group == "initial_conditions")
 
+var_labels_asterisk <- c(
+  "<i>μ</i><sub>L</sub> (long-term boost)", 
+  "<i>μ</i><sub>S</sub> (short-term boost)",
+  "<i>σ</i><sub>L</sub> (long-term cross<br>reactivity) *", 
+  "<i>σ</i><sub>S</sub> (short-term cross<br>reactivity) *",
+  "<i>τ</i> (seniority) *",
+  "<i>ω</i> (waning)",
+  "<i>σ</i><sub>obs</sub> (obs sd.)", 
+  "Total infections"
+)
+
 name_order <- c(
   "kucharski_data_study",
   "broad"
@@ -26,7 +37,8 @@ plot_data <- summary |>
          prior_description == "BetaBernoulli_1_1",
          variable %in% var_names) |>
   mutate(name = fct_rev(factor(name, name_order, name_labels)),
-         variable = factor(variable, var_names, var_labels))
+         variable_label = factor(variable, var_names, var_labels),
+         variable_asterisk = factor(variable, var_names, var_labels_asterisk))
 
 ggplot(plot_data) +
   
@@ -36,11 +48,7 @@ ggplot(plot_data) +
   geom_linerange(aes(xmin = q95_lower, xmax = q95_upper, y = name),
                  position = position_dodge2(width = 0.3)) +
   
-  geom_vline(aes(xintercept = median),
-             linetype = "14",
-             plot_data |> filter(name == "Kucharski 2018")) +
-  
-  facet_wrap(~variable,
+  facet_wrap(~variable_label,
              ncol = 4, scales = "free_x") +
   
   xlab("Value (median, 95% CrI)") + ylab(NULL) +
@@ -50,20 +58,75 @@ ggplot(plot_data) +
   theme(strip.text = element_markdown(size = 12, family = "Utopia"),
         panel.grid.major.y = element_gridline)
 
+
+ggsave(
+  "replication_paper/results/initial_params.png",
+  device = png,
+  width = 12,
+  height = 4, bg = "white"
+)
+
+
+ggplot(plot_data) +
+  
+  geom_point(aes(x = median, y = name),
+             size = 0.8,
+             position = position_dodge2(width = 0.3)) +
+  geom_linerange(aes(xmin = q95_lower, xmax = q95_upper, y = name),
+                 position = position_dodge2(width = 0.3)) +
+  
+  facet_wrap(~variable_asterisk,
+             ncol = 4, scales = "free_x") +
+  
+  xlab("Value (median, 95% CrI)") + ylab(NULL) +
+  
+  plot_theme_paper +
+  
+  ggh4x::scale_x_facet(
+    variable_asterisk == var_labels_asterisk[[5]],
+    limits = c(0, 0.1)
+  ) +
+  
+  ggh4x::scale_x_facet(
+    variable_asterisk == var_labels_asterisk[[3]],
+    limits = c(0.07, 0.2)
+  ) +
+  
+  ggh4x::scale_x_facet(
+    variable_asterisk == var_labels_asterisk[[4]],
+    limits = c(0, 0.1)
+  ) +
+
+  theme(strip.text = element_markdown(size = 12, family = "Utopia"),
+      panel.grid.major.y = element_gridline)
+
+
+ggsave(
+  "replication_paper/results/initial_params_zoomed.png",
+  device = png,
+  width = 12,
+  height = 4, bg = "white"
+)
+
+
+
 plot_data <- chains |>
   mutate(name = initial_params_name) |> 
-  filter(run_name == "hanam_2018",
-         prior_description == "BetaBernoulli_1_1") |>
+  # filter(proposal_name == "kucharski_data_study") |>
   mutate(name = fct_rev(factor(name, name_order, name_labels))) |> 
+  filter(name == "Narrow") |> 
   filter(.iteration > 150000)
 
 
 ggplot(plot_data) +
-  geom_point(aes(x = tau, y = mu_long, colour = factor(.chain))) +
+  geom_point(aes(x = tau, y = total_inf, colour = factor(.chain))) +
   
   facet_wrap(~name) +
   
   plot_theme_paper +
+  
+  coord_cartesian(xlim = c(0, 0.1),
+                  ylim = c(0, 800)) +
   
   theme(panel.grid.major = element_gridline)
 

@@ -18,7 +18,7 @@ data_runs <- bind_rows(
     exp_group = "prior_proposal",
     
     run_name = "hanam_2018",
-    fixed_params = list(NULL), 
+    fixed_params = list(NULL),sampler_name = "default", # filler
     proposal_name = c("uncorrected", "corrected"),
     infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1),
     initial_params_name = "kucharski_data_study"
@@ -76,20 +76,31 @@ data_runs <- bind_rows(
     run_name = "hanam_2018",
     infection_prior = list(matrix_beta_bernoulli_1_1),
     initial_params_name = c("broad", "kucharski_data_study")
-  )
+  ),
+  
+  # Compare effect of sampler:
+  # expand_grid(
+  #   exp_group = "sampler_choice",
+  #   
+  #   run_name = "hanam_2018",
+  #   infection_prior = list(matrix_beta_bernoulli_1_1, matrix_beta_bernoulli_2.5_8),
+  #   initial_params_name = "broad",
+  #   sampler_name = c("default", "slice_sampler")
+  # )
 ) |>
   rowwise() |> 
   # Fill in defaults
   mutate(
     use_corrected_titre = replace_na(use_corrected_titre, TRUE),
-    proposal_name = replace_na(proposal_name, "corrected")
+    proposal_name = replace_na(proposal_name, "corrected"), # TODO NULL might work fine here?
+    # sampler_name = replace_na(sampler_name, "default")
   ) |>
   # Add a description of the prior
   mutate(prior_description = str_c(unlist(infection_prior), collapse = "_")) |>
-  ungroup() |>
+  group_by(exp_group, run_name) |> 
   # Create a unique name and add in the run data (should probably be model_data)
-  mutate(name = str_c(run_name, "_", row_number()),
-         run_data = rlang::syms(run_name))
+  mutate(name = str_c(exp_group, "_", run_name, "_", row_number()),
+         model_data = rlang::syms(run_name))
 
 
 # Data which will be added to summarised outputs from each run

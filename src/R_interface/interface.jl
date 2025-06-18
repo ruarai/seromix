@@ -9,6 +9,7 @@ function fit_model(
     infection_prior = (name = "BetaBernoulli", alpha = 1.0, beta = 1.0),
     proposal_name = "corrected",
     initial_params_name = "kucharski_sim_study",
+    sampler_name = "default",
 
     n_samples = 2_000,
     n_thinning = 1,
@@ -47,15 +48,34 @@ function fit_model(
         initial_params = [Base.structdiff(p, fixed_params_tuple) for p in initial_params]
     end
 
-
-    gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
+    sampler = select_sampler(sampler_name, model, p, proposal_function)
 
     chain = sample_chain(
-        model, initial_params, gibbs_sampler, rng;
+        model, initial_params, sampler, rng;
         n_sample = n_samples, n_thinning = n_thinning, n_chain = n_chain
     );
 
     return DataFrame(chain)
+end
+
+function select_sampler(sampler_name, model, p, proposal_function)
+    symbols_not_inf = model_symbols_apart_from(model, [:infections])
+
+    if sampler_name == "default"
+        return Gibbs(
+            :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
+            symbols_not_inf => make_mh_parameter_sampler()
+        )
+    elseif sampler_name == "slice_sampler"
+        slice_sampler = RandPermGibbs(SliceSteppingOut(1.))
+
+        return Gibbs(
+            :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
+            symbols_not_inf => externalsampler(slice_sampler)
+        )
+    end
+
+    error("Invalid sampler specified")
 end
 
 
