@@ -32,7 +32,7 @@ attack_rates = vcat(
 )
 infections = Matrix(stack([rand(rng, Bernoulli(a), (n_subjects)) for a in attack_rates])')
 
-mask_infections_birth_year!(infections, p.subject_birth_ix) 
+# mask_infections_birth_year!(infections, p.subject_birth_ix) 
 heatmap(infections')
 
 

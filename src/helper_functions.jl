@@ -146,6 +146,8 @@ function chain_infections_matrix(chain, ix_iter, ix_chain, params)
     return infections
 end
 
+
+
 # TODO add birth year masking
 function chain_sum_infections(chain, params)
     # Assuming infections is at end
