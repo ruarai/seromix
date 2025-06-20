@@ -45,9 +45,9 @@ include("likelihood_model/waning_model_kucharski.jl")
 import Turing.Inference: isgibbscomponent
 include("inference/mh_parameter_sampler.jl")
 include("inference/mh_infection_sampler.jl")
-include("inference/mh_infection_steps.jl")
 include("inference/sampling_functions.jl")
 include("inference/initial_params.jl")
+include("proposals/infection_proposals.jl")
 
 include("helper_functions.jl")
 

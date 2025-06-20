@@ -1,7 +1,7 @@
 
 
-struct StateExplorer
-    slice_sampler::SliceSampler
+struct StateExplorerAdaptive2
+    # slice_sampler
     proposal_function::Function
 
     symbols_not_inf::Vector{Symbol}
@@ -9,25 +9,26 @@ struct StateExplorer
     n_t_steps::Int
     n_subjects::Int
 
-    sigma_step::Float64 #TODO remove
+    sigma_step::Float64
     inf_step::Float64
 end
 
 
-function Pigeons.step!(explorer::StateExplorer, replica, shared)
+function Pigeons.step!(explorer::StateExplorerAdaptive2, replica, shared)
     state = replica.state
     rng = replica.rng
     recorders = replica.recorders
     chain = replica.chain
-    h = explorer.slice_sampler
 
     log_potential = Pigeons.find_log_potential(replica, shared.tempering, shared)
 
     # Slice sampling
+    h = SliceSampler()
     cached_lp = -Inf
     for meta in state.metadata[explorer.symbols_not_inf]
         cached_lp = Pigeons.slice_sample!(h, meta.vals, log_potential, cached_lp, replica)
     end
+
 
     # Infections
 
@@ -44,7 +45,8 @@ function Pigeons.step!(explorer::StateExplorer, replica, shared)
             rng,
             inf_vi.vals,
             ix_subject,
-            n_t_steps
+            n_t_steps,
+            explorer.inf_step
         )
 
         log_pr_before = log_potential(state, IndividualSubsetContext(ix_subject))
@@ -69,35 +71,53 @@ function Pigeons.step!(explorer::StateExplorer, replica, shared)
 end
 
 function Pigeons.adapt_explorer(
-    explorer::StateExplorer,
+    explorer::StateExplorerAdaptive2,
     reduced_recorders,
     current_pt,
     new_tempering
 )
+    # Adjust random walk
+    mean_accepted_param = mean(Pigeons.value.(values(Pigeons.value(reduced_recorders.n_accepted_param))))
+    mean_rejected_param = mean(Pigeons.value.(values(Pigeons.value(reduced_recorders.n_rejected_param))))
+
+    target_accept_rate = 0.234
+
+    pr_accept_param = mean_accepted_param / (mean_accepted_param + mean_rejected_param)
+
+    sigma_step_adapted = clamp(exp(log(explorer.sigma_step) + pr_accept_param - target_accept_rate), 1e-5, 1.0)
+
+    println("Param acceptance rate = $(round(pr_accept_param, digits = 2)), adapted step size = $(round(sigma_step_adapted, digits = 2))")
+
     mean_accepted_inf = mean(Pigeons.value.(values(Pigeons.value(reduced_recorders.n_accepted_inf))))
     mean_rejected_inf = mean(Pigeons.value.(values(Pigeons.value(reduced_recorders.n_rejected_inf))))
 
     pr_accept_inf = mean_accepted_inf / (mean_accepted_inf + mean_rejected_inf)
 
-    println("Inf acceptance rate = $(round(pr_accept_inf, digits = 2)).")
+    inf_step_adapted = clamp(exp(log(explorer.inf_step) + pr_accept_inf - target_accept_rate), 1e-5, 10.0)
+
+    println("Inf acceptance rate = $(round(pr_accept_inf, digits = 2)), adapted inf step size = $(round(inf_step_adapted, digits = 2))")
 
 
-    return StateExplorer(
-        explorer.slice_sampler,
+    return StateExplorerAdaptive2(
         explorer.proposal_function,
         explorer.symbols_not_inf,
         explorer.n_t_steps,
         explorer.n_subjects,
-        explorer.sigma_step, 
-        explorer.inf_step
+        sigma_step_adapted,
+        inf_step_adapted
     )
 end
 
+
+n_accepted_param() = Pigeons.GroupBy(Int, Pigeons.Sum())
+n_rejected_param() = Pigeons.GroupBy(Int, Pigeons.Sum())
 n_accepted_inf() = Pigeons.GroupBy(Int, Pigeons.Sum())
 n_rejected_inf() = Pigeons.GroupBy(Int, Pigeons.Sum())
 
-function Pigeons.explorer_recorder_builders(explorer::StateExplorer)
+function Pigeons.explorer_recorder_builders(explorer::StateExplorerAdaptive2)
     result = [
+        n_accepted_param,
+        n_rejected_param,
         n_accepted_inf,
         n_rejected_inf
     ]

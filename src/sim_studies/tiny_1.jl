@@ -63,7 +63,11 @@ function filt_age(ix_subject, ix_t_obs)
     return ix_t_obs >= p.subject_birth_ix[ix_subject]
 end
 
-observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
+# observations = filter([:ix_subject, :ix_t_obs] => filt_age, complete_obs)
+ix_row = sample(axes(complete_obs, 1), 250, replace = false)
+ix_row = sort(ix_row)
+
+observations = complete_obs[ix_row,:]
 observations.observed_titre = rand(TitreArrayNormal(observations.observed_titre, obs_sd, const_titre_min, const_titre_max))
 
 model_data = Dict(
