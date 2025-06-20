@@ -25,22 +25,41 @@ model = make_waning_model(
 );
 
 pigeon_model = TuringLogPotential(model);
+const PigeonModelType = typeof(pigeon_model);
+
+function Pigeons.initialization(target::PigeonModelType, rng::AbstractRNG, ::Int64)
+    result = DynamicPPL.VarInfo(rng, target.model, DynamicPPL.SampleFromPrior(), DynamicPPL.PriorContext())
+    result = DynamicPPL.link(result, target.model)
+
+    Pigeons.update_state!(result, :mu_long, 1, 2.0)
+    Pigeons.update_state!(result, :mu_short, 1, 2.0)
+    Pigeons.update_state!(result, :omega, 1, 0.8)
+    Pigeons.update_state!(result, :sigma_long, 1, 0.1)
+    Pigeons.update_state!(result, :sigma_short, 1, 0.05)
+    Pigeons.update_state!(result, :tau, 1, 0.05)
+    Pigeons.update_state!(result, :obs_sd, 1, 1.5)
+
+    return result
+end
 
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
 explorer = StateExplorer(
-    SliceSampler(1.0, 20, 3, 1024),
+    SliceSampler(),
     proposal_jitter,
     [i for i in symbols_not_inf], p.n_t_steps, p.n_subjects, 0.1, 1.0
 )
 
 pt = pigeons(
     target = TuringLogPotential(model),
-    n_rounds = 4, n_chains = 1, multithreaded = false,
-    # n_rounds = 11, n_chains = 32, multithreaded = true,
+    # n_rounds = 6, n_chains = 1, multithreaded = false,
+    n_rounds = 12, n_chains = 16, multithreaded = true,
     explorer = explorer,
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema]
 );
+
+pt = increment_n_rounds!(pt, 1)
+pt = pigeons(pt)
 
 plot(pt.shared.tempering.communication_barriers.localbarrier)
 
