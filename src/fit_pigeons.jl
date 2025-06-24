@@ -16,11 +16,11 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-# prior_infection_dist = MatrixBetaBernoulliRow(2.5, 8.0, p.n_t_steps, p.n_subjects)
 prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p.n_t_steps, p.n_subjects)
 
 model = make_waning_model(
     p, obs_df; prior_infection_dist = prior_infection_dist,
+    use_corrected_titre = false,
     # turing_model = waning_model_tempering
 );
 
@@ -46,20 +46,21 @@ symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
 explorer = StateExplorer(
     SliceSampler(),
-    proposal_jitter,
+    # proposal_jitter,
+    proposal_original_corrected,
     [i for i in symbols_not_inf], p.n_t_steps, p.n_subjects, 0.1, 1.0
 )
 
 pt = pigeons(
     target = TuringLogPotential(model),
     # n_rounds = 6, n_chains = 1, multithreaded = false,
-    n_rounds = 12, n_chains = 16, multithreaded = true,
+    n_rounds = 13, n_chains = 64, multithreaded = true,
     explorer = explorer,
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema]
 );
 
-pt = increment_n_rounds!(pt, 1)
-pt = pigeons(pt)
+# pt = increment_n_rounds!(pt, 1)
+# pt = pigeons(pt)
 
 plot(pt.shared.tempering.communication_barriers.localbarrier)
 
@@ -88,8 +89,8 @@ scatter(chain[:tau], n_inf)
 scatter(chain[:mu_short], chain[:omega])
 
 using StatsPlots
-@df pt.shared.reports.swap_prs StatsPlots.plot(:round, :mean, group = :first, legend = false)
+@df pt.shared.reports.swap_prs StatsPlots.plot(:round, :mean, group = :first)
 
 
-# chain_name = "pigeons_2"
-# save_draws(chain, "$run_dir/chain_$chain_name.parquet")
+chain_name = "pigeons_3"
+save_draws(chain, "$run_dir/chain_$chain_name.parquet")
