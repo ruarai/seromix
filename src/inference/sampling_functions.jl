@@ -44,7 +44,7 @@ function make_gibbs_sampler(model, p, step_fn)
 end
 
 
-function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
+function log_callback(rng, model, sampler, sample, state, iteration, n_sample; kwargs...)
     if iteration % 50 == 0
         if length(sampler.alg.samplers) > 1
 
@@ -54,11 +54,12 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
 
             time_elapsed = (sampler_state.time_B - sampler_state.time_A) * 1000
 
-            time_for_thousand =  time_elapsed / 60
+            # Time per 10,000 samples
+            sampling_rate = time_elapsed / 6
 
             # println("$iteration; $(round(rate, digits=2)); $(round(time_elapsed, digits=2))ms.")
 
-            @printf("%6d; %6.2f; %7.2fms;%7.2fmin/1,000\n", iteration, rate, time_elapsed, time_for_thousand)
+            @printf("%6d; %6.2f; %7.2fms;%7.2fmin/10,000\n", iteration, rate, time_elapsed, sampling_rate)
         else
             @printf("%5d;\n", iteration)
         end
@@ -80,9 +81,15 @@ end
 # end
 
 # Hack to reduce model evaluations
-# will likely break anything with other samplers, bijection
-# function Turing.Inference.transition_to_turing(f::DynamicPPL.LogDensityFunction, transition)
-#     θ = transition.θ
-#     varinfo = DynamicPPL.unflatten(f.varinfo, θ)
-#     return Turing.Inference.Transition(θ, transition.lp, Turing.Inference.getstats(transition))
-# end
+function Turing.Inference.transition_to_turing(f::DynamicPPL.LogDensityFunction, transition)
+    θ = if transition isa InfectionSamplerTransition
+        transition.θ
+    elseif transition isa ParameterSamplerTransition
+        transition.θ
+    elseif transition isa SliceSampling.Transition
+        getparams(f.model, transition)
+    end
+
+    varinfo = DynamicPPL.unflatten(f.varinfo, θ)
+    return Turing.Inference.Transition(θ, transition.lp, Turing.Inference.getstats(transition))
+end

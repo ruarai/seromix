@@ -54,6 +54,7 @@ explorer = StateExplorer(
 pt = pigeons(
     target = TuringLogPotential(model),
     n_rounds = 14, n_chains = 64, multithreaded = true,   
+    # n_rounds = 14, n_chains = 64, multithreaded = true,   
     explorer = explorer,
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema]
 

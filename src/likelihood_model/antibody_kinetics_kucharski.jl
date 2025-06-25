@@ -9,15 +9,12 @@ function waning_curve!(
     time_diff_matrix::Matrix{Float64},
     subject_birth_ix::Vector{Int},
     infections::Matrix{Bool},
-
-    obs_lookup::Vector{Dict{Int, Vector{Tuple{Int,Int}}}},
+    obs_lookup_strain,
+    obs_lookup_ix,
     obs_views::Vector{UnitRange{Int}},
     y::AbstractArray{T}
 ) where T <: Real
-    n_t_steps, n_ind = size(infections)
-
-    
-    for ix_subject in 1:n_ind
+    for ix_subject in axes(infections, 2)
         waning_curve_individual!(
             mu_long, mu_short, omega,
             sigma_long, sigma_short, tau,
@@ -26,7 +23,8 @@ function waning_curve!(
             subject_birth_ix[ix_subject],
 
             view(infections, :, ix_subject),
-            obs_lookup[ix_subject],
+            obs_lookup_strain[ix_subject],
+            obs_lookup_ix[ix_subject],
 
             view(y, obs_views[ix_subject])
         )
@@ -45,7 +43,8 @@ function waning_curve_individual!(
     subject_birth_ix::Int,
     infections::AbstractArray{Bool},
 
-    obs_lookup_ind::Dict{Int64, Vector{Tuple{Int64,Int64}}},
+    obs_lookup_strain,
+    obs_lookup_ix,
 
     y::AbstractArray{T}
 ) where T <: Real
@@ -63,15 +62,20 @@ function waning_curve_individual!(
         
         # Process relevant times after infection
         for ix_t_obs in ix_t:n_t_steps
-            if !haskey(obs_lookup_ind, ix_t_obs)
+            if !haskey(obs_lookup_strain, ix_t_obs)
                 continue
             end
 
-            matches = obs_lookup_ind[ix_t_obs]
+            matches_strain = obs_lookup_strain[ix_t_obs]
+            matches_ix = obs_lookup_ix[ix_t_obs]
+
             time_diff = time_diff_matrix[ix_t_obs, ix_t]
             short_term_time_factor = max(0.0, 1.0 - omega * time_diff)
             
-            @inbounds for (ix_obs_strain, ix_obs) in matches
+            @turbo for i in eachindex(matches_strain)
+                ix_obs_strain = matches_strain[i]
+                ix_obs = matches_ix[i]
+
                 distance = dist_matrix[ix_t, ix_obs_strain]
                 
                 long_term_dist = max(0.0, 1.0 - sigma_long * distance)

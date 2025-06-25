@@ -42,6 +42,7 @@ complete_obs.observed_titre
         ix_t_obs = 1:n_t_steps, ix_strain = 1:n_t_steps, ix_subject = 1:n_subjects,
         observed_titre = 0.0
     )
+    obs_lookup_strain, obs_lookup_ix = make_obs_lookup_2(complete_obs)
 
     waning_curve!(
         model_params.mu_long, model_params.mu_short, model_params.omega,
@@ -51,7 +52,7 @@ complete_obs.observed_titre
 
         infections,
 
-        make_obs_lookup(complete_obs), make_obs_views(complete_obs),
+        obs_lookup_strain, obs_lookup_ix, make_obs_views(complete_obs),
         complete_obs.observed_titre
     )
 
@@ -61,6 +62,7 @@ complete_obs.observed_titre
     # Lazy way to store the approx. expected result
     @test sum(complete_obs.observed_titre) ≈ 52164.14374999999
 
+
     b_trial = @benchmark waning_curve!(
         $model_params.mu_long, $model_params.mu_short, $model_params.omega,
         $model_params.sigma_long, $model_params.sigma_short, $model_params.tau,
@@ -69,7 +71,8 @@ complete_obs.observed_titre
 
         $infections,
 
-        $(make_obs_lookup(complete_obs)), $(make_obs_views(complete_obs)),
+        $obs_lookup_strain, $obs_lookup_ix,
+        $(make_obs_views(complete_obs)),
         $complete_obs.observed_titre
     )
 
@@ -82,3 +85,26 @@ end
 
 
 
+data_code = "hanam_2018"
+rng = Random.Xoshiro(1)
+
+run_dir = "runs/$(data_code)/"
+model_data = load("$run_dir/model_data.hdf5")
+
+obs_df = DataFrame(model_data["observations"])
+
+p = read_model_parameters(model_data)
+
+prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p.n_t_steps, p.n_subjects)
+
+initial_params = make_initial_params_broad(p, 4, rng)
+
+model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
+
+symbols_not_inf = model_symbols_apart_from(model, [:infections])
+gibbs_sampler = make_gibbs_sampler(model, p, proposal_original_corrected)
+
+chain = sample_chain(
+    model, initial_params, gibbs_sampler, rng;
+    n_sample = 500, n_thinning = 1, n_chain = 4
+);

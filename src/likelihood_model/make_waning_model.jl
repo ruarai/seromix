@@ -22,12 +22,15 @@ function make_waning_model(
     n_max_ind_obs = maximum(length.(make_obs_views(obs_df)))
 
     individual_titre_obs = [obs_df.observed_titre[v] for v in make_obs_views(obs_df)]
+
+    obs_lookup_strain, obs_lookup_ix = make_obs_lookup_2(obs_df)
+    
     return turing_model(
         model_parameters,
         prior_infection_dist,
         use_corrected_titre,
 
-        make_obs_lookup(obs_df),
+        obs_lookup_strain, obs_lookup_ix,
         make_obs_views(obs_df),
         n_max_ind_obs,
         individual_titre_obs

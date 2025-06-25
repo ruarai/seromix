@@ -5,7 +5,7 @@
     prior_infection_dist::Distribution,
     use_corrected_titre::Bool,
 
-    obs_lookup, obs_views,
+    obs_lookup_strain, obs_lookup_ix, obs_views,
     n_max_ind_obs::Int,
 
     observed_titre::Vector{Vector{Float64}}     
@@ -51,8 +51,9 @@
             sigma_long, sigma_short, tau,
             model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
             model_parameters.subject_birth_ix[ix_subject],
-            AbstractArray{Bool}(view(infections, :, ix_subject)),
-            obs_lookup[ix_subject], 
+            view(infections, :, ix_subject),
+            obs_lookup_strain[ix_subject],
+            obs_lookup_ix[ix_subject],
             y_pred
         )
 
@@ -83,6 +84,7 @@ function ppd_kucharski(chain, model_parameters, n_ppd_subjects, n_draws)
         draw = chain[ix_sample,:]
         
         # TODO cache across ix_draw
+        # TODO fix with new lookup scheme
         obs_lookup = make_obs_lookup(obs_df_grouped[ix_draw])
         obs_view = make_obs_views(obs_df_grouped[ix_draw])
 

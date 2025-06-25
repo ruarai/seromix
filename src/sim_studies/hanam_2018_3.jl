@@ -59,6 +59,7 @@ waning_curve!(
 
     infections,
 
+    # TODO fix with new lookup scheme
     make_obs_lookup(complete_obs), make_obs_views(complete_obs),
     complete_obs.observed_titre
 )

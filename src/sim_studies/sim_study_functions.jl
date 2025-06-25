@@ -25,6 +25,7 @@ function simulate_latent_titre(continuous_params, model_parameters, infections)
 
         infections,
 
+        # TODO fix with new lookup scheme
         make_obs_lookup(complete_obs), make_obs_views(complete_obs),
         complete_obs.observed_titre
     )

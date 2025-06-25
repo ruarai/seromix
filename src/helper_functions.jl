@@ -12,15 +12,18 @@ function make_obs_views(obs_df)
     ]
 end
 
+
 function make_obs_lookup(obs_df)
-    n_ind = maximum(obs_df.ix_subject)
+    n_subject = maximum(obs_df.ix_subject)
 
-    obs_lookup = Vector{Dict{Int64, Vector{Tuple{Int64,Int64}}}}(undef, n_ind)
+    obs_lookup_strain = Vector{Dict{Int64, Vector{Int64}}}(undef, n_subject)
+    obs_lookup_ix = Vector{Dict{Int64, Vector{Int64}}}(undef, n_subject)
 
-    obs_ix_offsets = [findfirst(obs_df.ix_subject .== ix_subject) for ix_subject in 1:n_ind]
+    obs_ix_offsets = [findfirst(obs_df.ix_subject .== ix_subject) for ix_subject in 1:n_subject]
 
-    for ix_subject in 1:n_ind
-        obs_lookup[ix_subject] = Dict{Int64, Vector{Tuple{Int64,Int64}}}()
+    for ix_subject in 1:n_subject
+        obs_lookup_strain[ix_subject] = Dict{Int64, Vector{Int64}}()
+        obs_lookup_ix[ix_subject] = Dict{Int64, Vector{Int64}}()
     end
 
     for ix_obs in 1:nrow(obs_df)
@@ -30,14 +33,16 @@ function make_obs_lookup(obs_df)
 
         key = ix_t_obs
         
-        if !haskey(obs_lookup[ix_subject], key)
-            obs_lookup[ix_subject][key] = Int[]
+        if !haskey(obs_lookup_strain[ix_subject], key)
+            obs_lookup_strain[ix_subject][key] = Int[]
+            obs_lookup_ix[ix_subject][key] = Int[]
         end
 
-        push!(obs_lookup[ix_subject][key], (ix_strain, ix_obs - obs_ix_offsets[ix_subject] + 1))
+        push!(obs_lookup_strain[ix_subject][key], ix_strain)
+        push!(obs_lookup_ix[ix_subject][key], ix_obs - obs_ix_offsets[ix_subject] + 1)
     end
 
-    return obs_lookup
+    return obs_lookup_strain, obs_lookup_ix
 end
 
 function make_time_diff_matrix(modelled_years)
