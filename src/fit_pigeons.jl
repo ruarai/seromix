@@ -46,24 +46,17 @@ symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
 explorer = StateExplorer(
     SliceSampler(),
-    # proposal_jitter,
     proposal_original_corrected,
     [i for i in symbols_not_inf], p.n_t_steps, p.n_subjects, 0.1, 1.0
 )
 
 pt = pigeons(
     target = TuringLogPotential(model),
+    # n_rounds = 9, n_chains = 16, multithreaded = true,
     n_rounds = 14, n_chains = 64, multithreaded = true,   
-    # n_rounds = 14, n_chains = 64, multithreaded = true,   
     explorer = explorer,
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema]
-
-    # n_rounds = 5, n_chains = 64, multithreaded = true, checkpoint = true, extended_traces = true,
-    # record = [disk, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema]
 );
-
-# pt = increment_n_rounds!(pt, 1)
-# pt = pigeons(pt)
 
 plot(pt.shared.tempering.communication_barriers.localbarrier)
 
@@ -81,10 +74,9 @@ plot(chain, [:log_density], seriestype = :traceplot)
 
 
 heatmap(chain_infections_prob_2(chain, p)')
+# heatmap(model_data["infections_matrix"]')
 
 n_inf = chain_sum_infections(chain, p)
-plot(n_inf)
-
 
 scatter(chain[:mu_long], n_inf)
 scatter(chain[:mu_long], chain[:tau])
@@ -95,5 +87,6 @@ using StatsPlots
 @df pt.shared.reports.swap_prs StatsPlots.plot(:round, :mean, group = :first)
 
 
-chain_name = "pigeons_3"
+chain_name = "pigeons_4"
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")
+JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))

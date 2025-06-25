@@ -15,6 +15,7 @@ using AbstractMCMC
 using DynamicPPL
 using StaticArrays
 using ProgressMeter
+using LoopVectorization
 
 # using Plots, StatsPlots
 

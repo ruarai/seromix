@@ -7,7 +7,7 @@ function make_test_data(rng, n_t_steps, n_subjects)
 
     subject_birth_data = DataFrame(
         ix_subject = 1:n_subjects, 
-        ix_t_birth = floor.(Int, reverse(1:n_subjects) .* 0.7)
+        ix_t_birth = clamp.(floor.(Int, reverse(1:n_subjects) .* 0.5), 0, n_t_steps - 5)
     )
 
     p = FixedModelParameters(

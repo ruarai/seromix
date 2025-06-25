@@ -3,7 +3,7 @@
 include("../dependencies.jl")
 include("util.jl")
 
-using Test, StableRNGs
+using Test, StableRNGs, BenchmarkTools
 rng = Random.Xoshiro(1)
 
 
@@ -31,8 +31,6 @@ rng = Random.Xoshiro(1)
 end
 
 
-complete_obs.observed_titre
-
 @testset "Waning model" begin
     n_t_steps = 40
     n_subjects = 40
@@ -42,7 +40,7 @@ complete_obs.observed_titre
         ix_t_obs = 1:n_t_steps, ix_strain = 1:n_t_steps, ix_subject = 1:n_subjects,
         observed_titre = 0.0
     )
-    obs_lookup_strain, obs_lookup_ix = make_obs_lookup_2(complete_obs)
+    obs_lookup_strain, obs_lookup_ix = make_obs_lookup(complete_obs)
 
     waning_curve!(
         model_params.mu_long, model_params.mu_short, model_params.omega,
@@ -76,35 +74,52 @@ complete_obs.observed_titre
         $complete_obs.observed_titre
     )
 
-    # Should take less than 5ms, and memory use should be minimal
-    @test (median(x).time / 1000) < 5_000
-    @test (median(x).memory) < 100
-    @test (median(x).allocs) < 10
+    # Should take less than 1ms, and memory use should be minimal
+    @test (median(b_trial).time / 1000) < 1_000
+    @test (median(b_trial).memory) < 100
+    @test (median(b_trial).allocs) < 10
+end
+
+@testset "Inference model" begin
+    model_data = load("runs/hanam_2018/model_data.hdf5")
+    obs_df = DataFrame(model_data["observations"])
+    p = read_model_parameters(model_data)
+
+    prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p.n_t_steps, p.n_subjects)
+
+    initial_params = make_initial_params_broad(p, 4, rng)
+
+    model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
+
+    b_trial = @benchmark logjoint($model, x) setup=(x=rand(model))
+
+    @test (median(b_trial).time / 1000) < 5_000
 end
 
 
+# @profview [logjoint(model, rand(model)) for i in 1:1000]
 
 
-data_code = "hanam_2018"
-rng = Random.Xoshiro(1)
-
-run_dir = "runs/$(data_code)/"
-model_data = load("$run_dir/model_data.hdf5")
+model_data = load("runs/hanam_2018/model_data.hdf5")
+p = read_model_parameters(model_data)
+model_params, p, infections = make_test_data(StableRNG(1), p.n_t_steps, p.n_subjects)
 
 obs_df = DataFrame(model_data["observations"])
 
-p = read_model_parameters(model_data)
+obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
+obs_df.observed_titre .= 0.0
 
-prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p.n_t_steps, p.n_subjects)
+b_trial = @benchmark waning_curve!(
+    $model_params.mu_long, $model_params.mu_short, $model_params.omega,
+    $model_params.sigma_long, $model_params.sigma_short, $model_params.tau,
 
-initial_params = make_initial_params_broad(p, 4, rng)
+    $p.antigenic_distances, $p.time_diff_matrix, $p.subject_birth_ix,
 
-model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
+    $infections,
 
-symbols_not_inf = model_symbols_apart_from(model, [:infections])
-gibbs_sampler = make_gibbs_sampler(model, p, proposal_original_corrected)
+    $obs_lookup_strain, $obs_lookup_ix,
+    $(make_obs_views(obs_df)),
+    $obs_df.observed_titre
+)
 
-chain = sample_chain(
-    model, initial_params, gibbs_sampler, rng;
-    n_sample = 500, n_thinning = 1, n_chain = 4
-);
+# Previous: 387 microseconds

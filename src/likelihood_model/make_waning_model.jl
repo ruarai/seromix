@@ -23,7 +23,7 @@ function make_waning_model(
 
     individual_titre_obs = [obs_df.observed_titre[v] for v in make_obs_views(obs_df)]
 
-    obs_lookup_strain, obs_lookup_ix = make_obs_lookup_2(obs_df)
+    obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
     
     return turing_model(
         model_parameters,
