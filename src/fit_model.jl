@@ -11,10 +11,7 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-prior_infection_dist = MatrixBernoulli(0.5, p)
-prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
 prior_infection_dist = MatrixBetaBernoulliTimeVarying(1.0, 1.0, p)
-prior_infection_dist = MatrixBetaBernoulliSubjectVarying(1.0, 1.0, p)
 proposal_function = proposal_original_corrected
 
 initial_params = make_initial_params_kucharski_data_study(p, 4, model_data["initial_infections_manual"], rng)
@@ -23,9 +20,15 @@ model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist
 
 gibbs_sampler = make_gibbs_sampler(model, p, proposal_function);
 
+symbols_not_inf = model_symbols_apart_from(model, [:infections])
+gibbs_sampler = Gibbs(
+    :infections => make_mh_infection_sampler(p, proposal_function),
+    symbols_not_inf => externalsampler()
+)
+
 chain = sample_chain(
-    model, initial_params, gibbs_sampler, rng;
-    n_sample = 4000, n_thinning = 2, n_chain = 4
+    model, initial_params, gibbs_sampler, p, rng;
+    n_sample = 10000, n_thinning = 5, n_chain = 4
 );
 
 heatmap(chain_infections_prob(chain[1800:2000], p)')

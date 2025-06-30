@@ -47,7 +47,7 @@ Threads.@threads for row_ix_job in jobs
         println("Running $run_dir, $chain_name$name_suffix")
 
         chain = sample_chain(
-            model, initial_params, gibbs_sampler, rng;
+            model, initial_params, gibbs_sampler, p, rng;
             n_sample = 100_000, n_thinning = 50, n_chain = n_chains,
             progress = false
         );

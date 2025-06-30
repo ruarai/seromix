@@ -4,6 +4,7 @@ function sample_chain(
     model,
     initial_params,
     gibbs_sampler,
+    p,
     rng;
     n_sample::Int,
     n_thinning::Int,
@@ -84,12 +85,20 @@ end
 
 # Hack to reduce model evaluations
 function Turing.Inference.transition_to_turing(f::DynamicPPL.LogDensityFunction, transition)
+    if transition isa AdvancedMH.Transition
+        θ = Turing.Inference.getparams(f.model, transition)
+        varinfo = DynamicPPL.unflatten(f.varinfo, θ)
+        return Turing.Inference.Transition(f.model, varinfo, transition)
+    end
+
+
+
     θ = if transition isa InfectionSamplerTransition
         transition.θ
     elseif transition isa ParameterSamplerTransition
         transition.θ
     elseif transition isa SliceSampling.Transition
-        getparams(f.model, transition)
+        Turing.Inference.getparams(f.model, transition) # TODO this may not work
     end
 
     varinfo = DynamicPPL.unflatten(f.varinfo, θ)

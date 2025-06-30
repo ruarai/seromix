@@ -29,7 +29,7 @@ model = model_free | (
 gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
 
 chain = sample_chain(
-    model, initial_params, gibbs_sampler, rng;
+    model, initial_params, gibbs_sampler, p, rng;
     n_sample = 50000, n_thinning = 25, n_chain = 6
 );
 

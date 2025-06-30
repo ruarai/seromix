@@ -93,7 +93,7 @@ data_runs <- bind_rows(
   mutate(
     use_corrected_titre = replace_na(use_corrected_titre, TRUE),
     proposal_name = replace_na(proposal_name, "corrected"), # TODO NULL might work fine here?
-    # sampler_name = replace_na(sampler_name, "default")
+    sampler_name = replace_na(sampler_name, "default")
   ) |>
   # Add a description of the prior
   mutate(prior_description = str_c(unlist(infection_prior), collapse = "_")) |>

@@ -51,7 +51,7 @@ function fit_model(
     sampler = select_sampler(sampler_name, model, p, proposal_function)
 
     chain = sample_chain(
-        model, initial_params, sampler, rng;
+        model, initial_params, sampler, p, rng;
         n_sample = n_samples, n_thinning = n_thinning, n_chain = n_chain
     );
 
@@ -63,14 +63,14 @@ function select_sampler(sampler_name, model, p, proposal_function)
 
     if sampler_name == "default"
         return Gibbs(
-            :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
+            :infections => make_mh_infection_sampler(p, proposal_function),
             symbols_not_inf => make_mh_parameter_sampler()
         )
     elseif sampler_name == "slice_sampler"
         slice_sampler = RandPermGibbs(SliceSteppingOut(1.))
 
         return Gibbs(
-            :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
+            :infections => make_mh_infection_sampler(p, proposal_function),
             symbols_not_inf => externalsampler(slice_sampler)
         )
     end
@@ -84,14 +84,13 @@ function select_infection_prior(infection_prior, p)
     prior_name = infection_prior.name
 
     if prior_name == "Bernoulli"
-        return MatrixBernoulli(infection_prior.p, p.n_t_steps, p.n_subjects)
+        return MatrixBernoulli(infection_prior.p, p)
     elseif prior_name == "BetaBernoulli"
-        return MatrixBetaBernoulli(infection_prior.alpha, infection_prior.beta, p.n_t_steps, p.n_subjects)
+        return MatrixBetaBernoulli(infection_prior.alpha, infection_prior.beta, p)
     elseif prior_name == "BetaBernoulliTimeVarying"
-        # Infection matrix is indexed inf[time, subject]; so time-varying is row-varying
-        return MatrixBetaBernoulliRow(infection_prior.alpha, infection_prior.beta, p.n_t_steps, p.n_subjects)
+        return MatrixBetaBernoulliTimeVarying(infection_prior.alpha, infection_prior.beta, p)
     elseif prior_name == "BetaBernoulliSubjectVarying"
-        return MatrixBetaBernoulliColumn(infection_prior.alpha, infection_prior.beta, p.n_t_steps, p.n_subjects)
+        return MatrixBetaBernoulliSubjectVarying(infection_prior.alpha, infection_prior.beta, p)
     end
 
     error("Invalid infection prior specified")
@@ -113,7 +112,7 @@ function select_initial_params(initial_params_name, n_chain, p, model_data, obs_
     if initial_params_name == "kucharski_sim_study"
         return make_initial_params_kucharski_sim_study(p, obs_df, n_chain, rng)
     elseif initial_params_name == "kucharski_data_study"
-        return make_initial_params_kucharski_data_study(n_chain, model_data["initial_infections_manual"], rng)
+        return make_initial_params_kucharski_data_study(p, n_chain, model_data["initial_infections_manual"], rng)
     elseif initial_params_name == "kucharski_data_study_fluscape"
         return make_initial_params_kucharski_data_study_fluscape(p, obs_df, n_chain, rng)
     elseif initial_params_name == "broad"
