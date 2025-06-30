@@ -10,7 +10,7 @@ function sample_chain(
     n_chain::Int,
     progress=true
 )
-    return sample(
+    chain = sample(
         rng,
         model, gibbs_sampler, 
         MCMCThreads(), n_sample ÷ n_thinning, n_chain,
@@ -20,6 +20,10 @@ function sample_chain(
         initial_params = initial_params,
         progress = progress
     )
+
+    check_inf_prob_birth_year(chain_infections_prob(chain, p), p)
+
+    return chain
 end
 
 function model_symbols_apart_from(model, syms)
@@ -32,11 +36,11 @@ function model_symbols_apart_from(model, syms)
 end
 
 
-function make_gibbs_sampler(model, p, step_fn)
+function make_gibbs_sampler(model, p, proposal_function)
     symbols_not_inf = model_symbols_apart_from(model, [:infections])
     
     gibbs_sampler = Gibbs(
-        :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, step_fn),
+        :infections => make_mh_infection_sampler(p, proposal_function),
         symbols_not_inf => make_mh_parameter_sampler()
     )
     
@@ -44,7 +48,7 @@ function make_gibbs_sampler(model, p, step_fn)
 end
 
 
-function log_callback(rng, model, sampler, sample, state, iteration, n_sample; kwargs...)
+function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
     if iteration % 50 == 0
         if length(sampler.alg.samplers) > 1
 
@@ -57,9 +61,7 @@ function log_callback(rng, model, sampler, sample, state, iteration, n_sample; k
             # Time per 10,000 samples
             sampling_rate = time_elapsed / 6
 
-            # println("$iteration; $(round(rate, digits=2)); $(round(time_elapsed, digits=2))ms.")
-
-            @printf("%6d; %6.2f; %7.2fms;%7.2fmin/10,000\n", iteration, rate, time_elapsed, sampling_rate)
+            @printf("%6d; %6.2f; %7.2fms/sample;%7.2fmin/10,000 samples\n", iteration, rate, time_elapsed, sampling_rate)
         else
             @printf("%5d;\n", iteration)
         end

@@ -1,6 +1,9 @@
 
 
-function make_initial_params_kucharski_data_study(n_chain, init_matrix, rng)
+function make_initial_params_kucharski_data_study(p, n_chain, init_matrix, rng)
+    init_matrix_masked = copy(init_matrix)
+    mask_infections_birth_year!(init_matrix_masked, p.subject_birth_ix)
+
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -10,7 +13,7 @@ function make_initial_params_kucharski_data_study(n_chain, init_matrix, rng)
         tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
 
-        infections = init_matrix
+        infections = init_matrix_masked
     ) for i in 1:n_chain]
 end
 

@@ -43,8 +43,7 @@ function summarise_chain(chain_file, iterations_drop, model_data)
 
     for c in 1:n_chains
         infections = reshape(Matrix(chain_filt_grouped[c][:,ix_infections]), n_draws, p.n_t_steps, p.n_subjects)
-        [mask_infections_birth_year!(view(infections, i, :, :), p.subject_birth_ix) for i in 1:n_draws]
-
+        # [mask_infections_birth_year!(view(infections, i, :, :), p.subject_birth_ix) for i in 1:n_draws]
 
         values = [sum(view(infections, i, :, :)) for i in 1:n_draws]
 

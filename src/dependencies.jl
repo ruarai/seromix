@@ -48,15 +48,15 @@ include("inference/mh_parameter_sampler.jl")
 include("inference/mh_infection_sampler.jl")
 include("inference/sampling_functions.jl")
 include("inference/initial_params.jl")
-include("proposals/infection_proposals.jl")
+include("inference/infection_proposals.jl")
 
 include("helper_functions.jl")
 
 include("distributions/titre_arraynormal.jl")
 include("distributions/matrix_bernoulli.jl")
 include("distributions/matrix_beta_bernoulli.jl")
-include("distributions/matrix_beta_bernoulli_column.jl")
-include("distributions/matrix_beta_bernoulli_row.jl")
+include("distributions/matrix_beta_bernoulli_subject_varying.jl")
+include("distributions/matrix_beta_bernoulli_time_varying.jl")
 
 
 const const_titre_min = 0.0

@@ -3,16 +3,17 @@
 # A re-implementation of the infection history sampler as
 # used in Kucharski (2018)
 
-# For each individual, samples a new history using step_function
+# For each individual, samples a new history using proposal_function
 
 mutable struct MHInfectionSampler <: AbstractMCMC.AbstractSampler
-    # Ideally these would just be in the model but not sure how to do that.
     n_t_steps::Int
     n_subjects::Int
 
-    prop_sample::Float64
+    subject_birth_ix::Vector{Int}
 
-    step_function
+    proposal_proportion::Float64
+
+    proposal_function::Function
 end
 
 struct InfectionSamplerTransition{T, L <: Real}
@@ -31,7 +32,7 @@ struct InfectionSamplerState{P<:InfectionSamplerTransition, T}
     time_B::Float64
 end
 
-MHInfectionSampler(n_t_step, n_subjects, step_fn) = MHInfectionSampler(n_t_step, n_subjects, 1.0, step_fn)
+MHInfectionSampler(n_t_step, n_subjects, subject_birth_ix, proposal_function) = MHInfectionSampler(n_t_step, n_subjects, subject_birth_ix, 1.0, proposal_function)
 
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
@@ -76,7 +77,7 @@ function AbstractMCMC.step(
     n_subjects = sampler.n_subjects
 
     # Per Kucharski model, only step for some % of individuals
-    subject_indices = sample(rng, 1:n_subjects, ceil(Int, sampler.prop_sample * n_subjects), replace = false)
+    subject_indices = sample(rng, 1:n_subjects, ceil(Int, sampler.proposal_proportion * n_subjects), replace = false)
     # TODO add as option.
     # subject_indices = 1:n_subjects
 
@@ -90,9 +91,11 @@ function AbstractMCMC.step(
         context = IndividualSubsetContext(ix_subject)
         logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
 
-        swap_indices, log_hastings_ratio = sampler.step_function(rng, theta_new, ix_subject, n_t_steps)
+        subject_birth_ix = sampler.subject_birth_ix[ix_subject]
 
-        apply_swaps!(theta_new, swap_indices, ix_subject, n_t_steps)
+        swap_indices, log_hastings_ratio = sampler.proposal_function(rng, theta_new, ix_subject, n_t_steps, subject_birth_ix)
+
+        apply_swaps!(theta_new, swap_indices, ix_subject, n_t_steps, subject_birth_ix)
 
         varinfo_proposal = DynamicPPL.unflatten(f.varinfo, theta_new)
         logprob_proposal = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_proposal, context)))
@@ -106,7 +109,7 @@ function AbstractMCMC.step(
 
             rejected += 1
 
-            apply_swaps!(theta_new, swap_indices, ix_subject, n_t_steps)
+            apply_swaps!(theta_new, swap_indices, ix_subject, n_t_steps, subject_birth_ix)
         end
     end
 
@@ -116,8 +119,8 @@ function AbstractMCMC.step(
     return transition, InfectionSamplerState(transition, theta_new, accepted, rejected, state.time_B, time())
 end
 
-function apply_swaps!(theta, swap_indices, ix_subject, n_t_steps)
-    ix_start = (ix_subject - 1) * n_t_steps
+function apply_swaps!(theta, swap_indices, ix_subject, n_t_steps, subject_birth_ix)
+    ix_start = (ix_subject - 1) * n_t_steps + max(1, subject_birth_ix) - 1
 
     @inbounds for ix_swap in swap_indices
         theta[ix_start + ix_swap] = !theta[ix_start + ix_swap]
@@ -128,8 +131,17 @@ end
 # Below is necessary framework for use in Turing
 
 # Puts the sampler into an external sampler for use in Turing
-function make_mh_infection_sampler(n_t_steps, n_subjects, step_fn; prop_sample = 0.4)
-    return externalsampler(MHInfectionSampler(n_t_steps, n_subjects, prop_sample, step_fn), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
+function make_mh_infection_sampler(p, proposal_function; prop_sample = 0.4)
+    return externalsampler(
+        MHInfectionSampler(
+            p.n_t_steps, p.n_subjects, 
+            p.subject_birth_ix,
+            prop_sample,
+            proposal_function
+        ), 
+        adtype=Turing.DEFAULT_ADTYPE,
+        unconstrained=false
+    )
 end
 
 

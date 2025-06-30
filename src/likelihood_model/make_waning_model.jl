@@ -7,6 +7,9 @@ struct FixedModelParameters
 
     time_diff_matrix::Matrix{Float64}
 
+    # The first time-step in which the subject may be infected
+    # if zero, assume that they were born prior to simulation,
+    # such that it is equivalent to a value of one
     subject_birth_ix::Vector{Int}
 end
 

@@ -11,31 +11,26 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p.n_t_steps, p.n_subjects)
+prior_infection_dist = MatrixBernoulli(0.5, p)
+prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
+prior_infection_dist = MatrixBetaBernoulliTimeVarying(1.0, 1.0, p)
+prior_infection_dist = MatrixBetaBernoulliSubjectVarying(1.0, 1.0, p)
 proposal_function = proposal_original_corrected
 
-# initial_params = make_initial_params_broad(p, 4, rng)
-initial_params = make_initial_params_kucharski_data_study(4, model_data["initial_infections_manual"], rng)
+initial_params = make_initial_params_kucharski_data_study(p, 4, model_data["initial_infections_manual"], rng)
 
 model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
 
-symbols_not_inf = model_symbols_apart_from(model, [:infections])
-slice_sampler = RandPermGibbs(SliceSteppingOut(1.))
-
-gibbs_sampler = Gibbs(
-    :infections => make_mh_infection_sampler(p.n_t_steps, p.n_subjects, proposal_function),
-    symbols_not_inf => externalsampler(slice_sampler)
-)
-
-gibbs_sampler = make_gibbs_sampler(model, p, proposal_function)
+gibbs_sampler = make_gibbs_sampler(model, p, proposal_function);
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, rng;
-    n_sample = 100, n_thinning = 1, n_chain = 4
+    n_sample = 4000, n_thinning = 2, n_chain = 4
 );
 
-using Plots
+heatmap(chain_infections_prob(chain[1800:2000], p)')
 
+using Plots
 
 ix_start = 1
 plot(chain[ix_start:end], [:mu_long, :mu_short], seriestype = :traceplot)

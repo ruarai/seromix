@@ -153,7 +153,6 @@ end
 
 
 
-# TODO add birth year masking
 function chain_sum_infections(chain, params)
     # Assuming infections is at end
     chain_sub = chain[:,(end - params.n_t_steps * params.n_subjects + 1):end,:]
@@ -186,7 +185,7 @@ function chain_infections_prob(chain, params)
     infections = zeros(Float64, params.n_t_steps, params.n_subjects)
 
     for ix_subject in 1:params.n_subjects
-        for ix_t in max(1, params.subject_birth_ix[ix_subject]):params.n_t_steps
+        for ix_t in 1:params.n_t_steps
             infections[ix_t, ix_subject] = mean(chain[Symbol("infections[$ix_t, $ix_subject]")])
         end
     end
@@ -236,4 +235,18 @@ function list_files(base_dir, regex)
         for file_name in files_in_dir
         if occursin(regex, file_name)
     ]
+end
+
+
+function check_inf_prob_birth_year(prob_matrix, p)
+    for ix_subject in 1:p.n_subjects
+        if p.subject_birth_ix[ix_subject] > 1
+            for ix_t in 1:(p.subject_birth_ix[ix_subject] - 1)
+                if prob_matrix[ix_t, ix_subject] > 0
+                    println("Warning: P(infections[$ix_t, $ix_subject]) is greater than zero despite subject_birth_ix[$ix_subject] = $(p.subject_birth_ix[ix_subject])")
+                    return
+                end
+            end
+        end
+    end
 end
