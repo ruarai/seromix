@@ -37,7 +37,10 @@ plot_data <- summary |>
   mutate(name = fct_rev(factor(name, name_order, name_labels)),
          variable = factor(variable, var_names, var_labels))
 
-ggplot(plot_data) +
+plot_data |> 
+  filter(run_name == "fluscape_2009_neuts",
+         name != name_labels[5]) |> 
+  ggplot() +
   # annotate("rect", ymin = 0.5, ymax = 2.5,
   #          xmin = -Inf, xmax = Inf, fill = "grey50", alpha = 0.1) +
   # 
@@ -52,10 +55,10 @@ ggplot(plot_data) +
   
   geom_vline(aes(xintercept = median),
              linetype = "14",
-             plot_data |> filter(name == "Kucharski 2018")) +
+             plot_data |> filter(name == "Kucharski 2018", run_name == "fluscape_2009_neuts")) +
   
-  facet_grid(cols = vars(variable), rows = vars(run_name),
-             scales = "free_x") +
+  facet_grid(cols = vars(variable), #rows = vars(run_name),
+             scales = "free") +
   
   xlab("Value (median, 95% CrI)") + ylab(NULL) +
   

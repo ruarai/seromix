@@ -25,15 +25,15 @@ data_runs <- bind_rows(
   ),
   
   # Compare prior/proposal choices on fluscape studies:
-  # expand_grid(
-  #   exp_group = "prior_proposal_fluscape",
-  #   
-  #   run_name = c("fluscape_2009_neuts", "fluscape_2009_HI"),
-  #   fixed_params = list(list(omega = 0.5, mu_short = 1e-10, sigma_short = 1e-10)),
-  #   proposal_name = c("uncorrected", "corrected"),
-  #   infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1),
-  #   initial_params_name = "kucharski_data_study_fluscape"
-  # ),
+  expand_grid(
+    exp_group = "prior_proposal_fluscape",
+
+    run_name = c("fluscape_2009_neuts", "fluscape_2009_HI"),
+    fixed_params = list(list(omega = 0.5, mu_short = 1e-10, sigma_short = 1e-10)),
+    proposal_name = c("uncorrected", "corrected"),
+    infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1),
+    initial_params_name = "kucharski_data_study_fluscape"
+  ),
   
   # Compare effect of titre correction:
   expand_grid(
@@ -47,15 +47,15 @@ data_runs <- bind_rows(
   
   
   # Compare effect of titre correction on fluscape studies:
-  # expand_grid(
-  #   exp_group = "titre_correction",
-  #   
-  #   run_name = c("fluscape_2009_neuts", "fluscape_2009_HI"),
-  #   fixed_params = list(list(omega = 0.5, mu_short = 1e-10, sigma_short = 1e-10)),
-  #   infection_prior = list(matrix_beta_bernoulli_1_1),
-  #   initial_params_name = "kucharski_data_study_fluscape",
-  #   use_corrected_titre = c(TRUE, FALSE)
-  # ),
+  expand_grid(
+    exp_group = "titre_correction",
+
+    run_name = c("fluscape_2009_neuts", "fluscape_2009_HI"),
+    fixed_params = list(list(omega = 0.5, mu_short = 1e-10, sigma_short = 1e-10)),
+    infection_prior = list(matrix_beta_bernoulli_1_1),
+    initial_params_name = "kucharski_data_study_fluscape",
+    use_corrected_titre = c(TRUE, FALSE)
+  ),
   
   # Compare priors:
   expand_grid(
@@ -70,13 +70,13 @@ data_runs <- bind_rows(
   ),
   
   # Compare effect of initial conditions:
-  expand_grid(
-    exp_group = "initial_conditions",
-    
-    run_name = "hanam_2018",
-    infection_prior = list(matrix_beta_bernoulli_1_1),
-    initial_params_name = c("broad", "kucharski_data_study")
-  ),
+  # expand_grid(
+  #   exp_group = "initial_conditions",
+  #   
+  #   run_name = "hanam_2018",
+  #   infection_prior = list(matrix_beta_bernoulli_1_1),
+  #   initial_params_name = c("broad", "kucharski_data_study")
+  # ),
   
   # Compare effect of sampler:
   # expand_grid(

@@ -8,16 +8,16 @@ source("replication_paper/common.R")
 chains <- tar_read(combined_chains)
 
 name_order <- c(
-  "Bernoulli_0.5_uncorrected"
+  "Bernoulli_0.5_uncorrected",
   # "Bernoulli_0.5_corrected",
   # "BetaBernoulli_1_1_uncorrected",
-  # "BetaBernoulli_1_1_corrected"
+  "BetaBernoulli_1_1_corrected"
 )
 
 plot_data <- chains |>
   mutate(name = str_c(prior_description, "_", proposal_name)) |>
   
-  filter(exp_group == "prior_proposal_fluscape",
+  filter(exp_group == "prior_proposal",
          name %in% name_order) |> 
   
   pivot_longer(any_of(var_names),

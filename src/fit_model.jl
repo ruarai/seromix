@@ -23,12 +23,12 @@ gibbs_sampler = make_gibbs_sampler(model, p, proposal_function);
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 gibbs_sampler = Gibbs(
     :infections => make_mh_infection_sampler(p, proposal_function),
-    symbols_not_inf => externalsampler()
+    symbols_not_inf => externalsampler(RobustAdaptiveMetropolis2(0.234, 0.6, nothing, 0.0, Inf))
 )
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, p, rng;
-    n_sample = 10000, n_thinning = 5, n_chain = 4
+    n_sample = 100000, n_thinning = 50, n_chain = 4
 );
 
 heatmap(chain_infections_prob(chain[1800:2000], p)')
