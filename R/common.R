@@ -82,8 +82,7 @@ process_data_df <- function(data_df, modelled_years) {
 clean_chain <- function(chain_df) {
   chain_df |>
     rename(.chain = chain, .iteration = iteration) |> 
-    mutate(#Chain = .chain, # Copy for whatever reason.
-           .draw = (.iteration - min(.iteration)) + (.chain - 1) * (max(.iteration) - min(.iteration) + 1),
+    mutate(.draw = (.iteration - min(.iteration)) + (.chain - 1) * (max(.iteration) - min(.iteration) + 1),
            .before = 3) |>
     rename_with(function(x) str_remove(x, " ")) # Remove spaces from array indexing
 }

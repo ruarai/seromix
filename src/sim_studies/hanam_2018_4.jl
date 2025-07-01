@@ -1,19 +1,4 @@
 
-rng = Random.Xoshiro(1)
-
-pandemic_mean_ar = 0.5
-x_endemic_mean_ar = 0.1:0.1:0.5
-sd_ar = 0.5
-
-continuous_params = (
-    mu_long = 2.0,
-    mu_short = 2.0,
-    omega = 0.75,
-    sigma_long = 0.15,
-    sigma_short = 0.05,
-    tau = 0.05,
-    obs_sd = 1.5
-)
 
 real_model_data = load("runs/hanam_2018_age/model_data.hdf5")
 p = read_model_parameters(real_model_data)
@@ -44,7 +29,6 @@ for sim_row in eachrow(sim_scenarios)
 
     # Only include observations which are available in the study data
     real_obs = DataFrame(real_model_data["observations"])
-
     observations = innerjoin(complete_obs, real_obs[!, [:ix_t_obs, :ix_strain, :ix_subject]], on = [:ix_t_obs, :ix_strain, :ix_subject])
 
     apply_titre_obs_noise(observations, rng, continuous_params.obs_sd)

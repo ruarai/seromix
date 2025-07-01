@@ -1,6 +1,14 @@
 
 
-summarise_chain <- function(chain, drop_iterations, model_data, by_chain = TRUE) {
+make_chain_subset <- function(chain, model_data, name) {
+  chain |> 
+    clean_chain() |>
+    add_total_infections(model_data) |>
+    select(-starts_with("infections")) |>
+    mutate(name = name)
+}
+
+summarise_chain <- function(chain, drop_iterations, model_data, by_chain = TRUE, add_name = NULL) {
   chain_long <- chain |>
     clean_chain() |>
     filter(.iteration > drop_iterations) |>
@@ -18,7 +26,7 @@ summarise_chain <- function(chain, drop_iterations, model_data, by_chain = TRUE)
       group_by(variable)
   }
   
-  chain_long |> 
+  summ_chain <- chain_long |> 
     
     summarise(
       mean = mean(value),
@@ -29,6 +37,12 @@ summarise_chain <- function(chain, drop_iterations, model_data, by_chain = TRUE)
       ess_bulk = posterior::ess_bulk(value),
       ess_bulk = posterior::ess_tail(value)
     )
+  
+  if(is.null(add_name)) {
+    return(summ_chain)
+  } else{
+    return(summ_chain %>% mutate(name = add_name))
+  }
 }
 
 add_total_infections <- function(chain, model_data) {

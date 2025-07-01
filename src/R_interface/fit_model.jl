@@ -1,7 +1,5 @@
 
 
-include("../dependencies.jl")
-
 
 function fit_model(
     model_data_R;
