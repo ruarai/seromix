@@ -8,7 +8,7 @@ summary <- tar_read(combined_summaries) |>
   filter(exp_group == "prior_proposal")
 
 name_order <- c(
-  "kucharski_2018", 
+  "kucharski_2018",
   "hay_2024",
   
   "Bernoulli_0.5_uncorrected",
