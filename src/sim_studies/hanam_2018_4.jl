@@ -1,7 +1,4 @@
 
-include("../dependencies.jl")
-include("sim_study_functions.jl")
-
 rng = Random.Xoshiro(1)
 
 pandemic_mean_ar = 0.5
