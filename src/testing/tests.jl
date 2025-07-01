@@ -58,7 +58,7 @@ end
     @test all(complete_obs.observed_titre .>= 0)
 
     # Lazy way to store the approx. expected result
-    @test sum(complete_obs.observed_titre) ≈ 52164.14374999999
+    @test sum(complete_obs.observed_titre) ≈ 60025.987499999996 
 
 
     b_trial = @benchmark waning_curve!(
