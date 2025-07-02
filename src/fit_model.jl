@@ -18,21 +18,9 @@ model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist
 
 gibbs_sampler = make_gibbs_sampler(model, p, proposal_function);
 
-symbols_not_inf = model_symbols_apart_from(model, [:infections])
-
-gibbs_sampler = Gibbs(
-    :infections => make_mh_infection_sampler(p, proposal_function),
-    symbols_not_inf => externalsampler(RobustAdaptiveMetropolis2(0.234, 0.6, nothing, 0.01, 1.0))
-)
-
-
-plot((1:20000) .^ (-0.2), ylim = (0, 1))
-plot((1 - 0.0005) .^ (1:20000))
-
-
 chain = sample_chain(
     model, initial_params, gibbs_sampler, p, rng;
-    n_sample = 10_000, n_thinning = 5, n_chain = 4
+    n_sample = 50_000, n_thinning = 25, n_chain = 4
 );
 
 
