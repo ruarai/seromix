@@ -40,6 +40,22 @@ sim_ar_chains <- tar_map(
   tar_target(chain_summary_singular, summarise_chain(chain, n_warmup, sim_model_data, by_chain = FALSE, add_name = name))
 )
 
+targets_sim_studies <- list(
+  sim_ar_chains,
+  tar_combine(
+    combined_sim_ar_summaries,
+    sim_ar_chains[["chain_summary"]],
+    command = dplyr::bind_rows(!!!.x) |> left_join(sim_ar_meta, by = "name")
+  ),
+  tar_combine(
+    combined_sim_ar_singular_summaries,
+    sim_ar_chains[["chain_summary_singular"]],
+    command = dplyr::bind_rows(!!!.x) |> left_join(sim_ar_meta, by = "name")
+  )
+)
+
+
+
 
 
 

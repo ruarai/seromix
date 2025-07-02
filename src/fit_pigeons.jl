@@ -5,7 +5,7 @@ using Plots
 
 include("pigeons/explorer.jl")
 
-data_code = "sim_study_tiny_1"
+data_code = "hanam_2018"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
@@ -42,21 +42,18 @@ end
 
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
-explorer = ExplorerGibbs5(
-    proposal_original_corrected,
-    [i for i in symbols_not_inf],
-    p
-)
+explorer = 
 
+n_chains = 32
 pt = pigeons(
     target = TuringLogPotential(model),
-    n_rounds = 8, n_chains = 32, multithreaded = true,
-    # n_rounds = 14, n_chains = 64, multithreaded = true,   
-    explorer = explorer,
+    # n_rounds = 3, n_chains = n_chains, multithreaded = false,
+    n_rounds = 2, n_chains = n_chains, multithreaded = true,   
+    # explorer = ExplorerGibbs5(proposal_original_corrected, [i for i in symbols_not_inf], p, n_chains),
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema]
 );
 
-pt = increment_n_rounds!(pt, 1)
+pt = increment_n_rounds!(pt, 3)
 pt = pigeons(pt)
 
 plot(pt.shared.tempering.communication_barriers.localbarrier)

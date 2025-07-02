@@ -135,28 +135,15 @@ data_chains <- tar_map(
     garbage_collection = TRUE,
     format = "parquet"
   ),
-  tar_target(
-    chain_subset,
-    chain |> 
-      clean_chain() |>
-      add_total_infections(model_data) |>
-      select(-starts_with("infections")) |>
-      mutate(name = name)
-  ),
-  tar_target(
-    chain_summary,
-    summarise_chain(chain, n_warmup, model_data, by_chain = TRUE) |>
-      mutate(name = name)
-  ),
-  tar_target(
-    chain_summary_singular,
-    summarise_chain(chain, n_warmup, model_data, by_chain = FALSE) |>
-      mutate(name = name)
-  )
+  
+  tar_target(chain_subset, make_chain_subset(chain, model_data, name)),
+  
+  tar_target(chain_summary, summarise_chain(chain, n_warmup, model_data, add_name = name)),
+  tar_target(chain_summary_singular, summarise_chain(chain, n_warmup, model_data, by_chain = FALSE, add_name = name))
 )
 
 
-list(
+targets_studies <- list(
   data_preprocessing,
   data_chains,
   tar_combine(
