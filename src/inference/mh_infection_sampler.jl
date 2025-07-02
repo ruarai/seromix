@@ -51,8 +51,7 @@ function AbstractMCMC.step(
         theta_init = fill(false, d)
     end
 
-    varinfo_init = DynamicPPL.unflatten(model.logdensity.varinfo, theta_init)
-    logprob_init = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(model.logdensity.model, varinfo_init, DynamicPPL.DefaultContext())))
+    logprob_init = get_logp(theta_init, model)
 
     transition = InfectionSamplerTransition(theta_init, logprob_init)
     return transition, InfectionSamplerState(transition, theta_init, 0, 0, time(), time())
@@ -68,11 +67,6 @@ function AbstractMCMC.step(
     theta = state.transition.θ
     theta_new = copy(theta)
 
-    # Get the logdensity function
-    f = model.logdensity
-
-    varinfo_prev = DynamicPPL.unflatten(f.varinfo, theta)
-    
     n_t_steps = sampler.n_t_steps
     n_subjects = sampler.n_subjects
 
@@ -89,7 +83,7 @@ function AbstractMCMC.step(
         # calculating likelihood over one individual. Note will
         # still calculate prior across the infection history matrix
         context = IndividualSubsetContext(ix_subject)
-        logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
+        logprob_previous = get_logp(theta_new, model; context = context)
 
         subject_birth_ix = sampler.subject_birth_ix[ix_subject]
 
@@ -97,8 +91,7 @@ function AbstractMCMC.step(
 
         apply_swaps!(theta_new, swap_indices, ix_subject, n_t_steps, subject_birth_ix)
 
-        varinfo_proposal = DynamicPPL.unflatten(f.varinfo, theta_new)
-        logprob_proposal = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_proposal, context)))
+        logprob_proposal = get_logp(theta_new, model; context = context)
 
         if -Random.randexp(rng) <= logprob_proposal - logprob_previous + log_hastings_ratio
             # Accept, do nothing

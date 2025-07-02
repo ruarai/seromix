@@ -32,7 +32,7 @@
     # Otherwise, calculate across all subjects
     context = DynamicPPL.leafcontext(__context__)
     subjects_to_process = if context isa IndividualSubsetContext
-        SA[context.ix]
+        SA[context.ix] # StaticArray with one element (context.ix)
     else
         1:model_parameters.n_subjects
     end
@@ -107,4 +107,62 @@ function ppd_kucharski(chain, model_parameters, n_ppd_subjects, n_draws)
     end
 
     return DataFrame(obs_df_grouped)
+end
+
+
+
+function pointwise_likelihood_kucharski(chain, model_data)
+    model_data = convert_model_data(model_data)
+    p = read_model_parameters(model_data)
+
+    obs_df = DataFrame(model_data["observations"])
+
+    col_names = names(chain)
+    ix_infections = findall(s -> startswith(s, "infections"), col_names)
+
+    obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
+    obs_views = make_obs_views(obs_df)
+
+    logp = zeros(nrow(obs_df), nrow(chain))
+
+    y_pred_buffer = zeros(maximum([length(v) for v in obs_views]))
+
+    @showprogress for ix_sample in 1:nrow(chain)
+        draw = chain[ix_sample, :]
+        
+
+        infections = reshape(Vector(chain[ix_sample, ix_infections]), p.n_t_steps, p.n_subjects)
+
+        for ix_subject in 1:p.n_subjects
+            n_obs_subject = length(obs_views[ix_subject])
+            y_pred = view(y_pred_buffer, 1:n_obs_subject)
+            fill!(y_pred, 0.0)
+
+            waning_curve_individual!(
+                draw.mu_long, draw.mu_short, draw.omega,
+                draw.sigma_long, draw.sigma_short, draw.tau,
+
+                p.antigenic_distances, p.time_diff_matrix,
+                p.subject_birth_ix[ix_subject],
+
+                AbstractArray{Bool}(view(infections, :, ix_subject)),
+
+                obs_lookup_strain[ix_subject], obs_lookup_ix[ix_subject], 
+                y_pred
+            )
+
+            @inbounds for ix_obs in 1:n_obs_subject
+                ix_obs_absolute = obs_views[ix_subject][ix_obs]
+                logp[ix_obs_absolute, ix_sample] = titre_logpdf_component(
+                    obs_df.observed_titre[ix_obs_absolute],
+                    y_pred[ix_obs],
+                    draw.obs_sd,
+                    const_titre_min,
+                    const_titre_max
+                )
+            end
+        end
+    end
+
+    return logp
 end

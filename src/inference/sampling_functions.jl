@@ -69,6 +69,12 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
     end
 end
 
+function get_logp(theta, model; context = DynamicPPL.DefaultContext())
+    f = model.logdensity
+    varinfo_prev = DynamicPPL.unflatten(f.varinfo, theta)
+    return DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
+end
+
 
 # Hack to make sure logprob is carried through the Gibbs sampler
 # function Turing.Inference.varinfo(state::Turing.Inference.TuringState)

@@ -120,7 +120,3 @@ function select_initial_params(initial_params_name, n_chain, p, model_data, obs_
     error("Invalid initial params specified")
 end
 
-
-function convert_model_data(model_data_R)
-    return OrderedDict{String, Any}(String(k) => v for (k, v) in model_data_R)
-end

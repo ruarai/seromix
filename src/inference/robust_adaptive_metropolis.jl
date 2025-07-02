@@ -3,8 +3,7 @@ using AdvancedMH
 
 # Taken from RobustAdaptiveMetropolis in
 # https://github.com/TuringLang/AdvancedMH.jl
-# adapted to disable the warmup steps
-# (i.e. is always adapting)
+# adapted to not use step_warmup!
 
 Base.@kwdef struct RobustAdaptiveMetropolis2{T,A<:Union{Nothing,AbstractMatrix{T}}} <:
                    AdvancedMH.MHSampler
@@ -83,7 +82,10 @@ function ram_adapt(
     Δα = exp(logα) - sampler.α
     S = state.S
     # TODO: Make this configurable by defining a more general path.
-    η = state.iteration^(-sampler.γ)
+    # η = state.iteration^(-sampler.γ)
+    # η = 0.2 * (1 - 0.0005) ^ state.iteration
+    η = 0.1
+
     ΔS = sqrt(η * abs(Δα)) * S * U / LinearAlgebra.norm(U)
     # TODO: Maybe do in-place and then have the user extract it with a callback if they really want it.
     S_new = if sign(Δα) == 1
@@ -146,15 +148,28 @@ function AbstractMCMC.step(
 )
     # Take the inner step.
     x_new, lp_new, U, logα, isaccept = ram_step_inner(rng, model, sampler, state)
-    # Adapt the proposal.
-    S_new, η = ram_adapt(sampler, state, logα, U)
-    # Check that `S_new` has eigenvalues in the desired range.
-    if !valid_eigenvalues(
-        S_new, sampler.eigenvalue_lower_bound, sampler.eigenvalue_upper_bound
-    )
-        # In this case, we just keep the old `S` (p. 13 in Vihola, 2012).
-        S_new = state.S
+    
+    # Adapt the proposal if in the warmup stage
+    S_new, η = if state.iteration < 10_000 
+        S_new, η = ram_adapt(sampler, state, logα, U)
+
+        # Check that `S_new` has eigenvalues in the desired range.
+        if !valid_eigenvalues(
+            S_new, sampler.eigenvalue_lower_bound, sampler.eigenvalue_upper_bound
+        )
+            # In this case, we just keep the old `S` (p. 13 in Vihola, 2012).
+            S_new = state.S
+        end
+
+        S_new, η
+    else
+        state.S, state.η
     end
+
+    # if state.iteration % 50 == 0
+    #     eigenvals = LinearAlgebra.eigvals(S_new)
+    #     @printf("eigs ∈ [%6.2f, %6.2f], acceptance_rate = %6.2f\n", minimum(eigenvals), maximum(eigenvals), logα)
+    # end
 
     # Update state.
     state_new = RobustAdaptiveMetropolis2State(

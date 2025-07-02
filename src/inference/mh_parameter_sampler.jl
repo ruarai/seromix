@@ -47,8 +47,7 @@ function AbstractMCMC.step(
 
     sigma_covar_0 = 0.001
 
-    varinfo_init = DynamicPPL.unflatten(model.logdensity.varinfo, theta_init)
-    logprob_init = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(model.logdensity.model, varinfo_init, DynamicPPL.DefaultContext())))
+    logprob_init = get_logp(theta_init, model)
 
     transition = ParameterSamplerTransition(theta_init, logprob_init)
     return transition, ParameterSamplerState(transition, theta_init, sigma_covar_0, 0, 0)
@@ -80,12 +79,7 @@ function AbstractMCMC.step(
     sigma_covar_adapted = max(0.00001, min(1, exp(log(state.sigma_covar) + (obs_accept_rate - target_accept_rate) * 0.999 ^ n_steps)))
 
     # Get the logdensity function
-    f = model.logdensity
-
-    context = DynamicPPL.DefaultContext()
-
-    varinfo_prev = DynamicPPL.unflatten(f.varinfo, theta_current)
-    logprob_previous = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_prev, context)))
+    logprob_previous = get_logp(theta_current, model)
 
     # Theta proposal
     log_theta_current = log.(theta_current)
@@ -94,10 +88,7 @@ function AbstractMCMC.step(
     log_theta_new = rand(rng, log_theta_new_dist)
     theta_new = exp.(log_theta_new)
 
-
-    # TODO replace with direct function call?
-    varinfo_proposal = DynamicPPL.unflatten(f.varinfo, theta_new)
-    logprob_proposal = DynamicPPL.getlogp(last(DynamicPPL.evaluate!!(f.model, varinfo_proposal, context)))
+    logprob_proposal = get_logp(theta_new, model)
 
 
 
