@@ -23,7 +23,7 @@ data_runs <- bind_rows(
     exp_group = "prior_proposal",
     
     run_name = "hanam_2018",
-    fixed_params = list(NULL), sampler_name = "default", # filler
+    fixed_params = list(NULL),
     proposal_name = c("uncorrected", "corrected"),
     infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1),
     initial_params_name = "kucharski_data_study"
@@ -69,14 +69,26 @@ data_runs <- bind_rows(
     run_name = "hanam_2018",
     infection_prior = all_infection_priors,
     initial_params_name = "kucharski_data_study"
+  ),
+  
+  # Model comparison:
+  tibble( # Note not expand_grid
+    exp_group = "model_comparison",
+    
+    run_name = "hanam_2018_age",
+    infection_prior = list(matrix_beta_bernoulli_1_1),
+    initial_params_name = c("kucharski_data_study", "age_effect"),
+    
+    turing_model_name = c("kucharski", "age_effect")
   )
+  
 ) |>
   rowwise() |> 
   # Fill in defaults
   mutate(
     use_corrected_titre = replace_na(use_corrected_titre, TRUE),
     proposal_name = replace_na(proposal_name, "corrected"),
-    sampler_name = replace_na(sampler_name, "default")
+    turing_model_name = replace_na(turing_model_name, "kucharski")
   ) |>
   # Add a description of the prior
   mutate(prior_description = str_c(unlist(infection_prior), collapse = "_")) |>
@@ -126,7 +138,7 @@ data_chains <- tar_map(
       fixed_params = fixed_params,
       initial_params_name = initial_params_name,
       use_corrected_titre = use_corrected_titre,
-      sampler_name = sampler_name,
+      turing_model_name = turing_model_name,
       
       n_samples = as.integer(n_iterations),
       n_thinning = as.integer(round(n_iterations / 2000)),

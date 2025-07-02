@@ -3,26 +3,29 @@ include("dependencies.jl")
 
 rng = Random.Xoshiro(1)
 
-run_dir = "runs/hanam_2018/"
+run_dir = "runs/hanam_2018_age/"
 model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
+birth_data = DataFrame(model_data["subject_birth_data"])
+
+p.subject_birth_ix .= convert.(Int, birth_data.year_of_birth) .- 1967
+
 prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
 proposal_function = proposal_original_corrected
 
-initial_params = make_initial_params_kucharski_data_study(p, 4, model_data["initial_infections_manual"], rng)
-model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
+initial_params = make_initial_params_age(p, obs_df, 4, rng)
+model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist, turing_model = waning_model_age);
 
 gibbs_sampler = make_gibbs_sampler(model, p, proposal_function);
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, p, rng;
-    n_sample = 50_000, n_thinning = 25, n_chain = 4
+    n_sample = 1000, n_thinning = 1, n_chain = 4
 );
-
 
 using Plots
 
@@ -34,8 +37,7 @@ plot(chain_sum_infections(chain, p))
 plot(chain[ix_start:end], [:sigma_long, :sigma_short], seriestype = :traceplot)
 plot(chain[ix_start:end], [:obs_sd], seriestype = :traceplot)
 plot(chain[ix_start:end], [:omega], seriestype = :traceplot)
-plot(chain[ix_start:end], [:tau], seriestype = :traceplot)
-
+plot(chain[ix_start:end], [:beta], seriestype = :traceplot)
 
 plot(chain[ix_start:end], [:lp], seriestype = :traceplot)
 
@@ -49,9 +51,4 @@ end
 
 # chain_name = "prior_beta_1.3_8.0_corrected"
 # save_draws(chain, "$run_dir/chain_$chain_name.parquet")
-
-chain = DataFrame(chain)
-
-pointwise_likelihood_kucharski(chain, model_data)
-
 

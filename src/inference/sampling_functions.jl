@@ -110,3 +110,25 @@ function Turing.Inference.transition_to_turing(f::DynamicPPL.LogDensityFunction,
     varinfo = DynamicPPL.unflatten(f.varinfo, θ)
     return Turing.Inference.Transition(θ, transition.lp, Turing.Inference.getstats(transition))
 end
+
+function set_lp!(model, chain)
+    chain.value.data[:, findfirst(chain.value.axes[2] .== :lp),:] .= logjoint_threaded(model, chain)
+end
+
+function logjoint_threaded(model::Model, chain::AbstractMCMC.AbstractChains)
+    var_info = VarInfo(model) # extract variables info from the model
+    logp = zeros(size(chain, 1), size(chain, 3))
+
+    Threads.@threads for iteration_idx in 1:size(chain, 1)
+        for chain_idx in 1:size(chain, 3)
+            argvals_dict = OrderedDict(
+                vn_parent =>
+                    DynamicPPL.values_from_chain(var_info, vn_parent, chain, chain_idx, iteration_idx) for
+                vn_parent in keys(var_info)
+            )
+            logp[iteration_idx, chain_idx] = logjoint(model, argvals_dict)
+        end
+    end
+
+    return logp
+end

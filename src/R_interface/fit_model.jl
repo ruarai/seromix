@@ -8,6 +8,7 @@ function fit_model(
     proposal_name = "corrected",
     initial_params_name = "kucharski_sim_study",
     sampler_name = "default",
+    turing_model_name = "kucharski",
 
     n_samples = 2_000,
     n_thinning = 1,
@@ -32,10 +33,13 @@ function fit_model(
 
     initial_params = select_initial_params(initial_params_name, n_chain, p, model_data, obs_df, rng)
 
+    turing_model = select_turing_model(turing_model_name)
+
     model = make_waning_model(
         p, obs_df;
         prior_infection_dist = prior_infection_dist,
-        use_corrected_titre = use_corrected_titre
+        use_corrected_titre = use_corrected_titre,
+        turing_model = turing_model
     );
 
     if !isnothing(fixed_params)
@@ -52,6 +56,8 @@ function fit_model(
         model, initial_params, sampler, p, rng;
         n_sample = n_samples, n_thinning = n_thinning, n_chain = n_chain
     );
+
+    set_lp!(model, chain)
 
     return DataFrame(chain)
 end
@@ -115,8 +121,18 @@ function select_initial_params(initial_params_name, n_chain, p, model_data, obs_
         return make_initial_params_kucharski_data_study_fluscape(p, obs_df, n_chain, rng)
     elseif initial_params_name == "broad"
         return make_initial_params_broad(p, n_chain, rng)
+    elseif initial_params_name == "age_effect"
+        return make_initial_params_age(p, obs_df, n_chain, rng)
     end
 
     error("Invalid initial params specified")
 end
 
+function select_turing_model(turing_model_name)
+    if turing_model_name == "kucharski"
+        return waning_model_kucharski
+    elseif turing_model_name == "age_effect"
+        return waning_model_age_effect
+    end
+    error("Invalid turing model specified")
+end

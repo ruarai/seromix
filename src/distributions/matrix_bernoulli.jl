@@ -10,6 +10,11 @@ function Distributions.rand(rng::AbstractRNG, d::AbstractMatrixBernoulli)
     return Y
 end
 
+# Necessary to get logjoint to work
+function Distributions._logpdf(d::AbstractMatrixBernoulli, x::AbstractMatrix{<:Float64})
+    return Distributions._logpdf(d, convert.(Bool, x))
+end
+
 
 struct MatrixBernoulli{T} <: AbstractMatrixBernoulli
     p::T
