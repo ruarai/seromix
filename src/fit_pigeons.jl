@@ -3,10 +3,9 @@ include("dependencies.jl")
 using Pigeons, Bijectors
 using Plots
 
-# include("likelihood_model/waning_model_tempering.jl")
 include("pigeons/explorer.jl")
 
-data_code = "hanam_2018"
+data_code = "sim_study_tiny_1"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
@@ -16,12 +15,11 @@ obs_df = DataFrame(model_data["observations"])
 
 p = read_model_parameters(model_data)
 
-prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p.n_t_steps, p.n_subjects)
+prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
 
 model = make_waning_model(
     p, obs_df; prior_infection_dist = prior_infection_dist,
-    use_corrected_titre = false,
-    # turing_model = waning_model_tempering
+    use_corrected_titre = false
 );
 
 pigeon_model = TuringLogPotential(model);
@@ -44,19 +42,22 @@ end
 
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
-explorer = StateExplorer(
-    SliceSampler(),
+explorer = ExplorerGibbs5(
     proposal_original_corrected,
-    [i for i in symbols_not_inf], p.n_t_steps, p.n_subjects, 0.1, 1.0
+    [i for i in symbols_not_inf],
+    p
 )
 
 pt = pigeons(
     target = TuringLogPotential(model),
-    # n_rounds = 9, n_chains = 16, multithreaded = true,
-    n_rounds = 14, n_chains = 64, multithreaded = true,   
+    n_rounds = 8, n_chains = 32, multithreaded = true,
+    # n_rounds = 14, n_chains = 64, multithreaded = true,   
     explorer = explorer,
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema]
 );
+
+pt = increment_n_rounds!(pt, 1)
+pt = pigeons(pt)
 
 plot(pt.shared.tempering.communication_barriers.localbarrier)
 
@@ -74,7 +75,7 @@ plot(chain, [:log_density], seriestype = :traceplot)
 
 
 heatmap(chain_infections_prob_2(chain, p)')
-# heatmap(model_data["infections_matrix"]')
+heatmap(model_data["infections_matrix"]')
 
 n_inf = chain_sum_infections(chain, p)
 
@@ -84,9 +85,9 @@ scatter(chain[:tau], n_inf)
 scatter(chain[:mu_short], chain[:omega])
 
 using StatsPlots
-@df pt.shared.reports.swap_prs StatsPlots.plot(:round, :mean, group = :first)
+@df pt.shared.reports.swap_prs StatsPlots.plot(:round, :mean, group = :first, legend = false)
 
 
-chain_name = "pigeons_4"
-save_draws(chain, "$run_dir/chain_$chain_name.parquet")
-JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))
+# chain_name = "pigeons_4"
+# save_draws(chain, "$run_dir/chain_$chain_name.parquet")
+# JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))

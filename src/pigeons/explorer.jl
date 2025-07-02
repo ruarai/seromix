@@ -1,39 +1,68 @@
 
 
-struct StateExplorer
-    slice_sampler::SliceSampler
+struct ExplorerGibbs5
     proposal_function::Function
-
     symbols_not_inf::Vector{Symbol}
 
+    subject_birth_ix::Vector{Int}
     n_t_steps::Int
     n_subjects::Int
 
-    sigma_step::Float64 #TODO remove
-    inf_step::Float64
+    sigma_covar::Vector{Float64}
 end
 
+function ExplorerGibbs5(proposal_function, symbols_not_inf, p)
+    return ExplorerGibbs5(
+        proposal_function, symbols_not_inf,
+        p.subject_birth_ix, p.n_t_steps, p.n_subjects,
+        fill(0.001, 31)
+    )
+end
 
-function Pigeons.step!(explorer::StateExplorer, replica, shared)
+function Pigeons.step!(explorer::ExplorerGibbs5, replica, shared)
     state = replica.state
     rng = replica.rng
     recorders = replica.recorders
     chain = replica.chain
-    h = explorer.slice_sampler
+
+    # Add zero to initialise
+    Pigeons.@record_if_requested!(recorders, :n_accepted, (chain, 0))
+    Pigeons.@record_if_requested!(recorders, :n_rejected, (chain, 0)) 
 
     log_potential = Pigeons.find_log_potential(replica, shared.tempering, shared)
 
-    # Slice sampling
-    cached_lp = -Inf
-    for meta in state.metadata[explorer.symbols_not_inf]
-        cached_lp = Pigeons.slice_sample!(h, meta.vals, log_potential, cached_lp, replica)
+    # Get the logdensity function
+    logprob_previous = log_potential(state)
+
+    theta_previous = zeros(length(explorer.symbols_not_inf))
+    for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
+        theta_previous[i] = meta.vals[1]
+    end
+
+
+    # Theta proposal
+    # Note no log-transform here as bijection is provided by Pigeons.jl
+    theta_new_dist = MvNormal(theta_previous, explorer.sigma_covar[chain - 1])
+    theta_new = rand(rng, theta_new_dist)
+
+    for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
+        meta.vals[1] = theta_new[i]
+    end
+
+    logprob_proposal = log_potential(state)
+
+    log_target_ratio = logprob_proposal - logprob_previous
+
+    if -Random.randexp(rng) <= log_target_ratio
+        Pigeons.@record_if_requested!(recorders, :n_accepted, (chain, 1)) 
+    else   
+        Pigeons.@record_if_requested!(recorders, :n_rejected, (chain, 1)) 
+        for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
+            meta.vals[1] = theta_previous[i]
+        end
     end
 
     # Infections
-
-    n_accept = 0
-    n_reject = 0
-
     inf_vi = state.metadata.infections
     
     n_t_steps = explorer.n_t_steps
@@ -44,62 +73,57 @@ function Pigeons.step!(explorer::StateExplorer, replica, shared)
             rng,
             inf_vi.vals,
             ix_subject,
-            n_t_steps
+            n_t_steps,
+            explorer.subject_birth_ix[ix_subject]
         )
 
         log_pr_before = log_potential(state, IndividualSubsetContext(ix_subject))
 
-        apply_swaps!(inf_vi.vals, swap_indices, ix_subject, n_t_steps)
+        apply_swaps!(inf_vi.vals, swap_indices, ix_subject, n_t_steps, explorer.subject_birth_ix[ix_subject])
 
         log_pr_after = log_potential(state, IndividualSubsetContext(ix_subject))
 
         accept_ratio = exp(log_pr_after - log_pr_before + log_hastings_ratio)
         if accept_ratio < 1 && rand(rng) > accept_ratio
             # reject: revert the move we just proposed
-            apply_swaps!(inf_vi.vals, swap_indices, ix_subject, n_t_steps)
-
-            n_reject += 1
-        else
-            n_accept += 1
+            apply_swaps!(inf_vi.vals, swap_indices, ix_subject, n_t_steps, explorer.subject_birth_ix[ix_subject])
         end
     end
-
-    Pigeons.@record_if_requested!(recorders, :n_accepted_inf, (chain, n_accept)) 
-    Pigeons.@record_if_requested!(recorders, :n_rejected_inf, (chain, n_reject)) 
 end
 
+
 function Pigeons.adapt_explorer(
-    explorer::StateExplorer,
+    explorer::ExplorerGibbs5,
     reduced_recorders,
     current_pt,
     new_tempering
 )
-    mean_accepted_inf = mean(Pigeons.value.(values(Pigeons.value(reduced_recorders.n_accepted_inf))))
-    mean_rejected_inf = mean(Pigeons.value.(values(Pigeons.value(reduced_recorders.n_rejected_inf))))
+    n_accepted = Pigeons.value.(values(Pigeons.value(reduced_recorders.n_accepted)))
+    n_rejected = Pigeons.value.(values(Pigeons.value(reduced_recorders.n_rejected)))
 
-    pr_accept_inf = mean_accepted_inf / (mean_accepted_inf + mean_rejected_inf)
+    n_steps = n_accepted[1] + n_rejected[1]
 
-    println("Inf acceptance rate = $(round(pr_accept_inf, digits = 2)).")
+    pr_accept_inf = n_accepted ./ (n_accepted .+ n_rejected)
 
+    sigma_covar_adapted = exp.(log.(explorer.sigma_covar) .+ (pr_accept_inf .- 0.234) .* 0.999 .^ n_steps)
+    println(round.(pr_accept_inf, digits = 2))
 
-    return StateExplorer(
-        explorer.slice_sampler,
+    return ExplorerGibbs5(
         explorer.proposal_function,
         explorer.symbols_not_inf,
-        explorer.n_t_steps,
-        explorer.n_subjects,
-        explorer.sigma_step, 
-        explorer.inf_step
+        explorer.subject_birth_ix,
+        explorer.n_t_steps, explorer.n_subjects,
+        sigma_covar_adapted
     )
 end
 
-n_accepted_inf() = Pigeons.GroupBy(Int, Pigeons.Sum())
-n_rejected_inf() = Pigeons.GroupBy(Int, Pigeons.Sum())
+n_accepted() = Pigeons.GroupBy(Int, Pigeons.Sum())
+n_rejected() = Pigeons.GroupBy(Int, Pigeons.Sum())
 
-function Pigeons.explorer_recorder_builders(explorer::StateExplorer)
+function Pigeons.explorer_recorder_builders(explorer::ExplorerGibbs5)
     result = [
-        n_accepted_inf,
-        n_rejected_inf
+        n_accepted,
+        n_rejected
     ]
     return result
 end
