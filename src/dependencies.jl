@@ -42,6 +42,7 @@ using SliceSampling
 include("likelihood_model/make_waning_model.jl")
 include("likelihood_model/kucharski_antibody_kinetics.jl")
 include("likelihood_model/kucharski_waning_model.jl")
+include("likelihood_model/kucharski_chain_functions.jl")
 
 include("likelihood_model/age_antibody_kinetics.jl")
 include("likelihood_model/age_waning_model.jl")

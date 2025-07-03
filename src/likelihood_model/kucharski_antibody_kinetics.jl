@@ -89,3 +89,29 @@ function waning_curve_individual!(
         end
     end
 end
+
+
+# Necessary to get logjoint to work
+function waning_curve_individual!(
+    mu_long::T,
+    mu_short::T, omega::T,
+    sigma_long::T, sigma_short::T,
+    tau::T,
+    dist_matrix::Matrix{Float64},
+    time_diff_matrix::Matrix{Float64},
+    subject_birth_ix::Int,
+    infections::AbstractArray{Float64},
+
+    obs_lookup_strain,
+    obs_lookup_ix,
+
+    y::AbstractArray{T}
+) where T <: Real
+    waning_curve_individual!(
+        mu_long, mu_short, omega, sigma_long, sigma_short,
+        tau, dist_matrix, time_diff_matrix, subject_birth_ix,
+        convert.(Bool, infections),
+        obs_lookup_strain, obs_lookup_ix,
+        y
+    )
+end
