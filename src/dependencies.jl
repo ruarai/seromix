@@ -24,6 +24,7 @@ using LinearAlgebra
 using StatsBase
 using StatsFuns
 using SpecialFunctions
+using LogExpFunctions
 
 using DataFrames
 using QuackIO

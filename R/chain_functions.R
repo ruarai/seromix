@@ -51,3 +51,20 @@ add_total_infections <- function(chain, model_data) {
   chain |>
     mutate(total_inf = rowSums(across(starts_with("infections"))))
 }
+
+reformat_pigeons_chain <- function(chain_pigeons, model_data) {
+  n_subjects <- length(model_data$age_distribution)
+  n_t_steps <- length(model_data$modelled_years)
+  
+  inf_columns_new <- colnames(chain_pigeons) |> 
+    keep(~ str_detect(.x, "infections")) |> 
+    map_dbl(~ as.numeric(str_extract(.x, "\\d+")) - 1) |> 
+    map_chr(~ str_c("infections[", .x %% n_t_steps + 1, ",", .x %/% n_t_steps + 1, "]"))
+  
+  col_names <- colnames(chain_pigeons)
+  col_names[str_detect(col_names, "infections")] <- inf_columns_new
+  
+  colnames(chain_pigeons) <- col_names
+  
+  return(chain_pigeons)
+}

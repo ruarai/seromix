@@ -16,18 +16,24 @@ p.subject_birth_ix .= convert.(Int, birth_data.year_of_birth) .- 1967
 prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
 proposal_function = proposal_original_corrected
 
-initial_params = make_initial_params_kucharski_data_study(p, 8, model_data["initial_infections_manual"], rng)
+initial_params = make_initial_params_kucharski_data_study(p, 4, model_data["initial_infections_manual"], rng)
+
+
 turing_model = waning_model_kucharski
 
 # initial_params = make_initial_params_age(p, obs_df, 4, rng)
 
-model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model);
+model = make_waning_model(
+    p, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
+    mixture_importance_sampling = true
+);
 
 gibbs_sampler = make_gibbs_sampler(model, p, proposal_function);
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, p, rng;
-    n_sample = 200_000, n_thinning = 100, n_chain = 8
+    # n_sample = 100_000, n_thinning = 25, n_chain = 4
+    n_sample = 1000, n_thinning = 1, n_chain = 4
 );
 
 using Plots
@@ -40,7 +46,7 @@ plot(chain_sum_infections(chain, p))
 plot(chain[ix_start:end], [:sigma_long, :sigma_short], seriestype = :traceplot)
 plot(chain[ix_start:end], [:obs_sd], seriestype = :traceplot)
 plot(chain[ix_start:end], [:omega], seriestype = :traceplot)
-plot(chain[ix_start:end], [:beta], seriestype = :traceplot)
+plot(chain[ix_start:end], [:tau], seriestype = :traceplot)
 
 plot(chain[ix_start:end], [:lp], seriestype = :traceplot)
 

@@ -13,8 +13,10 @@ plot_data <- summary |>
          prior_description == "BetaBernoulli_1_1",
          proposal_name == "corrected") |> 
   
+  bind_rows(summaries_previous |> filter(name == "kucharski_2018")) |> 
   filter(run_name == "hanam_2018",
-         variable %in% var_names) |>
+         variable %in% var_names,
+         name %in% name_order) |>
   mutate(name = factor(if_else(use_corrected_titre, "Corrected", "Uncorrected")),
          variable = factor(variable, var_names, var_labels))
 

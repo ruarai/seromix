@@ -60,7 +60,7 @@ function pointwise_likelihood_kucharski(chain, model_data)
     obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
     obs_views = make_obs_views(obs_df)
 
-    logp = zeros(nrow(obs_df), nrow(chain))
+    logp = zeros(nrow(chain), nrow(obs_df))
 
     y_pred_buffer = zeros(maximum([length(v) for v in obs_views]))
 
@@ -90,7 +90,7 @@ function pointwise_likelihood_kucharski(chain, model_data)
 
             @inbounds for ix_obs in 1:n_obs_subject
                 ix_obs_absolute = obs_views[ix_subject][ix_obs]
-                logp[ix_obs_absolute, ix_sample] = titre_logpdf_component(
+                logp[ix_sample, ix_obs_absolute] = titre_logpdf_component(
                     obs_df.observed_titre[ix_obs_absolute],
                     y_pred[ix_obs],
                     draw.obs_sd,

@@ -6,29 +6,6 @@ source("replication_paper/common.R")
 
 
 
-chain_pigeon <- arrow::read_parquet("runs/hanam_2018/chain_pigeons_3.parquet")
-
-model_data <- tar_read(hanam_2018)
-
-n_subjects <- length(model_data$age_distribution)
-n_t_steps <- length(model_data$modelled_years)
-
-inf_columns_new <- colnames(chain_pigeon) |> 
-  keep(~ str_detect(.x, "infections")) |> 
-  map_dbl(~ as.numeric(str_extract(.x, "\\d+")) - 1) |> 
-  map_chr(~ str_c("infections[", .x %% n_t_steps + 1, ",", .x %/% n_t_steps + 1, "]"))
-
-col_names <- colnames(chain_pigeon)
-col_names[str_detect(col_names, "infections")] <- inf_columns_new
-
-colnames(chain_pigeon) <- col_names
-
-
-summ_pigeon <- chain_pigeon |> 
-  # select(-starts_with("infections")) |> 
-  summarise_chain(0, tar_read(hanam_2018), by_chain = FALSE) |> 
-  mutate(run_name = "hanam_2018",
-         name = "pigeons")
 
 
 summary <- tar_read(combined_summaries) |>
