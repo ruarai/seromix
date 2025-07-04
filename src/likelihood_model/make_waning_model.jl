@@ -196,14 +196,11 @@ end
 
 
 
-function pointwise_likelihood(
-    chain_df, model_data,
-    turing_model
+function model_pointwise_likelihood(
+    chain_df, p, obs_df,
+    turing_model;
+    fixed_params = missing
 )
-    p = read_model_parameters(model_data)
-
-    obs_df = DataFrame(model_data["observations"])
-
     col_names = names(chain_df)
     ix_infections = findall(s -> startswith(s, "infections"), col_names)
 
@@ -214,23 +211,26 @@ function pointwise_likelihood(
 
     param_symbols = model_symbols_apart_from(turing_model, [:infections])
 
-    individual_waning_function = turing_function_to_waning_function(model.f)
+    individual_waning_function = turing_function_to_waning_function(turing_model.f)
 
-
-    y_pred_buffer = zeros(maximum([length(v) for v in obs_views]))
-
-    @showprogress for ix_sample in 1:nrow(chain_df)
+    @showprogress Threads.@threads for ix_sample in 1:nrow(chain_df)
         draw = chain_df[ix_sample, :]
+        y_pred_buffer = zeros(maximum([length(v) for v in obs_views]))
         
 
         infections = reshape(Vector(chain_df[ix_sample, ix_infections]), p.n_t_steps, p.n_subjects)
+
+
+        params = NamedTuple{param_symbols}([draw[i] for i in param_symbols])
+        
+        if !ismissing(fixed_params)
+            params = merge(params, fixed_params)
+        end
 
         for ix_subject in 1:p.n_subjects
             n_obs_subject = length(obs_views[ix_subject])
             y_pred = view(y_pred_buffer, 1:n_obs_subject)
             fill!(y_pred, 0.0)
-
-            params = NamedTuple{param_symbols}([draw[i] for i in param_symbols])
 
             individual_waning_function(
                 params,

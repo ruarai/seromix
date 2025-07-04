@@ -30,7 +30,9 @@ sim_ar_chains <- tar_map(
       sim_model_data,
       infection_prior = infection_prior,
       initial_params_name = "kucharski_sim_study",
-      n_samples = as.integer(n_iterations), n_thinning = as.integer(round(n_iterations / 2000)), n_chain = as.integer(n_chain)
+      n_samples = as.integer(default_n_iterations),
+      n_thinning = as.integer(round(default_n_iterations / 2000)),
+      n_chain = as.integer(default_n_chain)
     ),
     garbage_collection = TRUE, format = "parquet"
   ),

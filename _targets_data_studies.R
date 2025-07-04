@@ -81,10 +81,14 @@ data_runs <- bind_rows(
     run_name = "hanam_2018_age",
     infection_prior = list(matrix_beta_bernoulli_1_1),
     
+    n_iterations = 200000, n_warmup = 15000, n_chain = 4,
+    
+    model_name = c("no_tau", "kucharski", "age_effect"),
     initial_params_name = c("kucharski_data_study", "kucharski_data_study", "age_effect"),
     turing_model_name = c("kucharski", "kucharski", "age_effect"),
     fixed_params = list(list(tau = 1e-10), NULL, NULL)
   ) |> 
+    # Add mixture sampling to do model comparison
     expand_grid(mixture_importance_sampling = c(TRUE, FALSE))
   
 ) |>
@@ -94,7 +98,11 @@ data_runs <- bind_rows(
     use_corrected_titre = replace_na(use_corrected_titre, TRUE),
     proposal_name = replace_na(proposal_name, "corrected"),
     turing_model_name = replace_na(turing_model_name, "kucharski"),
-    mixture_importance_sampling = replace_na(mixture_importance_sampling, FALSE)
+    mixture_importance_sampling = replace_na(mixture_importance_sampling, FALSE),
+    
+    n_iterations = replace_na(n_iterations, default_n_iterations),
+    n_warmup = replace_na(n_warmup, default_n_warmup),
+    n_chain = replace_na(n_chain, default_n_chain),
   ) |>
   # Add a description of the prior
   mutate(prior_description = str_c(unlist(infection_prior), collapse = "_")) |>
@@ -159,7 +167,9 @@ data_chains <- tar_map(
   tar_target(chain_subset, make_chain_subset(chain, model_data, name)),
   
   tar_target(chain_summary, summarise_chain(chain, n_warmup, model_data, add_name = name)),
-  tar_target(chain_summary_singular, summarise_chain(chain, n_warmup, model_data, by_chain = FALSE, add_name = name))
+  tar_target(chain_summary_singular, summarise_chain(chain, n_warmup, model_data, by_chain = FALSE, add_name = name)),
+  
+  tar_target(model_lp_mixis, get_lp_mixis(chain, n_warmup, model_data, turing_model_name, infection_prior, fixed_params, mixture_importance_sampling, name))
 )
 
 
@@ -179,6 +189,11 @@ targets_studies <- list(
   tar_combine(
     combined_chains,
     data_chains[["chain_subset"]],
+    command = dplyr::bind_rows(!!!.x) |> left_join(data_runs_meta, by = "name")
+  ),
+  tar_combine(
+    combined_lp_mixis,
+    data_chains[["model_lp_mixis"]],
     command = dplyr::bind_rows(!!!.x) |> left_join(data_runs_meta, by = "name")
   )
 )

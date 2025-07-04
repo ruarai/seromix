@@ -68,3 +68,31 @@ reformat_pigeons_chain <- function(chain_pigeons, model_data) {
   
   return(chain_pigeons)
 }
+
+get_lp_mixis <- function(
+    chain, n_warmup, model_data,
+    turing_model_name, infection_prior, fixed_params,
+    mixture_importance_sampling = TRUE, add_name = NULL
+) {
+  if(!mixture_importance_sampling) {
+    return(tibble(lp_mixis = NA, name = add_name))
+  }
+  
+  chain <- chain %>%
+    filter(iteration > n_warmup)
+  
+  logp <- get_julia_function("pointwise_likelihood")(
+    chain, model_data, turing_model_name, infection_prior,
+    fixed_params = fixed_params
+  )
+  
+  require(matrixStats)
+  
+  l_common_mix <- rowLogSumExps(-logp)
+  log_weights <- -logp - l_common_mix
+  elpd_mixis <- logSumExp(-l_common_mix) - rowLogSumExps(t(log_weights))
+  
+  return(tibble(lp_mixis = sum(elpd_mixis), name = add_name))
+}
+
+

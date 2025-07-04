@@ -5,10 +5,24 @@ tar_source()
 source("replication_paper/common.R")
 
 summary <- tar_read(combined_summaries) |>
-  filter(exp_group == "model_comparison")
+  filter(exp_group == "model_comparison", !mixture_importance_sampling)
+
+lp_mixis_summary <- tar_read(combined_lp_mixis) %>%
+  drop_na(lp_mixis) %>%
+  mutate(variable = "lp_mixis", median = lp_mixis)
+
+model_names <- c(
+  "model_comparison_hanam_2018_age_1" = "no_tau",
+  "model_comparison_hanam_2018_age_2" = "no_tau", 
+  "model_comparison_hanam_2018_age_3" = "kucharski", 
+  "model_comparison_hanam_2018_age_4" = "kucharski",
+  "model_comparison_hanam_2018_age_5" = "age_effect",
+  "model_comparison_hanam_2018_age_6" = "age_effect"
+)
 
 plot_data <- summary |>
-  mutate(name = initial_params_name)
+  bind_rows(lp_mixis_summary) |> 
+  mutate(name = model_names[name])
 
 ggplot(plot_data) +
 
