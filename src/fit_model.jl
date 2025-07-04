@@ -2,7 +2,7 @@ include("dependencies.jl")
 
 rng = Random.Xoshiro(1)
 
-run_dir = "runs/hanam_2018/"
+run_dir = "runs/sim_study_tiny_1/"
 model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
@@ -17,7 +17,8 @@ prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
 proposal_function = proposal_original_corrected
 
 turing_model = waning_model_kucharski
-initial_params = make_initial_params_kucharski_data_study(p, 4, model_data["initial_infections_manual"], rng)
+# initial_params = make_initial_params_kucharski_data_study(p, 4, model_data["initial_infections_manual"], rng)
+initial_params = make_initial_params_kucharski_sim_study(p, obs_df, 4, rng)
 
 
 # turing_model = waning_model_age_effect
@@ -32,8 +33,7 @@ gibbs_sampler = make_gibbs_sampler(model, p, proposal_function);
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, p, rng;
-    # n_sample = 100_000, n_thinning = 25, n_chain = 4
-    n_sample = 20000, n_thinning = 10, n_chain = 4
+    n_sample = 20, n_thinning = 1, n_chain = 4
 );
 
 set_lp!(model, chain)

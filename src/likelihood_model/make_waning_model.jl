@@ -66,6 +66,10 @@ function general_waning_likelihood(
     mixture_importance_sampling::Bool = false,
     use_corrected_titre::Bool = true
 )
+    if context isa DynamicPPL.PriorContext
+        return 0.0
+    end
+
     # If we're in an "IndividualSubsetContext", only calculate the likelihood over a single subject
     # Otherwise, calculate across all subjects
     subjects_to_process = if context isa IndividualSubsetContext

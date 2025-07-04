@@ -38,8 +38,8 @@ sim_ar_chains <- tar_map(
   ),
   tar_target(chain_subset, make_chain_subset(chain, sim_model_data, name)),
   
-  tar_target(chain_summary, summarise_chain(chain, n_warmup, sim_model_data, add_name = name)),
-  tar_target(chain_summary_singular, summarise_chain(chain, n_warmup, sim_model_data, by_chain = FALSE, add_name = name))
+  tar_target(chain_summary, summarise_chain(chain, default_n_warmup, sim_model_data, add_name = name)),
+  tar_target(chain_summary_singular, summarise_chain(chain, default_n_warmup, sim_model_data, by_chain = FALSE, add_name = name))
 )
 
 targets_sim_studies <- list(

@@ -1,6 +1,6 @@
 
 
-struct ExplorerGibbs5
+struct GibbsExplorer
     proposal_function::Function
     symbols_not_inf::Vector{Symbol}
 
@@ -8,18 +8,18 @@ struct ExplorerGibbs5
     n_t_steps::Int
     n_subjects::Int
 
-    sigma_covar::Vector{Float64}
+    sigma_covar::Float64
 end
 
-function ExplorerGibbs5(proposal_function, symbols_not_inf, p, n_chains)
-    return ExplorerGibbs5(
+function GibbsExplorer(proposal_function, symbols_not_inf, p)
+    return GibbsExplorer(
         proposal_function, symbols_not_inf,
         p.subject_birth_ix, p.n_t_steps, p.n_subjects,
-        fill(0.001, n_chains - 1)
+        0.01
     )
 end
 
-function Pigeons.step!(explorer::ExplorerGibbs5, replica, shared)
+function Pigeons.step!(explorer::GibbsExplorer, replica, shared)
     state = replica.state
     rng = replica.rng
     recorders = replica.recorders
@@ -42,7 +42,7 @@ function Pigeons.step!(explorer::ExplorerGibbs5, replica, shared)
 
     # Theta proposal
     # Note no log-transform here as bijection is provided by Pigeons.jl
-    theta_new_dist = MvNormal(theta_previous, explorer.sigma_covar[chain - 1])
+    theta_new_dist = MvNormal(theta_previous, explorer.sigma_covar)
     theta_new = rand(rng, theta_new_dist)
 
     for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
@@ -94,29 +94,27 @@ end
 
 
 function Pigeons.adapt_explorer(
-    explorer::ExplorerGibbs5,
+    explorer::GibbsExplorer,
     reduced_recorders,
     current_pt,
     new_tempering
 )
-    # Update sigma_covar for all n chains
-    # Need to verify this makes sense with Pigeons.jl internals
     n_accepted = Pigeons.value.(values(Pigeons.value(reduced_recorders.n_accepted)))
     n_rejected = Pigeons.value.(values(Pigeons.value(reduced_recorders.n_rejected)))
 
     n_steps = n_accepted[1] + n_rejected[1]
 
-    pr_accept_inf = n_accepted ./ (n_accepted .+ n_rejected)
+    pr_accept = mean(n_accepted ./ (n_accepted .+ n_rejected))
 
     # This is a bit weird
     # because this adaptation only happens once (rather than each iteration)
     # and n_steps is just the number of iterations in the last round
     # but does seem to work OK?
-    sigma_covar_adapted = exp.(log.(explorer.sigma_covar) .+ (pr_accept_inf .- 0.234) .* 0.999 .^ n_steps)
-    println(round.(pr_accept_inf, digits = 2))
-    println(round.(sigma_covar_adapted, digits = 4))
+    sigma_covar_adapted = exp(log(explorer.sigma_covar) + (pr_accept - 0.234) * 0.999 ^ n_steps)
 
-    return ExplorerGibbs5(
+    @printf("pr_accept = %6.4f; sigma_covar_adapted = %6.4f;\n", pr_accept, sigma_covar_adapted)
+
+    return GibbsExplorer(
         explorer.proposal_function,
         explorer.symbols_not_inf,
         explorer.subject_birth_ix,
@@ -128,7 +126,7 @@ end
 n_accepted() = Pigeons.GroupBy(Int, Pigeons.Sum())
 n_rejected() = Pigeons.GroupBy(Int, Pigeons.Sum())
 
-function Pigeons.explorer_recorder_builders(explorer::ExplorerGibbs5)
+function Pigeons.explorer_recorder_builders(explorer::GibbsExplorer)
     result = [
         n_accepted,
         n_rejected
