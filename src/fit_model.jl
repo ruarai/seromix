@@ -11,16 +11,16 @@ p = read_model_parameters(model_data)
 
 birth_data = DataFrame(model_data["subject_birth_data"])
 
-p.subject_birth_ix .= convert.(Int, birth_data.year_of_birth) .- 1967
+# p.subject_birth_ix .= convert.(Int, birth_data.year_of_birth) .- 1967
 
 prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
 proposal_function = proposal_original_corrected
 
+turing_model = waning_model_kucharski
 initial_params = make_initial_params_kucharski_data_study(p, 4, model_data["initial_infections_manual"], rng)
 
 
-turing_model = waning_model_kucharski
-
+# turing_model = waning_model_age_effect
 # initial_params = make_initial_params_age(p, obs_df, 4, rng)
 
 model = make_waning_model(
@@ -33,12 +33,12 @@ gibbs_sampler = make_gibbs_sampler(model, p, proposal_function);
 chain = sample_chain(
     model, initial_params, gibbs_sampler, p, rng;
     # n_sample = 100_000, n_thinning = 25, n_chain = 4
-    n_sample = 1000, n_thinning = 1, n_chain = 4
+    n_sample = 20000, n_thinning = 10, n_chain = 4
 );
 
+set_lp!(model, chain)
+
 using Plots
-
-
 ix_start = 1
 plot(chain[ix_start:end], [:mu_long, :mu_short], seriestype = :traceplot)
 plot(chain_sum_infections(chain, p))
@@ -61,3 +61,9 @@ end
 chain_name = "loo_test"
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")
 
+
+chain_df = DataFrame(chain)
+
+pointwise_likelihood(
+    chain_df, model_data, model
+)

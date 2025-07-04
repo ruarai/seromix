@@ -13,4 +13,3 @@ get_julia_function <- function(function_name) {
   julia_function(function_name)
 }
 
-

@@ -49,7 +49,9 @@ plot_data <- summary |>
 
 
 ggplot(plot_data) +
-  annotate("rect", ymin = 0.5, ymax = 2.5,
+  annotate("rect", ymin = 0.5, ymax = 1.5,
+           xmin = -Inf, xmax = Inf, fill = ggokabeito::palette_okabe_ito(6), alpha = 0.1) +
+  annotate("rect", ymin = 1.5, ymax = 2.5,
            xmin = -Inf, xmax = Inf, fill = "grey50", alpha = 0.1) +
   annotate("rect", ymin = 3.5, ymax = 4.5,
            xmin = -Inf, xmax = Inf, fill = "grey50", alpha = 0.1) +

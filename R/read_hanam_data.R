@@ -61,8 +61,9 @@ read_hanam_data <- function(use_inferred_age = FALSE) {
     subject_birth_data <- read_csv("input_data/kgostic_data_emporium/Fonville_2014/YOB_inferred.csv") |>
       select(ix_subject = `Subject number`,
              year_of_birth = YOB) |>
-      mutate(ix_t_birth = match(year_of_birth, modelled_years),
-             ix_t_birth = replace_na(ix_t_birth, 0),
+      mutate(#ix_t_birth = match(year_of_birth, modelled_years),
+             #ix_t_birth = replace_na(ix_t_birth, 0),
+             ix_t_birth = year_of_birth - modelled_years[1] - 1,
              ix_subject = as.integer(ix_subject)) |>
       arrange(ix_subject)
   } else {

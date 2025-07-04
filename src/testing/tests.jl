@@ -43,8 +43,7 @@ end
     obs_lookup_strain, obs_lookup_ix = make_obs_lookup(complete_obs)
 
     waning_curve!(
-        model_params.mu_long, model_params.mu_short, model_params.omega,
-        model_params.sigma_long, model_params.sigma_short, model_params.tau,
+        model_params, individual_waning_kucharski!,
 
         p.antigenic_distances, p.time_diff_matrix, p.subject_birth_ix,
 
@@ -110,8 +109,7 @@ obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
 obs_df.observed_titre .= 0.0
 
 b_trial = @benchmark waning_curve!(
-    $model_params.mu_long, $model_params.mu_short, $model_params.omega,
-    $model_params.sigma_long, $model_params.sigma_short, $model_params.tau,
+    $model_params, $individual_waning_kucharski!,
 
     $p.antigenic_distances, $p.time_diff_matrix, $p.subject_birth_ix,
 

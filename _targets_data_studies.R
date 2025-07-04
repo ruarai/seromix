@@ -23,10 +23,13 @@ data_runs <- bind_rows(
     exp_group = "prior_proposal",
     
     run_name = "hanam_2018",
-    fixed_params = list(NULL),
     proposal_name = c("uncorrected", "corrected"),
     infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1),
-    initial_params_name = "kucharski_data_study"
+    
+    # Filler variables to ensure column exists
+    initial_params_name = "kucharski_data_study",
+    mixture_importance_sampling = FALSE,
+    fixed_params = list(NULL)
   ),
   
   # Compare prior/proposal choices on fluscape studies:
@@ -77,10 +80,12 @@ data_runs <- bind_rows(
     
     run_name = "hanam_2018_age",
     infection_prior = list(matrix_beta_bernoulli_1_1),
-    initial_params_name = c("kucharski_data_study", "age_effect"),
     
-    turing_model_name = c("kucharski", "age_effect")
-  )
+    initial_params_name = c("kucharski_data_study", "kucharski_data_study", "age_effect"),
+    turing_model_name = c("kucharski", "kucharski", "age_effect"),
+    fixed_params = list(list(tau = 1e-10), NULL, NULL)
+  ) |> 
+    expand_grid(mixture_importance_sampling = c(TRUE, FALSE))
   
 ) |>
   rowwise() |> 
@@ -88,7 +93,8 @@ data_runs <- bind_rows(
   mutate(
     use_corrected_titre = replace_na(use_corrected_titre, TRUE),
     proposal_name = replace_na(proposal_name, "corrected"),
-    turing_model_name = replace_na(turing_model_name, "kucharski")
+    turing_model_name = replace_na(turing_model_name, "kucharski"),
+    mixture_importance_sampling = replace_na(mixture_importance_sampling, FALSE)
   ) |>
   # Add a description of the prior
   mutate(prior_description = str_c(unlist(infection_prior), collapse = "_")) |>
@@ -100,7 +106,7 @@ data_runs <- bind_rows(
 
 # Data which will be added to summarised outputs from each run
 data_runs_meta <- data_runs |>
-  select(name, exp_group, run_name, proposal_name, initial_params_name, use_corrected_titre, prior_description)
+  select(name, exp_group, run_name, proposal_name, initial_params_name, use_corrected_titre, prior_description, turing_model_name, mixture_importance_sampling)
 
 
 
@@ -139,6 +145,8 @@ data_chains <- tar_map(
       initial_params_name = initial_params_name,
       use_corrected_titre = use_corrected_titre,
       turing_model_name = turing_model_name,
+      
+      mixture_importance_sampling = mixture_importance_sampling,
       
       n_samples = as.integer(n_iterations),
       n_thinning = as.integer(round(n_iterations / 2000)),

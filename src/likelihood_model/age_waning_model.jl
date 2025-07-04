@@ -1,12 +1,11 @@
 @model function waning_model_age_effect(
     model_parameters::FixedModelParameters,
     prior_infection_dist::Distribution,
-    use_corrected_titre::Bool,
+    observed_titre::Vector{Vector{Float64}},
+    model_cache::WaningModelCache;
 
-    obs_lookup_strain, obs_lookup_ix, obs_views,
-    n_max_ind_obs::Int,
-
-    observed_titre::Vector{Vector{Float64}}     
+    mixture_importance_sampling::Bool = false,
+    use_corrected_titre::Bool = true
 )
     mu_long ~ Uniform(0.0, 10.0)
     mu_short ~ Uniform(0.0, 10.0)
@@ -20,42 +19,78 @@
     beta ~ Uniform(0.0, 1.0)
 
     obs_sd ~ Uniform(0.0, 10.0)
-    obs_min = convert(typeof(mu_long), const_titre_min)
-    obs_max = convert(typeof(mu_long), const_titre_max)
+
+    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, beta, obs_sd)
 
     infections ~ prior_infection_dist
 
-    # If we're in an "IndividualSubsetContext", only calculate the
-    # likelihood over a single subject
-    # Otherwise, calculate across all subjects
-    context = DynamicPPL.leafcontext(__context__)
-    subjects_to_process = if context isa IndividualSubsetContext
-        SA[context.ix] # StaticArray with one element (context.ix)
-    else
-        1:model_parameters.n_subjects
-    end
+    log_likelihood = general_waning_likelihood(
+        params,
+        infections,
+        model_parameters,
+        observed_titre,
+        model_cache,
+        individual_waning_age_effect!,
+        DynamicPPL.leafcontext(__context__);
+        use_corrected_titre = use_corrected_titre,
+        mixture_importance_sampling = mixture_importance_sampling
+    )
 
-    # Reduce the total memory allocation across the observed titre
-    # by calculating across a single pre-allocated array.
-    y_pred_buffer = zeros(typeof(mu_long), n_max_ind_obs)
+    @addlogprob! log_likelihood
+end
 
-    for ix_subject in subjects_to_process
-        n_obs_subject = length(obs_views[ix_subject])
-        y_pred = view(y_pred_buffer, 1:n_obs_subject)
-        fill!(y_pred, 0.0)
+function individual_waning_age_effect!(
+    params,
+    dist_matrix::Matrix{Float64},
+    time_diff_matrix::Matrix{Float64},
+    subject_birth_ix::Int,
+    infections::AbstractArray{Bool},
 
-        waning_curve_individual_age!(
-            mu_long, mu_short, omega,
-            sigma_long, sigma_short, beta,
-            model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
-            model_parameters.subject_birth_ix[ix_subject],
-            view(infections, :, ix_subject),
-            obs_lookup_strain[ix_subject],
-            obs_lookup_ix[ix_subject],
-            y_pred
-        )
+    obs_lookup_strain,
+    obs_lookup_ix,
 
-         observed_titre[ix_subject] ~ TitreArrayNormal(y_pred, obs_sd, obs_min, obs_max, use_corrected_titre)
+    y::AbstractArray{Float64}
+)
+    n_t_steps = length(infections)
+
+    for ix_t in max(1, subject_birth_ix):n_t_steps
+        @inbounds if !infections[ix_t]
+            continue
+        end
+        
+        age = ix_t - subject_birth_ix
+        
+        age_effect = max(0.0, 1.0 - age * params.beta)
+
+        # Process relevant times after infection
+        for ix_t_obs in ix_t:n_t_steps
+            if !haskey(obs_lookup_strain, ix_t_obs)
+                continue
+            end
+
+            matches_strain = obs_lookup_strain[ix_t_obs]
+            matches_ix = obs_lookup_ix[ix_t_obs]
+
+            time_diff = time_diff_matrix[ix_t_obs, ix_t]
+            short_term_time_factor = max(0.0, 1.0 - params.omega * time_diff)
+            
+            @turbo for i in eachindex(matches_strain)
+                ix_obs_strain = matches_strain[i]
+                ix_obs = matches_ix[i]
+
+                distance = dist_matrix[ix_t, ix_obs_strain]
+                
+                long_term_dist = max(0.0, 1.0 - params.sigma_long * distance)
+                short_term_dist = max(0.0, 1.0 - params.sigma_short * distance)
+                
+                long_term = params.mu_long * long_term_dist
+                short_term = params.mu_short * short_term_time_factor * short_term_dist
+                
+                y[ix_obs] += age_effect * (long_term + short_term)
+            end
+        end
     end
 end
 
+# Used by pointwise_likelihood()
+turing_function_to_waning_function(model_f::typeof(waning_model_age_effect)) = individual_waning_age_effect!

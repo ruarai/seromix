@@ -17,6 +17,7 @@ function fit_model(
     fixed_params = nothing,
 
     use_corrected_titre = true,
+    mixture_importance_sampling = false,
 
     rng_seed = 1
 )
@@ -39,7 +40,8 @@ function fit_model(
         p, obs_df;
         prior_infection_dist = prior_infection_dist,
         use_corrected_titre = use_corrected_titre,
-        turing_model = turing_model
+        turing_model = turing_model,
+        mixture_importance_sampling = mixture_importance_sampling
     );
 
     if !isnothing(fixed_params)
