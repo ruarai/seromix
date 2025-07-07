@@ -1,16 +1,5 @@
 
 
-# Infection prior definitions (see src/R_interface/fit_model.jl)
-matrix_bernoulli_10 <- list(name = "Bernoulli", p = 0.1)
-matrix_bernoulli_30 <- list(name = "Bernoulli", p = 0.3)
-matrix_bernoulli_50 <- list(name = "Bernoulli", p = 0.5)
-matrix_beta_bernoulli_1_1 <- list(name = "BetaBernoulli", alpha = 1.0, beta = 1.0)
-matrix_beta_bernoulli_1_1_tv <- list(name = "BetaBernoulliTimeVarying", alpha = 1.0, beta = 1.0)
-matrix_beta_bernoulli_1_1_sv <- list(name = "BetaBernoulliSubjectVarying", alpha = 1.0, beta = 1.0)
-
-matrix_beta_bernoulli_2.5_8 <- list(name = "BetaBernoulli", alpha = 2.5, beta = 8.0)
-matrix_beta_bernoulli_2.5_8_tv <- list(name = "BetaBernoulliTimeVarying", alpha = 2.5, beta = 8.0)
-matrix_beta_bernoulli_2.5_8_sv <- list(name = "BetaBernoulliSubjectVarying", alpha = 2.5, beta = 8.0)
 
 all_infection_priors <- list(
   matrix_bernoulli_10, matrix_bernoulli_30, matrix_bernoulli_50,
@@ -160,8 +149,7 @@ data_chains <- tar_map(
       n_thinning = as.integer(round(n_iterations / 2000)),
       n_chain = as.integer(n_chain)
     ),
-    garbage_collection = TRUE,
-    format = "parquet"
+    garbage_collection = TRUE, memory = "transient", format = "parquet"
   ),
   
   tar_target(chain_subset, make_chain_subset(chain, model_data, name)),

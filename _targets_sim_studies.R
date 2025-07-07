@@ -34,7 +34,7 @@ sim_ar_chains <- tar_map(
       n_thinning = as.integer(round(default_n_iterations / 2000)),
       n_chain = as.integer(default_n_chain)
     ),
-    garbage_collection = TRUE, format = "parquet"
+    garbage_collection = TRUE, memory = "transient", format = "parquet"
   ),
   tar_target(chain_subset, make_chain_subset(chain, sim_model_data, name)),
   

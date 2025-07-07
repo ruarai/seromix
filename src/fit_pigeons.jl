@@ -5,7 +5,7 @@ using Plots
 
 include("pigeons/explorer.jl")
 
-data_code = "sim_study_tiny_1"
+data_code = "hanam_2018_age"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
@@ -23,10 +23,9 @@ model = make_waning_model(
     p, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model
 );
 
-pigeon_model = TuringLogPotential(model);
-const PigeonModelType = typeof(pigeon_model);
+pt_target = TuringLogPotential(model)
 
-function Pigeons.initialization(target::PigeonModelType, rng::AbstractRNG, ::Int64)
+function Pigeons.initialization(target::typeof(pt_target), rng::AbstractRNG, ::Int64)
     result = DynamicPPL.VarInfo(rng, target.model, DynamicPPL.SampleFromPrior(), DynamicPPL.PriorContext())
 
     Pigeons.update_state!(result, :mu_long, 1, 2.0)
@@ -37,63 +36,25 @@ function Pigeons.initialization(target::PigeonModelType, rng::AbstractRNG, ::Int
     Pigeons.update_state!(result, :tau, 1, 0.05)
     Pigeons.update_state!(result, :obs_sd, 1, 1.5)
 
-    result = DynamicPPL.link(result, target.model)
-    
-    return result
+    return DynamicPPL.link(result, target.model)
 end
 
-function Pigeons.log_unnormalized_ratio(log_potentials::AbstractVector, numerator::Int, denominator::Int, state)
-    lp_num = log_potentials[numerator](state)
-    lp_den = log_potentials[denominator](state)
-    ans = lp_num-lp_den
-    if isnan(ans)
-        error("Got NaN log-unnormalized ratio; Dumping information:\n\tlp_num=$lp_num\n\tlp_den=$lp_den\n\t")
-    end
-    return ans
-end
+# Approx timing
+# sum([0.5 * 2^i for i in 1:15]) / (60 * 60)
 
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 pt = pigeons(
-    target = pigeon_model,
-    # n_rounds = 3, n_chains = 32, multithreaded = false,
-    n_rounds = 8, n_chains = 32, multithreaded = true,   
+    target = pt_target,
+    n_rounds = 12, n_chains = 16, multithreaded = true,   
     explorer = GibbsExplorer(proposal_original_corrected, [i for i in symbols_not_inf], p),
-    record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema]
+    extended_traces = true,
+    record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
 );
-
-pt = increment_n_rounds!(pt, 1)
-pt = pigeons(pt)
-
-plot(pt.shared.tempering.communication_barriers.localbarrier)
 
 
 chain = Chains(pt);
-plot(chain, [:mu_long, :mu_short], seriestype = :traceplot)
-plot(chain, Symbol("infections[20]"), seriestype = :traceplot)
-
-plot(chain, [:sigma_long, :sigma_short], seriestype = :traceplot)
-plot(chain, [:obs_sd], seriestype = :traceplot)
-plot(chain, [:omega], seriestype = :traceplot)
-plot(chain, [:tau], seriestype = :traceplot)
-
-plot(chain, [:log_density], seriestype = :traceplot)
 
 
-heatmap(chain_infections_prob_2(chain, p)')
-heatmap(model_data["infections_matrix"]')
-
-n_inf = chain_sum_infections(chain, p)
-plot(n_inf)
-
-scatter(chain[:mu_long], n_inf)
-scatter(chain[:mu_long], chain[:tau])
-scatter(chain[:tau], n_inf)
-scatter(chain[:mu_short], chain[:omega])
-
-using StatsPlots
-@df pt.shared.reports.swap_prs StatsPlots.plot(:round, :mean, group = :first, legend = false)
-
-
-# chain_name = "pigeons_4"
+# chain_name = "pigeons_5"
 # save_draws(chain, "$run_dir/chain_$chain_name.parquet")
 # JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))

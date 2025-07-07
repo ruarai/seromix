@@ -28,7 +28,7 @@ name_labels <- c(
   "BetaBernoulli(1,1), corrected (PT)"
 )
 
-summary_pigeons <- arrow::read_parquet("runs/hanam_2018/chain_pigeons_3.parquet") |> 
+summary_pigeons <- arrow::read_parquet("runs/hanam_2018/chain_pigeons_5.parquet") |> 
   reformat_pigeons_chain(tar_read(hanam_2018)) |> 
   summarise_chain(0, tar_read(hanam_2018), by_chain = FALSE) |> 
   mutate(run_name = "hanam_2018",
@@ -40,10 +40,10 @@ plot_data <- summary |>
   bind_rows(summaries_previous |> filter(name == "kucharski_2018"),
             summary_pigeons) |> 
   filter(run_name == "hanam_2018",
-         variable %in% var_names,
+         variable %in% names(var_labels),
          name %in% name_order) |>
   mutate(name = fct_rev(factor(name, name_order, name_labels)),
-         variable = factor(variable, var_names, var_labels))
+         variable = factor(variable, names(var_labels), var_labels))
 
 
 

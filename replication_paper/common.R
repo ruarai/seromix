@@ -1,17 +1,19 @@
 
-
-var_names <- c("mu_long", "mu_short", "sigma_long", "sigma_short",  "tau", "omega", "obs_sd", "total_inf")
 var_labels <- c(
-  "<i>μ</i><sub>L</sub> (long-term boost)", 
-  "<i>μ</i><sub>S</sub> (short-term boost)",
-  "<i>σ</i><sub>L</sub> (long-term cross<br>reactivity)", 
-  "<i>σ</i><sub>S</sub> (short-term cross<br>reactivity)",
-  "<i>τ</i> (seniority)",
-  "<i>ω</i> (waning)",
-  "<i>σ</i><sub>obs</sub> (obs sd.)", 
-  "Total infections"
+  "mu_long" = "<i>μ</i><sub>L</sub> (long-term boost)",
+  "mu_short" = "<i>μ</i><sub>S</sub> (short-term boost)",
+  "sigma_long" = "<i>σ</i><sub>L</sub> (long-term cross<br>reactivity)", 
+  "sigma_short" = "<i>σ</i><sub>S</sub> (short-term cross<br>reactivity)",
+  "tau" = "<i>τ</i> (seniority)",
+  "omega" = "<i>ω</i> (waning)",
+  "obs_sd" = "<i>σ</i><sub>obs</sub> (obs sd.)",
+  "total_inf" = "Total infections",
+  
+  "beta" = "<i>β</i> (linear age effect)",
+  
+  "mixis_lp" = "Mixture-IS LOO score",
+  "lp" = "Log-probability"
 )
-
 
 
 summaries_previous <- tribble(
@@ -44,3 +46,4 @@ summaries_previous <- tribble(
   "hay_2024", "omega", "hanam_2018",  2.01 / 2.65, 1.74 / 2.65, 2.27 / 2.65, # Approximate
   "hay_2024", "obs_sd", "hanam_2018", 1.29, 1.27, 1.31
 )
+

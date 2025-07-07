@@ -25,41 +25,51 @@ function Pigeons.step!(explorer::GibbsExplorer, replica, shared)
     recorders = replica.recorders
     chain = replica.chain
 
-    # Add zero to initialise
-    Pigeons.@record_if_requested!(recorders, :n_accepted, (chain, 0))
-    Pigeons.@record_if_requested!(recorders, :n_rejected, (chain, 0)) 
-
     log_potential = Pigeons.find_log_potential(replica, shared.tempering, shared)
 
-    # Get the logdensity function
-    logprob_previous = log_potential(state)
-
-    theta_previous = zeros(length(explorer.symbols_not_inf))
-    for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
-        theta_previous[i] = meta.vals[1]
-    end
 
 
-    # Theta proposal
-    # Note no log-transform here as bijection is provided by Pigeons.jl
-    theta_new_dist = MvNormal(theta_previous, explorer.sigma_covar)
-    theta_new = rand(rng, theta_new_dist)
+    # Add zero to initialise
+    # Pigeons.@record_if_requested!(recorders, :n_accepted, (chain, 0))
+    # Pigeons.@record_if_requested!(recorders, :n_rejected, (chain, 0)) 
 
-    for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
-        meta.vals[1] = theta_new[i]
-    end
+    # # Get the logdensity function
+    # logprob_previous = log_potential(state)
 
-    logprob_proposal = log_potential(state)
+    # theta_previous = zeros(length(explorer.symbols_not_inf))
+    # for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
+    #     theta_previous[i] = meta.vals[1]
+    # end
 
-    log_target_ratio = logprob_proposal - logprob_previous
 
-    if -Random.randexp(rng) <= log_target_ratio
-        Pigeons.@record_if_requested!(recorders, :n_accepted, (chain, 1)) 
-    else   
-        Pigeons.@record_if_requested!(recorders, :n_rejected, (chain, 1)) 
-        for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
-            meta.vals[1] = theta_previous[i]
-        end
+    # # Theta proposal
+    # # Note no log-transform here as bijection is provided by Pigeons.jl
+    # theta_new_dist = MvNormal(theta_previous, explorer.sigma_covar)
+    # theta_new = rand(rng, theta_new_dist)
+
+    # for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
+    #     meta.vals[1] = theta_new[i]
+    # end
+
+    # logprob_proposal = log_potential(state)
+
+    # log_target_ratio = logprob_proposal - logprob_previous
+
+    # if -Random.randexp(rng) <= log_target_ratio
+    #     Pigeons.@record_if_requested!(recorders, :n_accepted, (chain, 1)) 
+    # else   
+    #     Pigeons.@record_if_requested!(recorders, :n_rejected, (chain, 1)) 
+    #     for (i, meta) in enumerate(state.metadata[explorer.symbols_not_inf])
+    #         meta.vals[1] = theta_previous[i]
+    #     end
+    # end
+
+    h = SliceSampler()
+
+    # Slice sampling
+    cached_lp = -Inf
+    for meta in state.metadata[explorer.symbols_not_inf]
+        cached_lp = Pigeons.slice_sample!(h, meta.vals, log_potential, cached_lp, replica)
     end
 
     # Infections
@@ -99,20 +109,22 @@ function Pigeons.adapt_explorer(
     current_pt,
     new_tempering
 )
-    n_accepted = Pigeons.value.(values(Pigeons.value(reduced_recorders.n_accepted)))
-    n_rejected = Pigeons.value.(values(Pigeons.value(reduced_recorders.n_rejected)))
+    # n_accepted = Pigeons.value.(values(Pigeons.value(reduced_recorders.n_accepted)))
+    # n_rejected = Pigeons.value.(values(Pigeons.value(reduced_recorders.n_rejected)))
 
-    n_steps = n_accepted[1] + n_rejected[1]
+    # n_steps = n_accepted[1] + n_rejected[1]
 
-    pr_accept = mean(n_accepted ./ (n_accepted .+ n_rejected))
+    # pr_accept = mean(n_accepted ./ (n_accepted .+ n_rejected))
 
     # This is a bit weird
     # because this adaptation only happens once (rather than each iteration)
     # and n_steps is just the number of iterations in the last round
     # but does seem to work OK?
-    sigma_covar_adapted = exp(log(explorer.sigma_covar) + (pr_accept - 0.234) * 0.999 ^ n_steps)
+    # sigma_covar_adapted = exp(log(explorer.sigma_covar) + (pr_accept - 0.234) * 0.999 ^ n_steps)
 
-    @printf("pr_accept = %6.4f; sigma_covar_adapted = %6.4f;\n", pr_accept, sigma_covar_adapted)
+    # @printf("pr_accept = %6.4f; sigma_covar_adapted = %6.4f;\n", pr_accept, sigma_covar_adapted)
+
+    sigma_covar_adapted = 0.01
 
     return GibbsExplorer(
         explorer.proposal_function,

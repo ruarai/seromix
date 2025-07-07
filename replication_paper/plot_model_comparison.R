@@ -5,11 +5,11 @@ tar_source()
 source("replication_paper/common.R")
 
 summary <- tar_read(combined_summaries) |>
-  filter(exp_group == "model_comparison", !mixture_importance_sampling)
+  filter(exp_group == "model_comparison", mixture_importance_sampling)
 
 lp_mixis_summary <- tar_read(combined_lp_mixis) %>%
   drop_na(lp_mixis) %>%
-  mutate(variable = "lp_mixis", median = lp_mixis)
+  mutate(variable = "mixis_lp", median = lp_mixis)
 
 model_names <- c(
   "model_comparison_hanam_2018_age_1" = "no_tau",
@@ -22,21 +22,25 @@ model_names <- c(
 
 plot_data <- summary |>
   bind_rows(lp_mixis_summary) |> 
-  mutate(name = model_names[name])
+  mutate(name = model_names[name]) |>
+  filter(name != "age_effect") |> 
+  mutate(variable = factor(variable, names(var_labels), var_labels))
 
 ggplot(plot_data) +
 
   
-  geom_point(aes(x = median, y = name),
+  geom_point(aes(x = median, y = name, colour = factor(.chain)),
              size = 0.8,
              position = position_dodge2(width = 0.3)) +
-  geom_linerange(aes(xmin = q95_lower, xmax = q95_upper, y = name),
+  geom_linerange(aes(xmin = q95_lower, xmax = q95_upper, y = name, colour = factor(.chain)),
                  position = position_dodge2(width = 0.3)) +
   
   facet_wrap(~variable,
              ncol = 4, scales = "free_x") +
   
   xlab("Value (median, 95% CrI)") + ylab(NULL) +
+  
+  scale_colour_discrete(type = rep(RColorBrewer::brewer.pal(9, "Blues")[c(6,9)], 10)) +
   
   plot_theme_paper +
   
@@ -46,3 +50,4 @@ ggplot(plot_data) +
         legend.position = "none") +
   
   ggtitle("Ha Nam study inference results")
+

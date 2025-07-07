@@ -75,7 +75,7 @@ get_lp_mixis <- function(
     mixture_importance_sampling = TRUE, add_name = NULL
 ) {
   if(!mixture_importance_sampling) {
-    return(tibble(lp_mixis = NA, name = add_name))
+    return(tibble(lp_mixis = NA, name = add_name, .chain = NA))
   }
   
   chain <- chain %>%
@@ -88,11 +88,19 @@ get_lp_mixis <- function(
   
   require(matrixStats)
   
-  l_common_mix <- rowLogSumExps(-logp)
-  log_weights <- -logp - l_common_mix
-  elpd_mixis <- logSumExp(-l_common_mix) - rowLogSumExps(t(log_weights))
-  
-  return(tibble(lp_mixis = sum(elpd_mixis), name = add_name))
+  map(
+    1:max(chain$chain),
+    function(ix_chain) {
+      rows_chain <- chain$chain == ix_chain
+      
+      l_common_mix <- rowLogSumExps(-logp[rows_chain, ])
+      log_weights <- -logp[rows_chain, ] - l_common_mix
+      elpd_mixis <- logSumExp(-l_common_mix) - rowLogSumExps(t(log_weights))
+      
+      tibble(lp_mixis = sum(elpd_mixis), .chain = ix_chain, name = add_name)
+    }
+  ) %>%
+    bind_rows()
 }
 
 
