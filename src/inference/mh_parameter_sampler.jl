@@ -40,6 +40,7 @@ function AbstractMCMC.step(
     kwargs...
 )
     if !isnothing(initial_params)
+        # TODO fix with link function
         theta_init = initial_params
     else
         theta_init = rand(rng, Uniform(0, 1.0), 7)
@@ -82,23 +83,15 @@ function AbstractMCMC.step(
     logprob_previous = get_logp(theta_current, model)
 
     # Theta proposal
-    log_theta_current = log.(theta_current)
-
-    log_theta_new_dist = MvNormal(log_theta_current, sigma_covar_adapted)
-    log_theta_new = rand(rng, log_theta_new_dist)
-    theta_new = exp.(log_theta_new)
+    theta_new_dist = MvNormal(theta_current, sigma_covar_adapted)
+    theta_new = rand(rng, theta_new_dist)
 
     logprob_proposal = get_logp(theta_new, model)
 
 
-
+    # Note no correction for log-scale operations (as this is performed by Turing.jl)
     log_target_ratio = logprob_proposal - logprob_previous
-
-    # Correction term for log-normal proposals around theta
-    log_hastings_ratio = sum(log_theta_new) - sum(log_theta_current)
-    acceptance_ratio = log_target_ratio + log_hastings_ratio
-
-    if -Random.randexp(rng) <= acceptance_ratio
+    if -Random.randexp(rng) <= log_target_ratio
         # Accept theta_new
         transition = ParameterSamplerTransition(theta_new, logprob_proposal)
         n_accepted += 1
@@ -116,7 +109,7 @@ end
 
 # Puts the sampler into an external sampler for use in Turing
 function make_mh_parameter_sampler()
-    return externalsampler(MHParameterSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
+    return externalsampler(MHParameterSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=true)
 end
 
 isgibbscomponent(::MHParameterSampler) = true
