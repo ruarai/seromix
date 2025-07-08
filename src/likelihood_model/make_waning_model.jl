@@ -125,6 +125,16 @@ function general_waning_likelihood(
                     )
                 end
 
+                if isinf(lpp) && lpp < 0
+                    @show lpp
+                    @show i, ix_subject
+                    @show observed_titre[ix_subject][i]
+                    @show y_pred[i]
+                    @show params.obs_sd
+                    # It might be useful to see the state of r and alpha too
+                    @show r, alpha
+                end
+
                 lp += lpp
 
                 # Accumulation for the logsumexp(-lpp[ix_subject])
@@ -223,8 +233,9 @@ function model_pointwise_likelihood(
         
 
         infections = reshape(Vector(chain_df[ix_sample, ix_infections]), p.n_t_steps, p.n_subjects)
+        infections = convert(Matrix{Bool}, convert.(Bool, infections))
 
-
+        
         params = NamedTuple{param_symbols}([draw[i] for i in param_symbols])
         
         if !ismissing(fixed_params)
@@ -262,4 +273,71 @@ function model_pointwise_likelihood(
     end
 
     return logp
+end
+
+
+
+function model_ppd(
+    chain_df, p,
+    turing_model;
+    n_samples = 10,
+    fixed_params = missing
+)
+    samples_indices = sort(sample(1:size(chain_df, 1), n_samples, replace = false))
+
+    complete_obs = expand_grid(
+        ix_t_obs = 1:p.n_t_steps,
+        ix_strain = 1:p.n_t_steps,
+        ix_subject = 1:p.n_subjects,
+        observed_titre = 0.0,
+        ix_sample = eachindex(samples_indices)
+    )
+
+    complete_obs_grouped = groupby(complete_obs, :ix_sample)
+
+
+    col_names = names(chain_df)
+    ix_infections = findall(s -> startswith(s, "infections"), col_names)
+
+
+    param_symbols = model_symbols_apart_from(turing_model, [:infections])
+
+    individual_waning_function = turing_function_to_waning_function(turing_model.f)
+
+    @showprogress Threads.@threads for ix_sample in eachindex(samples_indices)
+
+        obs_sample = complete_obs_grouped[(ix_sample = ix_sample, )]
+
+
+        obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_sample)
+        obs_views = make_obs_views(obs_sample)
+
+        draw = chain_df[samples_indices[ix_sample], :]
+
+
+        infections = reshape(Vector(chain_df[samples_indices[ix_sample], ix_infections]), p.n_t_steps, p.n_subjects)
+        infections = convert(Matrix{Bool}, convert.(Bool, infections))
+
+
+        params = NamedTuple{param_symbols}([draw[i] for i in param_symbols])
+
+        if !ismissing(fixed_params)
+            params = merge(params, fixed_params)
+        end
+
+        obs_val = zeros(nrow(obs_sample))
+        
+        waning_curve!(
+            params, individual_waning_function,
+            p.antigenic_distances, p.time_diff_matrix,
+            p.subject_birth_ix,
+            infections,
+            obs_lookup_strain, obs_lookup_ix, obs_views,
+            obs_val
+        )
+
+        complete_obs.observed_titre[complete_obs.ix_sample .== ix_sample] .= obs_val
+    end
+
+    return complete_obs
 end

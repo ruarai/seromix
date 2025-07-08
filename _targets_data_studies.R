@@ -63,20 +63,20 @@ data_runs <- bind_rows(
     initial_params_name = "kucharski_data_study"
   ),
   
-  # Model comparison:
-  tibble( # Note not expand_grid
-    exp_group = "model_comparison",
-    
-    run_name = "hanam_2018_age",
-    infection_prior = list(matrix_beta_bernoulli_1_1),
-    
-    n_iterations = 200000, n_warmup = 15000, n_chain = 4,
-    
-    model_name = c("no_tau", "kucharski", "age_effect"),
-    initial_params_name = c("kucharski_data_study", "kucharski_data_study", "age_effect"),
-    turing_model_name = c("kucharski", "kucharski", "age_effect"),
-    fixed_params = list(list(tau = 1e-10), NULL, NULL)
+  # Model comparison
+  tribble(
+    ~exp_name, ~initial_params_name, ~turing_model_name, ~fixed_params,
+    "no_tau", "kucharski_data_study", "kucharski", list(tau = 1e-10),
+    "kucharski", "kucharski_data_study", "kucharski", NULL,
+    "age_effect", "age_effect", "age_effect",  NULL,
+    "age_effect_2", "age_effect_2", "age_effect_2",  NULL,
+    "intercept", "intercept", "intercept",NULL,
   ) |> 
+    mutate(exp_group = "model_comparison",
+           run_name = "hanam_2018_age",
+           infection_prior = list(matrix_beta_bernoulli_1_1),
+           n_iterations = 200000, n_warmup = 15000, n_chain = 4
+           ) |> 
     # Add mixture sampling to do model comparison
     expand_grid(mixture_importance_sampling = c(TRUE, FALSE))
   
@@ -103,7 +103,7 @@ data_runs <- bind_rows(
 
 # Data which will be added to summarised outputs from each run
 data_runs_meta <- data_runs |>
-  select(name, exp_group, run_name, proposal_name, initial_params_name, use_corrected_titre, prior_description, turing_model_name, mixture_importance_sampling)
+  select(name, exp_group, run_name, proposal_name, initial_params_name, use_corrected_titre, prior_description, turing_model_name, exp_name, mixture_importance_sampling)
 
 
 

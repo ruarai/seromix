@@ -17,7 +17,7 @@ true_values <- tibble(
   obs_sd = 1.5
 ) |> 
   pivot_longer(everything(), names_to = "variable") |> 
-  mutate(variable = factor(variable, var_names, var_labels))
+  mutate(variable = factor(variable, names(var_labels), var_labels))
 
 
 prior_labels <- c(
@@ -29,9 +29,9 @@ prior_labels <- c(
 
 plot_data <- summary |> 
   
-  filter(variable %in% var_names,
+  filter(variable %in% names(var_labels),
          variable != "total_inf") |> 
-  mutate(variable = factor(variable, var_names, var_labels),
+  mutate(variable = factor(variable, names(var_labels), var_labels),
          prior_name = prior_labels[prior_description],
          endemic_mean_ar = factor(endemic_mean_ar))
 
@@ -75,10 +75,11 @@ plot_data |>
              true_values |> filter(variable  %in% var_labels[c(1, 3, 5)])) +
   
   geom_point(aes(x = median, y = endemic_mean_ar, colour = drop_age),
-             size = 0.8,
+             size = 1.2,
              position = position_dodge2(width = 0.3)) +
   
   geom_linerange(aes(xmin = q95_lower, xmax = q95_upper, y = endemic_mean_ar, colour = drop_age),
+                 linewidth = 0.7,
                  position = position_dodge2(width = 0.3)) +
   
   facet_grid(cols = vars(variable), 

@@ -12,7 +12,8 @@ var_labels <- c(
   "beta" = "<i>β</i> (linear age effect)",
   
   "mixis_lp" = "Mixture-IS LOO score",
-  "lp" = "Log-probability"
+  "lp" = "Log-probability",
+  "exp_intercept" = "exp-intercept"
 )
 
 

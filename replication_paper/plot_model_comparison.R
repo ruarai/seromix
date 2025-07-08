@@ -11,20 +11,20 @@ lp_mixis_summary <- tar_read(combined_lp_mixis) %>%
   drop_na(lp_mixis) %>%
   mutate(variable = "mixis_lp", median = lp_mixis)
 
-model_names <- c(
-  "model_comparison_hanam_2018_age_1" = "no_tau",
-  "model_comparison_hanam_2018_age_2" = "no_tau", 
-  "model_comparison_hanam_2018_age_3" = "kucharski", 
-  "model_comparison_hanam_2018_age_4" = "kucharski",
-  "model_comparison_hanam_2018_age_5" = "age_effect",
-  "model_comparison_hanam_2018_age_6" = "age_effect"
+exp_labels <- c(
+  "age_effect_2" = "Seniority and age-effect",
+  "age_effect" = "Age-effect, no seniority",
+  "kucharski" = "Seniority, no age-effect",
+  "no_tau" = "No seniority or age-effect",
+  "intercept" = "Seniority w/ intercept"
 )
 
 plot_data <- summary |>
+  
   bind_rows(lp_mixis_summary) |> 
-  mutate(name = model_names[name]) |>
-  filter(name != "age_effect") |> 
-  mutate(variable = factor(variable, names(var_labels), var_labels))
+  mutate(name = exp_name) |>
+  mutate(variable = factor(variable, names(var_labels), var_labels),
+         name = factor(name, names(exp_labels), exp_labels))
 
 ggplot(plot_data) +
 

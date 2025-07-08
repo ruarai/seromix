@@ -1,6 +1,4 @@
-
-# The Kucharski (2018) model for waning immunity
-@model function waning_model_kucharski(
+@model function waning_model_non_linear(
     model_parameters::FixedModelParameters,
     prior_infection_dist::Distribution,
     observed_titre::Vector{Vector{Float64}},
@@ -18,11 +16,12 @@
     sigma_long ~ Uniform(0.0, 10.0)
     sigma_short ~ Uniform(0.0, 10.0)
 
-    tau ~ Uniform(0.0, 10.0)
+    tau ~ Uniform(0.0, 1.0)
+    beta ~ Uniform(0.0, 1.0)
 
     obs_sd ~ Uniform(0.0, 10.0)
 
-    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, tau, obs_sd)
+    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, beta, tau, obs_sd)
 
     infections ~ prior_infection_dist
 
@@ -32,7 +31,7 @@
         model_parameters,
         observed_titre,
         model_cache,
-        individual_waning_kucharski!,
+        individual_waning_non_linear!,
         DynamicPPL.leafcontext(__context__);
         use_corrected_titre = use_corrected_titre,
         mixture_importance_sampling = mixture_importance_sampling
@@ -41,7 +40,7 @@
     @addlogprob! log_likelihood
 end
 
-function individual_waning_kucharski!(
+function individual_waning_non_linear!(
     params,
     dist_matrix::Matrix{Float64},
     time_diff_matrix::Matrix{Float64},
@@ -55,7 +54,6 @@ function individual_waning_kucharski!(
 )
     n_t_steps = length(infections)
 
-
     prior_infections = 0.0
 
     for ix_t in max(1, subject_birth_ix):n_t_steps
@@ -63,9 +61,13 @@ function individual_waning_kucharski!(
             continue
         end
         
+        age = ix_t - subject_birth_ix
+        
+        age_effect = max(0.0, 1.0 - age * params.beta)
+
         seniority = max(0.0, 1.0 - params.tau * prior_infections)
         prior_infections += 1.0
-        
+
         # Process relevant times after infection
         for ix_t_obs in ix_t:n_t_steps
             if !haskey(obs_lookup_strain, ix_t_obs)
@@ -90,11 +92,11 @@ function individual_waning_kucharski!(
                 long_term = params.mu_long * long_term_dist
                 short_term = params.mu_short * short_term_time_factor * short_term_dist
                 
-                y[ix_obs] += seniority * (long_term + short_term)
+                y[ix_obs] += seniority * age_effect * (long_term + short_term)
             end
         end
     end
 end
 
 # Used by pointwise_likelihood()
-turing_function_to_waning_function(model_f::typeof(waning_model_kucharski)) = individual_waning_kucharski!
+turing_function_to_waning_function(model_f::typeof(waning_model_non_linear)) = individual_waning_non_linear!

@@ -105,8 +105,41 @@ function make_initial_params_age(p, obs_df, n_chain, rng)
         omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
         sigma_long = 0.1 + rand(rng, Uniform(-0.02, 0.02)),
         sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
-        beta = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
+        beta = 0.02 + rand(rng, Uniform(-0.01, 0.01)), 
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
+
+        infections = initial_infections_matrix(p, obs_df, rng)
+    ) for i in 1:n_chain]
+end
+
+
+function make_initial_params_age_2(p, obs_df, n_chain, rng)
+    return [(
+        mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
+        mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
+        omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
+        sigma_long = 0.1 + rand(rng, Uniform(-0.02, 0.02)),
+        sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
+        beta = 0.02 + rand(rng, Uniform(-0.01, 0.01)), 
+        tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
+        obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
+
+        infections = initial_infections_matrix(p, obs_df, rng)
+    ) for i in 1:n_chain]
+end
+
+
+
+function make_initial_params_intercept(p, obs_df, n_chain, rng)
+    return [(
+        mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
+        mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
+        omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
+        sigma_long = 0.1 + rand(rng, Uniform(-0.02, 0.02)),
+        sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
+        tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
+        obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
+        exp_intercept = 1.0 + rand(rng, Uniform(-0.1, 0.1)), 
 
         infections = initial_infections_matrix(p, obs_df, rng)
     ) for i in 1:n_chain]

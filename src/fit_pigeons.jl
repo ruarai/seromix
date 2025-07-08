@@ -5,7 +5,7 @@ using Plots
 
 include("pigeons/explorer.jl")
 
-data_code = "hanam_2018_age"
+data_code = "hanam_2018"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
@@ -20,7 +20,8 @@ prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
 turing_model = waning_model_kucharski
 
 model = make_waning_model(
-    p, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model
+    p, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
+    mixture_importance_sampling = true
 );
 
 pt_target = TuringLogPotential(model)
@@ -45,7 +46,7 @@ end
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 pt = pigeons(
     target = pt_target,
-    n_rounds = 12, n_chains = 16, multithreaded = true,   
+    n_rounds = 15, n_chains = 64, multithreaded = true,   
     explorer = GibbsExplorer(proposal_original_corrected, [i for i in symbols_not_inf], p),
     extended_traces = true,
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
@@ -55,6 +56,6 @@ pt = pigeons(
 chain = Chains(pt);
 
 
-# chain_name = "pigeons_5"
-# save_draws(chain, "$run_dir/chain_$chain_name.parquet")
-# JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))
+chain_name = "pigeons_5_mixture"
+save_draws(chain, "$run_dir/chain_$chain_name.parquet")
+JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))

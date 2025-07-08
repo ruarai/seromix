@@ -3,7 +3,7 @@
 
 
 
-read_hanam_data <- function(use_inferred_age = FALSE) {
+read_hanam_data <- function(use_inferred_age = FALSE, subset_n = NA) {
   
   hanam_data_raw <- read_csv("input_data/kucharski_2018/datasets/HaNamCohort.csv", col_types = cols(.default = col_character()))
   
@@ -74,6 +74,14 @@ read_hanam_data <- function(use_inferred_age = FALSE) {
       ix_t_birth = 0,
       year_of_birth = modelled_years[1] - 1 # Necessary for plots
     )
+  }
+  
+  
+  if(!is.na(subset_n)) {
+    observations_df <- observations_df %>%
+      filter(ix_subject <= subset_n)
+    subject_birth_data <- subject_birth_data %>%
+      filter(ix_subject <= subset_n)
   }
   
   # Take age distribution
