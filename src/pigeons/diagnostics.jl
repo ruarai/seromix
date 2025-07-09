@@ -4,8 +4,17 @@ chain_name = "pigeons_5_mixis"
 pt = JLD2.load("runs/hanam_2018/pt_$chain_name.jld2")["pt"]
 
 
-plot(pt.reduced_recorders.index_process[3], linewidth = 2)
+plot(pt.reduced_recorders.index_process[5], linewidth = 2)
 
+[findfirst(
+    stack([pt.reduced_recorders.index_process[i] for i in 1:64])[j, :]
+    .== 1) for j in 1:32768]
+
+plot([
+    maximum(pt.reduced_recorders.index_process[i]) -
+    minimum(pt.reduced_recorders.index_process[i]) 
+    for i in 1:64
+])
 
 chain = Chains(pt);
 

@@ -164,6 +164,26 @@ function general_waning_likelihood(
     return lp
 end
 
+function general_waning_likelihood(
+    params,
+    infections::Matrix{Float64},
+    observed_titre::Vector{Vector{Float64}},
+
+    sp::StaticModelParameters,
+    model_cache::WaningModelCache,
+    __context__,
+
+    individual_waning_function::Function;
+
+    use_corrected_titre::Bool = true,
+    mixture_importance_sampling::Bool = false
+)
+    return general_waning_likelihood(
+        params, convert.(Bool, infections), observed_titre, sp, model_cache, __context__, individual_waning_function;
+        use_corrected_titre = use_corrected_titre, mixture_importance_sampling = mixture_importance_sampling
+    )
+end
+
 function waning_curve!(
     params, individual_waning_function,
     dist_matrix::Matrix{Float64},
@@ -206,6 +226,8 @@ function model_pointwise_likelihood(
     obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
     obs_views = make_obs_views(obs_df)
 
+    model_cache = WaningModelCache(obs_lookup_strain, obs_lookup_ix, obs_views, maximum([length(v) for v in obs_views]))
+
     logp = zeros(nrow(chain_df), nrow(obs_df))
 
     param_symbols = model_symbols_apart_from(turing_model, [:infections])
@@ -214,7 +236,7 @@ function model_pointwise_likelihood(
 
     @showprogress Threads.@threads for ix_sample in 1:nrow(chain_df)
         draw = chain_df[ix_sample, :]
-        y_pred_buffer = zeros(maximum([length(v) for v in obs_views]))
+        latent_titre_buffer = zeros(model_cache.n_max_ind_obs)
         
 
         infections = reshape(Vector(chain_df[ix_sample, ix_infections]),sp.n_t_steps,sp.n_subjects)
@@ -229,26 +251,25 @@ function model_pointwise_likelihood(
 
         for ix_subject in 1:sp.n_subjects
             n_obs_subject = length(obs_views[ix_subject])
-            y_pred = view(y_pred_buffer, 1:n_obs_subject)
-            fill!(y_pred, 0.0)
+            latent_titre = view(latent_titre_buffer, 1:n_obs_subject)
+            fill!(latent_titre, 0.0)
 
             individual_waning_function(
+
                 params,
-
-               sp.antigenic_distances,sp.time_diff_matrix,
-               sp.subject_birth_ix[ix_subject],
-
                 AbstractArray{Bool}(view(infections, :, ix_subject)),
+                latent_titre,
+                ix_subject,
 
-                obs_lookup_strain[ix_subject], obs_lookup_ix[ix_subject], 
-                y_pred
+                sp,
+                model_cache
             )
 
             @inbounds for ix_obs in 1:n_obs_subject
                 ix_obs_absolute = obs_views[ix_subject][ix_obs]
                 logp[ix_sample, ix_obs_absolute] = titre_logpdf_component(
                     obs_df.observed_titre[ix_obs_absolute],
-                    y_pred[ix_obs],
+                    latent_titre[ix_obs],
                     draw.obs_sd,
                     const_titre_min,
                     const_titre_max

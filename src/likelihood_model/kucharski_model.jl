@@ -67,7 +67,7 @@ function individual_waning_kucharski!(
             matches_strain = model_cache.obs_lookup_strain[ix_subject][ix_t_obs]
             matches_ix = model_cache.obs_lookup_ix[ix_subject][ix_t_obs]
 
-            time_diff = sp.time_diff_matrix[ix_t_obs, ix_t] # TODO maybe remove the matrix here
+            time_diff = sp.time_diff_matrix[ix_t_obs, ix_t]
             short_term_time_factor = max(0.0, 1.0 - params.omega * time_diff)
             
             @turbo for i in eachindex(matches_strain)

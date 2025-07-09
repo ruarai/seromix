@@ -21,7 +21,7 @@
 
     intercept ~ Uniform(-5.0, 1.0)
 
-    obs_sd ~ Uniform(0.0, 10.0)
+    obs_sd ~ Uniform(1.0, 10.0)
 
     params = (; mu_long, mu_short, omega, sigma_long, sigma_short, beta, tau, intercept, obs_sd)
 

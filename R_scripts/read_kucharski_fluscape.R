@@ -90,12 +90,12 @@ yy=predict(am.spl,xx)$y
 antigenic.map.in=cbind(xx,yy)
 
 
-dmatrix = 1 - outputdmatrix.fromcoord(-1,e$inf_years,antigenic.map.in,linearD=TRUE)
+dmatrix = outputdmatrix.fromcoord(-1,e$inf_years,antigenic.map.in,linearD=TRUE)
 
 write_rds(dmatrix, "input_data/kucharski_2018/antigenic_distances_kucharski_fluscape.rds")
 
 image(dmatrix)
-image(1 - model_data$antigenic_distances)
+image(model_data$antigenic_distances)
 
 
 
