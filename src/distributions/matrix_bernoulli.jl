@@ -26,7 +26,7 @@ struct MatrixBernoulli{T} <: AbstractMatrixBernoulli
     n_total::Int
 end
 
-function MatrixBernoulli(prob, p::FixedModelParameters)
+function MatrixBernoulli(prob, p::StaticModelParameters)
     n_total = sum(sum(p.subject_birth_ix .<= ix_t) for ix_t in 1:p.n_t_steps)
     
     return MatrixBernoulli(prob, p.n_t_steps, p.n_subjects, p.subject_birth_ix, n_total)

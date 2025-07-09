@@ -4,7 +4,7 @@ function sample_chain(
     model,
     initial_params,
     gibbs_sampler,
-    p,
+    sp,
     rng;
     n_sample::Int,
     n_thinning::Int,
@@ -22,7 +22,7 @@ function sample_chain(
         progress = progress
     )
 
-    check_inf_prob_birth_year(chain_infections_prob(chain, p), p)
+    check_inf_prob_birth_year(chain_infections_prob(chain, sp), sp)
 
     return chain
 end
@@ -37,11 +37,11 @@ function model_symbols_apart_from(model, syms)
 end
 
 
-function make_gibbs_sampler(model, p, proposal_function)
+function make_gibbs_sampler(model, sp, proposal_function)
     symbols_not_inf = model_symbols_apart_from(model, [:infections])
     
     gibbs_sampler = Gibbs(
-        :infections => make_mh_infection_sampler(p, proposal_function),
+        :infections => make_mh_infection_sampler(sp, proposal_function),
         symbols_not_inf => make_mh_parameter_sampler()
     )
     

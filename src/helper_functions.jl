@@ -106,7 +106,7 @@ function ntuple_to_matrix(nt, n_t_steps, n_subjects)
 end
 
 
-function read_model_parameters(dict)
+function read_fixed_parameters(dict)
     antigenic_distances = dict["antigenic_distances"]
     modelled_years = dict["modelled_years"]
     subject_birth_ix::Vector{Int64} = DataFrame(dict["subject_birth_data"]).ix_t_birth
@@ -116,7 +116,7 @@ function read_model_parameters(dict)
     
     time_diff_matrix = make_time_diff_matrix(modelled_years)
     
-    params = FixedModelParameters(
+    params = StaticModelParameters(
         n_t_steps, n_subjects,
         antigenic_distances, time_diff_matrix, subject_birth_ix
     )

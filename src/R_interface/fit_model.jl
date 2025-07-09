@@ -27,17 +27,17 @@ function fit_model(
 
     obs_df = DataFrame(model_data["observations"])
 
-    p = read_model_parameters(model_data)
+   sp = read_fixed_parameters(model_data)
 
-    prior_infection_dist = select_infection_prior(infection_prior, p)
+    prior_infection_dist = select_infection_prior(infection_prior, sp)
     proposal_function = select_proposal_function(proposal_name)
 
-    initial_params = select_initial_params(initial_params_name, n_chain, p, model_data, obs_df, rng)
+    initial_params = select_initial_params(initial_params_name, n_chain, sp, model_data, obs_df, rng)
 
     turing_model = select_turing_model(turing_model_name)
 
     model = make_waning_model(
-        p, obs_df;
+       sp, obs_df;
         prior_infection_dist = prior_infection_dist,
         use_corrected_titre = use_corrected_titre,
         turing_model = turing_model,
@@ -52,10 +52,10 @@ function fit_model(
         initial_params = [Base.structdiff(p, fixed_params_tuple) for p in initial_params]
     end
 
-    sampler = select_sampler(sampler_name, model, p, proposal_function)
+    sampler = select_sampler(sampler_name, model, sp, proposal_function)
 
     chain = sample_chain(
-        model, initial_params, sampler, p, rng;
+        model, initial_params, sampler, sp, rng;
         n_sample = n_samples, n_thinning = n_thinning, n_chain = n_chain
     );
 
@@ -64,19 +64,19 @@ function fit_model(
     return DataFrame(chain)
 end
 
-function select_sampler(sampler_name, model, p, proposal_function)
+function select_sampler(sampler_name, model, sp, proposal_function)
     symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
     if sampler_name == "default"
         return Gibbs(
-            :infections => make_mh_infection_sampler(p, proposal_function),
+            :infections => make_mh_infection_sampler(sp, proposal_function),
             symbols_not_inf => make_mh_parameter_sampler()
         )
     elseif sampler_name == "slice_sampler"
         slice_sampler = RandPermGibbs(SliceSteppingOut(1.))
 
         return Gibbs(
-            :infections => make_mh_infection_sampler(p, proposal_function),
+            :infections => make_mh_infection_sampler(sp, proposal_function),
             symbols_not_inf => externalsampler(slice_sampler)
         )
     end
@@ -114,21 +114,21 @@ function select_proposal_function(proposal_name)
     error("Invalid proposal function specified")
 end
 
-function select_initial_params(initial_params_name, n_chain, p, model_data, obs_df, rng)
+function select_initial_params(initial_params_name, n_chain, sp, model_data, obs_df, rng)
     if initial_params_name == "kucharski_sim_study"
-        return make_initial_params_kucharski_sim_study(p, obs_df, n_chain, rng)
+        return make_initial_params_kucharski_sim_study(sp, obs_df, n_chain, rng)
     elseif initial_params_name == "kucharski_data_study"
-        return make_initial_params_kucharski_data_study(p, n_chain, model_data["initial_infections_manual"], rng)
+        return make_initial_params_kucharski_data_study(sp, n_chain, model_data["initial_infections_manual"], rng)
     elseif initial_params_name == "kucharski_data_study_fluscape"
-        return make_initial_params_kucharski_data_study_fluscape(p, obs_df, n_chain, rng)
+        return make_initial_params_kucharski_data_study_fluscape(sp, obs_df, n_chain, rng)
     elseif initial_params_name == "broad"
-        return make_initial_params_broad(p, n_chain, rng)
+        return make_initial_params_broad(sp, n_chain, rng)
     elseif initial_params_name == "age_effect"
-        return make_initial_params_age(p, obs_df, n_chain, rng)
+        return make_initial_params_age(sp, obs_df, n_chain, rng)
     elseif initial_params_name == "age_effect_2"
-        return make_initial_params_age_2(p, obs_df, n_chain, rng)
+        return make_initial_params_age_2(sp, obs_df, n_chain, rng)
     elseif initial_params_name == "intercept"
-        return make_initial_params_intercept(p, obs_df, n_chain, rng)
+        return make_initial_params_intercept(sp, obs_df, n_chain, rng)
     end
 
     error("Invalid initial params specified")

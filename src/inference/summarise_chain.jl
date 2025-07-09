@@ -3,7 +3,7 @@
 function summarise_chain(chain_file, iterations_drop, model_data)
     chain = read_parquet(DataFrame, chain_file) # TODO make faster :(
 
-    p = read_model_parameters(model_data)
+    p = read_fixed_parameters(model_data)
 
     chain_name = match(r"chain_(.+)(?=\.parquet)", chain_file).match
     run_ix = match(r"\d*(?=/chain)", chain_file).match

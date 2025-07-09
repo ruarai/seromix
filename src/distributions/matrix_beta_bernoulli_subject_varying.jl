@@ -8,7 +8,7 @@ struct MatrixBetaBernoulliSubjectVarying{T} <: AbstractMatrixBernoulli
 end
 
 
-function MatrixBetaBernoulliSubjectVarying(alpha, beta, p::FixedModelParameters)
+function MatrixBetaBernoulliSubjectVarying(alpha, beta, p::StaticModelParameters)
     return MatrixBetaBernoulliSubjectVarying(alpha, beta, p.n_t_steps, p.n_subjects, p.subject_birth_ix)
 end
 

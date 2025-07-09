@@ -13,14 +13,14 @@ model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
 
-p = read_model_parameters(model_data)
+sp = read_fixed_parameters(model_data)
 
-prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p)
+prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
 
 turing_model = waning_model_kucharski
 
 model = make_waning_model(
-    p, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
+   sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
     mixture_importance_sampling = true
 );
 
@@ -47,7 +47,7 @@ symbols_not_inf = model_symbols_apart_from(model, [:infections])
 pt = pigeons(
     target = pt_target,
     n_rounds = 15, n_chains = 64, multithreaded = true,   
-    explorer = GibbsExplorer(proposal_original_corrected, [i for i in symbols_not_inf], p),
+    explorer = GibbsExplorer(proposal_original_corrected, [i for i in symbols_not_inf], sp),
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
 );
 

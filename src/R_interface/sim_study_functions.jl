@@ -16,12 +16,12 @@ function infections_from_attack_rate(rng, attack_rates, n_subjects)
 end
 
 
-function simulate_latent_titre(continuous_params, p, infections; individual_waning_function = individual_waning_kucharski!)
+function simulate_latent_titre(continuous_params, sp, infections; individual_waning_function = individual_waning_kucharski!)
     # Must be ordered by ix_subject
     complete_obs = expand_grid(
-        ix_t_obs = 1:p.n_t_steps,
-        ix_strain = 1:p.n_t_steps,
-        ix_subject = 1:p.n_subjects,
+        ix_t_obs = 1:sp.n_t_steps,
+        ix_strain = 1:sp.n_t_steps,
+        ix_subject = 1:sp.n_subjects,
         observed_titre = 0.0
     )
 
@@ -31,9 +31,9 @@ function simulate_latent_titre(continuous_params, p, infections; individual_wani
         continuous_params,
         individual_waning_function,
 
-        p.antigenic_distances,
-        p.time_diff_matrix,
-        p.subject_birth_ix,
+       sp.antigenic_distances,
+       sp.time_diff_matrix,
+       sp.subject_birth_ix,
 
         infections,
         obs_lookup_strain, obs_lookup_ix, make_obs_views(complete_obs),

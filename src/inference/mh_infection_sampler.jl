@@ -124,11 +124,11 @@ end
 # Below is necessary framework for use in Turing
 
 # Puts the sampler into an external sampler for use in Turing
-function make_mh_infection_sampler(p, proposal_function; prop_sample = 0.4)
+function make_mh_infection_sampler(sp, proposal_function; prop_sample = 0.4)
     return externalsampler(
         MHInfectionSampler(
-            p.n_t_steps, p.n_subjects, 
-            p.subject_birth_ix,
+           sp.n_t_steps,sp.n_subjects, 
+           sp.subject_birth_ix,
             prop_sample,
             proposal_function
         ), 

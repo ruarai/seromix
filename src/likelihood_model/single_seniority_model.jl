@@ -1,6 +1,6 @@
 
 @model function waning_model_single_seniority(
-    model_parameters::FixedModelParameters,
+    sp::StaticModelParameters,
     prior_infection_dist::Distribution,
     observed_titre::Vector{Vector{Float64}},
     model_cache::WaningModelCache;
@@ -28,7 +28,7 @@
     log_likelihood = general_waning_likelihood(
         params,
         infections,
-        model_parameters,
+        sp,
         observed_titre,
         model_cache,
         individual_waning_single_seniority!,

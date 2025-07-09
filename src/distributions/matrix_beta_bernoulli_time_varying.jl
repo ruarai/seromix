@@ -11,7 +11,7 @@ end
 
 
 
-function MatrixBetaBernoulliTimeVarying(alpha, beta, p::FixedModelParameters)
+function MatrixBetaBernoulliTimeVarying(alpha, beta, p::StaticModelParameters)
     n_alive_t = [sum(p.subject_birth_ix .<= ix_t) for ix_t in 1:p.n_t_steps]
     
     return MatrixBetaBernoulliTimeVarying(alpha, beta, p.n_t_steps, p.n_subjects, p.subject_birth_ix, n_alive_t)

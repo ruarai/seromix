@@ -34,7 +34,7 @@ end
 @testset "Waning model" begin
     n_t_steps = 40
     n_subjects = 40
-    model_params, p, infections = make_test_data(StableRNG(1), n_t_steps, n_subjects)
+    model_params, sp, infections = make_test_data(StableRNG(1), n_t_steps, n_subjects)
 
     complete_obs = expand_grid(
         ix_t_obs = 1:n_t_steps, ix_strain = 1:n_t_steps, ix_subject = 1:n_subjects,
@@ -45,7 +45,7 @@ end
     waning_curve!(
         model_params, individual_waning_kucharski!,
 
-        p.antigenic_distances, p.time_diff_matrix, p.subject_birth_ix,
+       sp.antigenic_distances,sp.time_diff_matrix,sp.subject_birth_ix,
 
         infections,
 
@@ -64,7 +64,7 @@ end
         $model_params.mu_long, $model_params.mu_short, $model_params.omega,
         $model_params.sigma_long, $model_params.sigma_short, $model_params.tau,
 
-        $p.antigenic_distances, $p.time_diff_matrix, $p.subject_birth_ix,
+        $sp.antigenic_distances, $sp.time_diff_matrix, $sp.subject_birth_ix,
 
         $infections,
 
@@ -82,13 +82,13 @@ end
 @testset "Inference model" begin
     model_data = load("runs/hanam_2018/model_data.hdf5")
     obs_df = DataFrame(model_data["observations"])
-    p = read_model_parameters(model_data)
+   sp = read_fixed_parameters(model_data)
 
-    prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, p.n_t_steps, p.n_subjects)
+    prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0,sp.n_t_steps,sp.n_subjects)
 
-    initial_params = make_initial_params_broad(p, 4, rng)
+    initial_params = make_initial_params_broad(sp, 4, rng)
 
-    model = make_waning_model(p, obs_df; prior_infection_dist = prior_infection_dist);
+    model = make_waning_model(sp, obs_df; prior_infection_dist = prior_infection_dist);
 
     b_trial = @benchmark logjoint($model, x) setup=(x=rand(model))
 
@@ -100,8 +100,8 @@ end
 
 
 model_data = load("runs/hanam_2018/model_data.hdf5")
-p = read_model_parameters(model_data)
-model_params, p, infections = make_test_data(StableRNG(1), p.n_t_steps, p.n_subjects)
+sp = read_fixed_parameters(model_data)
+model_params, sp, infections = make_test_data(StableRNG(1),sp.n_t_steps,sp.n_subjects)
 
 obs_df = DataFrame(model_data["observations"])
 
@@ -111,7 +111,7 @@ obs_df.observed_titre .= 0.0
 b_trial = @benchmark waning_curve!(
     $model_params, $individual_waning_kucharski!,
 
-    $p.antigenic_distances, $p.time_diff_matrix, $p.subject_birth_ix,
+    $sp.antigenic_distances, $sp.time_diff_matrix, $sp.subject_birth_ix,
 
     $infections,
 

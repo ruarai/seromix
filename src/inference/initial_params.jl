@@ -1,8 +1,8 @@
 
 
-function make_initial_params_kucharski_data_study(p, n_chain, init_matrix, rng)
+function make_initial_params_kucharski_data_study(sp, n_chain, init_matrix, rng)
     init_matrix_masked = copy(init_matrix)
-    mask_infections_birth_year!(init_matrix_masked, p.subject_birth_ix)
+    mask_infections_birth_year!(init_matrix_masked,sp.subject_birth_ix)
 
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
@@ -18,7 +18,7 @@ function make_initial_params_kucharski_data_study(p, n_chain, init_matrix, rng)
 end
 
 
-function make_initial_params_broad(p, n_chain, rng)
+function make_initial_params_broad(sp, n_chain, rng)
     return [(
         mu_long = rand(rng, Uniform(0.5, 5.0)),
         mu_short = rand(rng, Uniform(0.5, 5.0)), 
@@ -28,11 +28,11 @@ function make_initial_params_broad(p, n_chain, rng)
         tau = rand(rng, Uniform(0.0, 0.2)), 
         obs_sd = rand(rng, Uniform(1.0, 2.5)), 
 
-        infections = rand(Bernoulli(0.5), p.n_t_steps, p.n_subjects)
+        infections = rand(Bernoulli(0.5),sp.n_t_steps,sp.n_subjects)
     ) for i in 1:n_chain]
 end
 
-function make_initial_params_kucharski_sim_study(p, obs_df, n_chain, rng)
+function make_initial_params_kucharski_sim_study(sp, obs_df, n_chain, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -42,29 +42,29 @@ function make_initial_params_kucharski_sim_study(p, obs_df, n_chain, rng)
         tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
 
-        infections = initial_infections_matrix(p, obs_df, rng)
+        infections = initial_infections_matrix(sp, obs_df, rng)
     ) for i in 1:n_chain]
 end
 
 
-function make_initial_params_kucharski_data_study_fluscape(p, obs_df, n_chain, rng)
+function make_initial_params_kucharski_data_study_fluscape(sp, obs_df, n_chain, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
         sigma_long = 0.15 + rand(rng, Uniform(-0.02, 0.02)),
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
 
-        infections = initial_infections_matrix(p, obs_df, rng)
+        infections = initial_infections_matrix(sp, obs_df, rng)
     ) for i in 1:n_chain]
 end
 
 # Translated from Kucharski model, but not sure that it's necessary.
-function initial_infections_matrix(p, obs_df, rng)
-    infections_0 = zeros(Bool, p.n_t_steps, p.n_subjects)
+function initial_infections_matrix(sp, obs_df, rng)
+    infections_0 = zeros(Bool,sp.n_t_steps,sp.n_subjects)
 
     obs_df_grouped = groupby(obs_df, :ix_subject)
 
-    for ix_subject in 1:p.n_subjects
+    for ix_subject in 1:sp.n_subjects
         
         obs_df_subject = obs_df_grouped[ix_subject]
 
@@ -92,13 +92,13 @@ function initial_infections_matrix(p, obs_df, rng)
         end
     end
 
-    mask_infections_birth_year!(infections_0, p.subject_birth_ix)
+    mask_infections_birth_year!(infections_0,sp.subject_birth_ix)
 
     return infections_0
 end
 
 
-function make_initial_params_age(p, obs_df, n_chain, rng)
+function make_initial_params_age(sp, obs_df, n_chain, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -110,13 +110,13 @@ function make_initial_params_age(p, obs_df, n_chain, rng)
         intercept = 0.0 + rand(rng, Uniform(-0.1, 0.1)), 
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
 
-        infections = initial_infections_matrix(p, obs_df, rng)
+        infections = initial_infections_matrix(sp, obs_df, rng)
     ) for i in 1:n_chain]
 end
 
 
 
-function make_initial_params_intercept(p, obs_df, n_chain, rng)
+function make_initial_params_intercept(sp, obs_df, n_chain, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -127,13 +127,13 @@ function make_initial_params_intercept(p, obs_df, n_chain, rng)
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
         intercept = 0.0 + rand(rng, Uniform(-0.1, 0.1)), 
 
-        infections = initial_infections_matrix(p, obs_df, rng)
+        infections = initial_infections_matrix(sp, obs_df, rng)
     ) for i in 1:n_chain]
 end
 
 
 
-function make_initial_params_non_linear(p, obs_df, n_chain, rng)
+function make_initial_params_non_linear(sp, obs_df, n_chain, rng)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_long_mult = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
@@ -154,6 +154,6 @@ function make_initial_params_non_linear(p, obs_df, n_chain, rng)
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
         intercept = 0.0 + rand(rng, Uniform(-0.1, 0.1)), 
 
-        infections = initial_infections_matrix(p, obs_df, rng)
+        infections = initial_infections_matrix(sp, obs_df, rng)
     ) for i in 1:n_chain]
 end

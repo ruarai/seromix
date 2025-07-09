@@ -26,10 +26,10 @@ plot(chain, [:log_density], seriestype = :traceplot)
 
 
 
-heatmap(chain_infections_prob_2(chain, p)')
+heatmap(chain_infections_prob_2(chain, sp)')
 # # heatmap(model_data["infections_matrix"]')
 
-n_inf = chain_sum_infections(chain, p)
+n_inf = chain_sum_infections(chain, sp)
 plot(n_inf)
 
 scatter(chain[:mu_long], n_inf)
@@ -45,4 +45,4 @@ using StatsPlots
 plot(pt.shared.tempering.communication_barriers.localbarrier)
 
 
-lpp = model_sum_mixIS(DataFrame(chain), p, obs_df, model)
+lpp = model_sum_mixIS(DataFrame(chain), sp, obs_df, model)

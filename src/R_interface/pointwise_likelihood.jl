@@ -9,14 +9,14 @@ function pointwise_likelihood(
 
     obs_df = DataFrame(model_data["observations"])
 
-    p = read_model_parameters(model_data)
+   sp = read_fixed_parameters(model_data)
 
-    prior_infection_dist = select_infection_prior(infection_prior, p)
+    prior_infection_dist = select_infection_prior(infection_prior, sp)
 
     turing_model = select_turing_model(turing_model_name)
 
     model = make_waning_model(
-        p, obs_df;
+       sp, obs_df;
         prior_infection_dist = prior_infection_dist,
         use_corrected_titre = use_corrected_titre,
         turing_model = turing_model
@@ -32,7 +32,7 @@ function pointwise_likelihood(
 
     return model_pointwise_likelihood(
         chain_df,
-        p, obs_df,
+       sp, obs_df,
         model;
         fixed_params = fixed_params_tuple
     )

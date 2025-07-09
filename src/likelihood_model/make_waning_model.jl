@@ -1,5 +1,5 @@
 
-struct FixedModelParameters
+struct StaticModelParameters
     n_t_steps::Int
     n_subjects::Int
 
@@ -23,7 +23,7 @@ struct WaningModelCache
 end
 
 function make_waning_model(
-    model_parameters::FixedModelParameters,
+    sp::StaticModelParameters,
     obs_df::DataFrame;
     prior_infection_dist::Distribution,
     turing_model = waning_model_kucharski,
@@ -46,7 +46,7 @@ function make_waning_model(
     )
     
     return turing_model(
-        model_parameters,
+        sp,
         prior_infection_dist,
         individual_titre_obs,
         model_cache;
@@ -58,11 +58,14 @@ end
 
 
 function general_waning_likelihood(
-    params, infections, model_parameters,
+    params,
+    infections,
+    sp::StaticModelParameters,
     observed_titre::Vector{Vector{Float64}},
     model_cache::WaningModelCache,
     individual_waning_function::Function,
     context::DynamicPPL.AbstractContext;
+
     mixture_importance_sampling::Bool = false,
     use_corrected_titre::Bool = true
 )
@@ -75,7 +78,7 @@ function general_waning_likelihood(
     subjects_to_process = if context isa IndividualSubsetContext
         SA[context.ix] # StaticArray with one element (context.ix)
     else
-        1:model_parameters.n_subjects
+        1:sp.n_subjects
     end
 
     # Reduce the total memory allocation across the observed titre
@@ -99,8 +102,8 @@ function general_waning_likelihood(
         # Fills in y_pred according to antibody dynamics
         individual_waning_function(
             params,
-            model_parameters.antigenic_distances, model_parameters.time_diff_matrix,
-            model_parameters.subject_birth_ix[ix_subject],
+            sp.antigenic_distances, sp.time_diff_matrix,
+            sp.subject_birth_ix[ix_subject],
             view(infections, :, ix_subject),
             model_cache.obs_lookup_strain[ix_subject],
             model_cache.obs_lookup_ix[ix_subject],
@@ -159,26 +162,6 @@ function general_waning_likelihood(
     return lp
 end
 
-function general_waning_likelihood(
-    params, infections::Matrix{Float64}, model_parameters,
-    observed_titre::Vector{Vector{Float64}},
-    model_cache::WaningModelCache,
-    individual_waning_function::Function,
-    context::DynamicPPL.AbstractContext;
-    mixture_importance_sampling::Bool = false,
-    use_corrected_titre::Bool = true
-)
-    return general_waning_likelihood(
-        params, convert.(Bool, infections), model_parameters,
-        observed_titre,
-        model_cache,
-        individual_waning_function,
-        context;
-        mixture_importance_sampling = mixture_importance_sampling,
-        use_corrected_titre = use_corrected_titre
-    )
-end
-
 function waning_curve!(
     params, individual_waning_function,
     dist_matrix::Matrix{Float64},
@@ -211,7 +194,7 @@ end
 
 
 function model_pointwise_likelihood(
-    chain_df, p, obs_df,
+    chain_df, sp, obs_df,
     turing_model;
     fixed_params = missing
 )
@@ -232,7 +215,7 @@ function model_pointwise_likelihood(
         y_pred_buffer = zeros(maximum([length(v) for v in obs_views]))
         
 
-        infections = reshape(Vector(chain_df[ix_sample, ix_infections]), p.n_t_steps, p.n_subjects)
+        infections = reshape(Vector(chain_df[ix_sample, ix_infections]),sp.n_t_steps,sp.n_subjects)
         infections = convert(Matrix{Bool}, convert.(Bool, infections))
 
         
@@ -242,7 +225,7 @@ function model_pointwise_likelihood(
             params = merge(params, fixed_params)
         end
 
-        for ix_subject in 1:p.n_subjects
+        for ix_subject in 1:sp.n_subjects
             n_obs_subject = length(obs_views[ix_subject])
             y_pred = view(y_pred_buffer, 1:n_obs_subject)
             fill!(y_pred, 0.0)
@@ -250,8 +233,8 @@ function model_pointwise_likelihood(
             individual_waning_function(
                 params,
 
-                p.antigenic_distances, p.time_diff_matrix,
-                p.subject_birth_ix[ix_subject],
+               sp.antigenic_distances,sp.time_diff_matrix,
+               sp.subject_birth_ix[ix_subject],
 
                 AbstractArray{Bool}(view(infections, :, ix_subject)),
 
@@ -275,11 +258,11 @@ function model_pointwise_likelihood(
     return logp
 end
 
-function model_sum_mixIS(chain_df, p, obs_df, model)
+function model_sum_mixIS(chain_df, sp, obs_df, model)
     chains = unique(chain_df.chain)
     elpd_mixIS_sum = zeros(length(chains))
 
-    lpp = model_pointwise_likelihood(chain_df, p, obs_df, model)
+    lpp = model_pointwise_likelihood(chain_df, sp, obs_df, model)
 
     for ix_chain in chains
         rows_chain = chain_df.chain .== ix_chain
@@ -295,7 +278,7 @@ end
 
 
 function model_ppd(
-    chain_df, p,
+    chain_df, sp,
     turing_model;
     n_samples = 10,
     fixed_params = missing
@@ -303,9 +286,9 @@ function model_ppd(
     samples_indices = sort(sample(1:size(chain_df, 1), n_samples, replace = false))
 
     complete_obs = expand_grid(
-        ix_t_obs = 1:p.n_t_steps,
-        ix_strain = 1:p.n_t_steps,
-        ix_subject = 1:p.n_subjects,
+        ix_t_obs = 1:sp.n_t_steps,
+        ix_strain = 1:sp.n_t_steps,
+        ix_subject = 1:sp.n_subjects,
         observed_titre = 0.0,
         ix_sample = eachindex(samples_indices)
     )
@@ -332,7 +315,7 @@ function model_ppd(
         draw = chain_df[samples_indices[ix_sample], :]
 
 
-        infections = reshape(Vector(chain_df[samples_indices[ix_sample], ix_infections]), p.n_t_steps, p.n_subjects)
+        infections = reshape(Vector(chain_df[samples_indices[ix_sample], ix_infections]),sp.n_t_steps,sp.n_subjects)
         infections = convert(Matrix{Bool}, convert.(Bool, infections))
 
 
@@ -346,8 +329,8 @@ function model_ppd(
         
         waning_curve!(
             params, individual_waning_function,
-            p.antigenic_distances, p.time_diff_matrix,
-            p.subject_birth_ix,
+           sp.antigenic_distances,sp.time_diff_matrix,
+           sp.subject_birth_ix,
             infections,
             obs_lookup_strain, obs_lookup_ix, obs_views,
             obs_val

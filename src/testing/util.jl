@@ -10,7 +10,7 @@ function make_test_data(rng, n_t_steps, n_subjects)
         ix_t_birth = clamp.(floor.(Int, reverse(1:n_subjects) .* 0.5), 0, n_t_steps - 5)
     )
 
-    p = FixedModelParameters(
+   sp = StaticModelParameters(
         n_t_steps, n_subjects,
         antigenic_distance,
         time_diff_matrix,
@@ -28,11 +28,11 @@ function make_test_data(rng, n_t_steps, n_subjects)
     )
 
     infections = rand(rng, Bernoulli(0.2), (n_t_steps, n_subjects))
-    mask_infections_birth_year!(infections, p.subject_birth_ix)
+    mask_infections_birth_year!(infections,sp.subject_birth_ix)
 
     return (
         model_params = model_params,
-        p = p,
+        p =sp,
         infections = infections
     )
 end
