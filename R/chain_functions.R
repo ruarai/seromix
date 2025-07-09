@@ -78,20 +78,20 @@ get_lp_mixis <- function(
     return(tibble(lp_mixis = NA, name = add_name, .chain = NA))
   }
   
-  chain <- chain %>%
+  chain_sub <- chain %>%
     filter(iteration > n_warmup)
   
   logp <- get_julia_function("pointwise_likelihood")(
-    chain, model_data, turing_model_name, infection_prior,
+    chain_sub, model_data, turing_model_name, infection_prior,
     fixed_params = fixed_params
   )
   
   require(matrixStats)
   
   map(
-    1:max(chain$chain),
+    1:max(chain_sub$chain),
     function(ix_chain) {
-      rows_chain <- chain$chain == ix_chain
+      rows_chain <- chain_sub$chain == ix_chain
       
       l_common_mix <- rowLogSumExps(-logp[rows_chain, ])
       log_weights <- -logp[rows_chain, ] - l_common_mix

@@ -19,11 +19,11 @@
 
     tau ~ Uniform(0.0, 10.0)
 
-    exp_intercept ~ Uniform(0.0, 2.0)
+    intercept ~ Uniform(-5.0, 1.0)
 
     obs_sd ~ Uniform(0.0, 10.0)
 
-    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, tau, obs_sd, exp_intercept)
+    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, tau, obs_sd, intercept)
 
     infections ~ prior_infection_dist
 
@@ -56,7 +56,7 @@ function individual_waning_intercept!(
 )
     n_t_steps = length(infections)
 
-    y .+= log(params.exp_intercept)
+    y .+= params.intercept
 
     prior_infections = 0.0
 

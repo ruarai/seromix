@@ -32,6 +32,15 @@ data_runs <- bind_rows(
     initial_params_name = "kucharski_data_study_fluscape"
   ),
   
+  # Compare effect of age inclusion/exclusion
+  expand_grid(
+    exp_group = "age_inclusion",
+    
+    run_name = c("hanam_2018", "hanam_2018_age"),
+    infection_prior = list(matrix_beta_bernoulli_1_1),
+    initial_params_name = "kucharski_data_study"
+  ),
+  
   # Compare effect of titre correction:
   expand_grid(
     exp_group = "titre_correction",
@@ -66,16 +75,18 @@ data_runs <- bind_rows(
   # Model comparison
   tribble(
     ~exp_name, ~initial_params_name, ~turing_model_name, ~fixed_params,
-    "no_tau", "kucharski_data_study", "kucharski", list(tau = 1e-10),
-    "kucharski", "kucharski_data_study", "kucharski", NULL,
-    "age_effect", "age_effect", "age_effect",  NULL,
-    "age_effect_2", "age_effect_2", "age_effect_2",  NULL,
-    "intercept", "intercept", "intercept",NULL,
+    "without_seniority", "age_effect", "age_effect", list(tau = 0.0, beta = 0.0, intercept = 0.0),
+    "kucharski", "age_effect", "age_effect", list(beta = 0.0, intercept = 0.0),
+    "with_age_effect", "age_effect", "age_effect", list(intercept = 0.0),
+    "with_intercept", "age_effect", "age_effect", list(beta = 0.0),
+    "with_both", "age_effect", "age_effect", NULL,
   ) |> 
     mutate(exp_group = "model_comparison",
            run_name = "hanam_2018_age",
            infection_prior = list(matrix_beta_bernoulli_1_1),
-           n_iterations = 200000, n_warmup = 15000, n_chain = 4
+           n_iterations = 200000, 
+           n_warmup = 150000,
+           n_chain = 4
            ) |> 
     # Add mixture sampling to do model comparison
     expand_grid(mixture_importance_sampling = c(TRUE, FALSE))

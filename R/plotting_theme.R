@@ -20,3 +20,4 @@ plot_theme_paper <- list(
 )
 
 element_gridline <- element_line(colour = "grey50", linetype = "28", linewidth = 0.3)
+element_facet_background <- element_rect(fill = "white", colour = "grey50", linewidth = 0.5)

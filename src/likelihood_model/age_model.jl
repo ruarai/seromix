@@ -17,10 +17,13 @@
     sigma_short ~ Uniform(0.0, 10.0)
 
     beta ~ Uniform(0.0, 1.0)
+    tau ~ Uniform(0.0, 1.0)
+
+    intercept ~ Uniform(-5.0, 1.0)
 
     obs_sd ~ Uniform(0.0, 10.0)
 
-    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, beta, obs_sd)
+    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, beta, tau, intercept, obs_sd)
 
     infections ~ prior_infection_dist
 
@@ -52,6 +55,9 @@ function individual_waning_age_effect!(
     y::AbstractArray{Float64}
 )
     n_t_steps = length(infections)
+    
+    y .+= params.intercept
+    prior_infections = 0.0
 
     for ix_t in max(1, subject_birth_ix):n_t_steps
         @inbounds if !infections[ix_t]
@@ -61,6 +67,9 @@ function individual_waning_age_effect!(
         age = ix_t - subject_birth_ix
         
         age_effect = max(0.0, 1.0 - age * params.beta)
+        seniority = max(0.0, 1.0 - params.tau * prior_infections)
+
+        prior_infections += 1.0
 
         # Process relevant times after infection
         for ix_t_obs in ix_t:n_t_steps
@@ -86,7 +95,7 @@ function individual_waning_age_effect!(
                 long_term = params.mu_long * long_term_dist
                 short_term = params.mu_short * short_term_time_factor * short_term_dist
                 
-                y[ix_obs] += age_effect * (long_term + short_term)
+                y[ix_obs] += seniority * age_effect * (long_term + short_term)
             end
         end
     end

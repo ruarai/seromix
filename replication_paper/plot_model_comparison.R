@@ -12,17 +12,18 @@ lp_mixis_summary <- tar_read(combined_lp_mixis) %>%
   mutate(variable = "mixis_lp", median = lp_mixis)
 
 exp_labels <- c(
-  "age_effect_2" = "Seniority and age-effect",
-  "age_effect" = "Age-effect, no seniority",
-  "kucharski" = "Seniority, no age-effect",
-  "no_tau" = "No seniority or age-effect",
-  "intercept" = "Seniority w/ intercept"
+  "with_both" = "With both",
+  "with_intercept" = "With intercept",
+  "with_age_effect" = "With age-effect",
+  "kucharski" = "Baseline"#,
+  # "without_seniority" = "Without seniority"
 )
 
 plot_data <- summary |>
   
   bind_rows(lp_mixis_summary) |> 
   mutate(name = exp_name) |>
+  filter(name %in% names(exp_labels)) |> 
   mutate(variable = factor(variable, names(var_labels), var_labels),
          name = factor(name, names(exp_labels), exp_labels))
 
@@ -47,6 +48,7 @@ ggplot(plot_data) +
   theme(strip.text = element_markdown(size = 12, family = "Utopia"),
         panel.grid.major.y = element_gridline,
         axis.text.y = element_markdown(),
+        panel.background = element_facet_background,
         legend.position = "none") +
   
   ggtitle("Ha Nam study inference results")

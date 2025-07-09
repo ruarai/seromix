@@ -4,8 +4,8 @@ library(tidyverse)
 
 tar_source()
 
-run_name <- "hanam_2018"
-chain_name <- "pigeons_5"
+run_name <- "hanam_2018_age"
+chain_name <- "nonlinear_test"
 
 run_dir <- str_c("runs/", run_name, "/")
 model_data <- read_model_data(str_c(run_dir, "/model_data.hdf5"))
@@ -17,7 +17,7 @@ ppd <- arrow::read_parquet(str_c(run_dir, "ppd_", chain_name, ".parquet")) |>
 
 chain <- read_chain(str_c(run_dir, "chain_", chain_name, ".parquet"))
 
-ix_subject_ex <- 5
+ix_subject_ex <- 29
 
 
 subjects <- unique(ppd$ix_subject)
@@ -50,5 +50,11 @@ for(ix_subject_ex in subjects) {
   plot(p)
 }
 dev.off()
+
+
+
+chain_raw <- arrow::read_parquet(str_c(run_dir, "chain_", chain_name, ".parquet"))
+
+get_lp_mixis(chain_raw, n_warmup = 15000, tar_read(hanam_2018_age), "nonlinear", matrix_beta_bernoulli_1_1, fixed_params = NULL)
 
 

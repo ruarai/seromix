@@ -145,6 +145,8 @@ function select_turing_model(turing_model_name)
         return waning_model_single_seniority
     elseif turing_model_name == "intercept"
         return waning_model_intercept
+    elseif turing_model_name == "nonlinear"
+        return waning_model_non_linear
     end
     error("Invalid turing model specified")
 end

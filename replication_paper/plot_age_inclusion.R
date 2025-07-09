@@ -5,9 +5,12 @@ tar_source()
 
 source("replication_paper/common.R")
 
-summary <- tar_read(combined_sim_ar_singular_summaries)
+summary_sim <- tar_read(combined_sim_ar_summaries)
 
-true_values <- tibble(
+summary_data <- tar_read(combined_summaries) |>
+  filter(exp_group == "age_inclusion")
+
+sim_true_values <- tibble(
   mu_long = 2.0,
   mu_short = 2.0,
   omega = 0.75,
@@ -27,52 +30,23 @@ prior_labels <- c(
 )
 
 
-plot_data <- summary |> 
+sim_plot_data <- summary_sim |> 
   
-  filter(variable %in% names(var_labels),
+  filter(variable %in% names(var_labels)[1:6],
          variable != "total_inf") |> 
   mutate(variable = factor(variable, names(var_labels), var_labels),
          prior_name = prior_labels[prior_description],
          endemic_mean_ar = factor(endemic_mean_ar))
 
 
-plot_data |> 
-  # filter(prior_description == "BetaBernoulliTimeVarying_1_1") |>
-  filter(prior_description == "BetaBernoulliSubjectVarying_1_1") |>
-  # filter(prior_description == "BetaBernoulli_1_1") |> 
+
+sim_plot_data |> 
+  filter(prior_name == "BetaBernoulli(1, 1)") |> 
   ggplot() +
   
   geom_vline(aes(xintercept = value),
              linetype = "14",
-             true_values) +
-  
-  geom_point(aes(x = median, y = endemic_mean_ar, colour = drop_age),
-             size = 0.8,
-             position = position_dodge2(width = 0.3)) +
-  
-  geom_linerange(aes(xmin = q95_lower, xmax = q95_upper, y = endemic_mean_ar, colour = drop_age),
-                 position = position_dodge2(width = 0.3)) +
-  
-  facet_wrap(~variable, ncol = 4, scales = "free_x") +
-  
-  ggokabeito::scale_colour_okabe_ito(order = c(9, 5), name = "Age", labels = c("Kept", "Dropped")) +
-  
-  xlab("Value (median, 95% CrI)") + ylab(NULL) +
-  plot_theme_paper +
-  
-  theme(strip.text = element_markdown(size = 12, family = "Utopia"),
-        panel.grid.major.y = element_gridline,
-        panel.spacing.x = unit(1, "cm"),
-        legend.position = "bottom")
-
-
-plot_data |> 
-  filter(variable %in% var_labels[c(1, 3, 5)]) |> 
-  ggplot() +
-  
-  geom_vline(aes(xintercept = value),
-             linetype = "14",
-             true_values |> filter(variable  %in% var_labels[c(1, 3, 5)])) +
+             sim_true_values |> filter(variable  %in% var_labels[1:6])) +
   
   geom_point(aes(x = median, y = endemic_mean_ar, colour = drop_age),
              size = 1.2,
@@ -82,8 +56,7 @@ plot_data |>
                  linewidth = 0.7,
                  position = position_dodge2(width = 0.3)) +
   
-  facet_grid(cols = vars(variable), 
-             rows = vars(prior_name), scales = "free_x") +
+  facet_wrap(~variable, scales = "free_x") +
   
   ggokabeito::scale_colour_okabe_ito(order = c(9, 5), name = "Age", labels = c("Kept", "Dropped")) +
   
@@ -92,6 +65,48 @@ plot_data |>
   
   theme(strip.text = element_markdown(size = 12, family = "Utopia"),
         panel.grid.major.y = element_gridline,
-        panel.background = element_rect(fill = "transparent", colour = "grey80"),
+        panel.background = element_facet_background,
         panel.spacing.x = unit(1, "cm"),
         legend.position = "bottom")
+
+
+data_run_labels <- c(
+  "age_inclusion_hanam_2018_1" = "Dropped",
+  "age_inclusion_hanam_2018_age_1" = "Kept"
+)
+
+
+plot_data <- summary_data |> 
+  
+  filter(variable %in% names(var_labels)[1:6],
+         variable != "total_inf") |> 
+  
+  mutate(variable = factor(variable, names(var_labels), var_labels),
+         name = factor(name, names(data_run_labels), data_run_labels))
+
+
+plot_data |> 
+  ggplot() +
+  
+  geom_point(aes(x = median, y = name, colour = name),
+             size = 1.2,
+             position = position_dodge2(width = 0.3)) +
+  
+  geom_linerange(aes(xmin = q95_lower, xmax = q95_upper, y = name, colour = name),
+                 linewidth = 0.7,
+                 position = position_dodge2(width = 0.3)) +
+  
+  facet_wrap(~variable, scales = "free_x") +
+  
+  ggokabeito::scale_colour_okabe_ito(order = c(9, 5), name = "Age", labels = c("Kept", "Dropped")) +
+  
+  xlab("Value (median, 95% CrI)") + ylab(NULL) +
+  plot_theme_paper +
+  
+  theme(strip.text = element_markdown(size = 12, family = "Utopia"),
+        panel.grid.major.y = element_gridline,
+        panel.background = element_facet_background,
+        panel.spacing.x = unit(1, "cm"),
+        legend.position = "bottom")
+
+

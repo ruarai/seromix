@@ -48,14 +48,13 @@ pt = pigeons(
     target = pt_target,
     n_rounds = 15, n_chains = 64, multithreaded = true,   
     explorer = GibbsExplorer(proposal_original_corrected, [i for i in symbols_not_inf], p),
-    extended_traces = true,
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
 );
 
 
+
+
+chain_name = "pigeons_5_mixis"
 chain = Chains(pt);
-
-
-chain_name = "pigeons_5_mixture"
 save_draws(chain, "$run_dir/chain_$chain_name.parquet")
 JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))

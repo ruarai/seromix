@@ -13,7 +13,7 @@ var_labels <- c(
   
   "mixis_lp" = "Mixture-IS LOO score",
   "lp" = "Log-probability",
-  "exp_intercept" = "exp-intercept"
+  "intercept" = "c (intercept)"
 )
 
 

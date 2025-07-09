@@ -53,16 +53,23 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
     if iteration % 50 == 0
         if length(sampler.alg.samplers) > 1
 
-            sampler_state = state.states[1].state
+            inf_state = state.states[1].state
+            param_state = state.states[2].state
 
-            rate = sampler_state.n_accepted / (sampler_state.n_accepted + sampler_state.n_rejected)
+            pr_accept_inf = inf_state.n_accepted / (inf_state.n_accepted + inf_state.n_rejected)
+            pr_accept_param = param_state.n_accepted / (param_state.n_accepted + param_state.n_rejected)
 
-            time_elapsed = (sampler_state.time_B - sampler_state.time_A) * 1000
+            sample_time = (inf_state.time_B - inf_state.time_A) * 1000
 
             # Time per 10,000 samples
-            sampling_rate = time_elapsed / 6
+            sampling_rate = sample_time / 6
 
-            @printf("%6d; %6.2f; %7.2fms/sample;%7.2fmin/10,000 samples\n", iteration, rate, time_elapsed, sampling_rate)
+            @printf(
+                "%6d; %6.2f; %6.2f; %7.2fms/sample;%7.2fmin/10,000 samples\n", 
+                iteration, 
+                pr_accept_inf, pr_accept_param, 
+                sample_time, sampling_rate
+            )
         else
             @printf("%5d;\n", iteration)
         end

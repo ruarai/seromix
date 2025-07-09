@@ -275,6 +275,23 @@ function model_pointwise_likelihood(
     return logp
 end
 
+function model_sum_mixIS(chain_df, p, obs_df, model)
+    chains = unique(chain_df.chain)
+    elpd_mixIS_sum = zeros(length(chains))
+
+    lpp = model_pointwise_likelihood(chain_df, p, obs_df, model)
+
+    for ix_chain in chains
+        rows_chain = chain_df.chain .== ix_chain
+
+        l_common_mix = logsumexp(-lpp[rows_chain,:], dims = 2)
+        log_weights = -lpp[rows_chain,:] .- l_common_mix
+        elpd_mixIS = logsumexp(-l_common_mix) .- logsumexp(log_weights, dims = 1)
+        elpd_mixIS_sum[ix_chain] = sum(elpd_mixIS)
+    end
+
+    return elpd_mixIS_sum
+end
 
 
 function model_ppd(

@@ -1,7 +1,7 @@
 
 
-# pt_jld = JLD2.load("runs/hanam_2018/pt_pigeons_5.jld2")
-# pt = pt_jld["pt"]
+chain_name = "pigeons_5_mixis"
+pt = JLD2.load("runs/hanam_2018/pt_$chain_name.jld2")["pt"]
 
 
 plot(pt.reduced_recorders.index_process[3], linewidth = 2)
@@ -45,17 +45,4 @@ using StatsPlots
 plot(pt.shared.tempering.communication_barriers.localbarrier)
 
 
-
-X = chain_infections_prob_2(chain, p)
-
-reindex = [
-    vcat(
-        zeros(max.(0, -(p.subject_birth_ix[i]))),
-        X[max.(p.subject_birth_ix[i], 1):p.n_t_steps, i]
-    ) 
-    for i in 1:p.n_subjects
-]
-
-plot(cumsum.(reindex), legend = false, lc = "black")
-
-plot(cumsum(X, dims = 1), legend = false)
+lpp = model_sum_mixIS(DataFrame(chain), p, obs_df, model)
