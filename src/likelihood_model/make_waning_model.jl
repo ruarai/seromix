@@ -56,34 +56,36 @@ function make_waning_model(
     );
 end
 
-
 function general_waning_likelihood(
     params,
     infections,
-    sp::StaticModelParameters,
     observed_titre::Vector{Vector{Float64}},
-    model_cache::WaningModelCache,
-    individual_waning_function::Function,
-    context::DynamicPPL.AbstractContext;
 
-    mixture_importance_sampling::Bool = false,
-    use_corrected_titre::Bool = true
+    sp::StaticModelParameters,
+    model_cache::WaningModelCache,
+    __context__,
+
+    individual_waning_function::Function;
+
+    use_corrected_titre::Bool = true,
+    mixture_importance_sampling::Bool = false
 )
-    if context isa DynamicPPL.PriorContext
+    leaf_context = DynamicPPL.leafcontext(__context__)
+    if leaf_context isa DynamicPPL.PriorContext
         return 0.0
     end
 
     # If we're in an "IndividualSubsetContext", only calculate the likelihood over a single subject
     # Otherwise, calculate across all subjects
-    subjects_to_process = if context isa IndividualSubsetContext
-        SA[context.ix] # StaticArray with one element (context.ix)
+    subjects_to_process = if leaf_context isa IndividualSubsetContext
+        SA[leaf_context.ix] # StaticArray with one element (leaf_context.ix)
     else
         1:sp.n_subjects
     end
 
     # Reduce the total memory allocation across the observed titre
     # by calculating across a single pre-allocated array.
-    y_pred_buffer = Vector{Float64}(undef, model_cache.n_max_ind_obs)
+    latent_titre_buffer = Vector{Float64}(undef, model_cache.n_max_ind_obs)
 
     # We calculate streaming logsumexp(-logp) to add to the likelihood
     # at the end if doing mixture importance sampling (otherwise, we add zero), see:
@@ -96,34 +98,34 @@ function general_waning_likelihood(
 
     for ix_subject in subjects_to_process
         n_obs_subject = length(model_cache.obs_views[ix_subject])
-        y_pred = view(y_pred_buffer, 1:n_obs_subject)
-        fill!(y_pred, 0.0)
+        latent_titre = view(latent_titre_buffer, 1:n_obs_subject)
+        fill!(latent_titre, 0.0)
 
         # Fills in y_pred according to antibody dynamics
         individual_waning_function(
             params,
-            sp.antigenic_distances, sp.time_diff_matrix,
-            sp.subject_birth_ix[ix_subject],
             view(infections, :, ix_subject),
-            model_cache.obs_lookup_strain[ix_subject],
-            model_cache.obs_lookup_ix[ix_subject],
-            y_pred
+            latent_titre,
+            ix_subject,
+
+            sp,
+            model_cache
         )
 
         # Calculate the log-likelihood of y_pred for this ix_subject
         if mixture_importance_sampling
-            @inbounds for i in 1:length(y_pred)
+            @inbounds for i in 1:length(latent_titre)
                 # Pointwise log likelihood
                 lpp = if use_corrected_titre
                     titre_logpdf_component(
                         observed_titre[ix_subject][i],
-                        y_pred[i],
+                        latent_titre[i],
                         params.obs_sd, const_titre_min, const_titre_max
                     )
                 else
                     titre_logpdf_component_uncorrected(
                         observed_titre[ix_subject][i],
-                        y_pred[i],
+                        latent_titre[i],
                         params.obs_sd, const_titre_min, const_titre_max
                     )
                 end
@@ -132,7 +134,7 @@ function general_waning_likelihood(
                     @show lpp
                     @show i, ix_subject
                     @show observed_titre[ix_subject][i]
-                    @show y_pred[i]
+                    @show latent_titre[i]
                     @show params.obs_sd
                     # It might be useful to see the state of r and alpha too
                     @show r, alpha
@@ -147,9 +149,9 @@ function general_waning_likelihood(
             end
         else
             if use_corrected_titre
-                lp += apply_logpdf_simd(observed_titre[ix_subject], y_pred, params.obs_sd, const_titre_min, const_titre_max)
+                lp += apply_logpdf_simd(observed_titre[ix_subject], latent_titre, params.obs_sd, const_titre_min, const_titre_max)
             else
-                lp += apply_logpdf_uncorrected(observed_titre[ix_subject], y_pred, params.obs_sd, const_titre_min, const_titre_max)
+                lp += apply_logpdf_uncorrected(observed_titre[ix_subject], latent_titre, params.obs_sd, const_titre_min, const_titre_max)
             end
         end
 

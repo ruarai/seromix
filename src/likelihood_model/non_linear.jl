@@ -38,34 +38,28 @@
 
     infections ~ prior_infection_dist
 
-    log_likelihood = general_waning_likelihood(
-        params,
-        infections,
-        sp,
-        observed_titre,
-        model_cache,
-        individual_waning_non_linear!,
-        DynamicPPL.leafcontext(__context__);
+    @addlogprob! general_waning_likelihood(
+        params, infections, observed_titre,
+
+        sp, model_cache, __context__,
+
+        individual_waning_non_linear!;
         use_corrected_titre = use_corrected_titre,
         mixture_importance_sampling = mixture_importance_sampling
     )
-
-    @addlogprob! log_likelihood
 end
 
 function individual_waning_non_linear!(
     params,
-    dist_matrix::Matrix{Float64},
-    time_diff_matrix::Matrix{Float64},
-    subject_birth_ix::Int,
     infections::AbstractArray{Bool},
+    latent_titre::AbstractArray{Float64},
+    ix_subject::Int,
 
-    obs_lookup_strain,
-    obs_lookup_ix,
-
-    y::AbstractArray{Float64}
+    sp::StaticModelParameters,
+    model_cache::WaningModelCache
 )
     n_t_steps = length(infections)
+    subject_birth_ix = sp.subject_birth_ix[ix_subject]
 
     prior_infections = 0.0
 
@@ -85,21 +79,21 @@ function individual_waning_non_linear!(
 
         # Process relevant times after infection
         for ix_t_obs in ix_t:n_t_steps
-            if !haskey(obs_lookup_strain, ix_t_obs)
+            if !haskey(model_cache.obs_lookup_strain[ix_subject], ix_t_obs)
                 continue
             end
 
-            matches_strain = obs_lookup_strain[ix_t_obs]
-            matches_ix = obs_lookup_ix[ix_t_obs]
+            matches_strain = model_cache.obs_lookup_strain[ix_subject][ix_t_obs]
+            matches_ix = model_cache.obs_lookup_ix[ix_subject][ix_t_obs]
 
-            time_diff = time_diff_matrix[ix_t_obs, ix_t]
+            time_diff = sp.time_diff_matrix[ix_t_obs, ix_t]
             # short_term_time_factor = 1.0 - params.omega * time_diff 
             
             @turbo for i in eachindex(matches_strain)
                 ix_obs_strain = matches_strain[i]
                 ix_obs = matches_ix[i]
 
-                distance = dist_matrix[ix_t, ix_obs_strain]
+                distance = sp.antigenic_distances[ix_t, ix_obs_strain]
                 
                 long_term_dist = 1.0 - params.sigma_long * distance
                 # short_term_dist = 1.0 - params.sigma_short * distance
@@ -133,21 +127,21 @@ function individual_waning_non_linear!(
 
         # Process relevant times after infection
         for ix_t_obs in ix_t:n_t_steps
-            if !haskey(obs_lookup_strain, ix_t_obs)
+            if !haskey(model_cache.obs_lookup_strain[ix_subject], ix_t_obs)
                 continue
             end
 
-            matches_strain = obs_lookup_strain[ix_t_obs]
-            matches_ix = obs_lookup_ix[ix_t_obs]
+            matches_strain = model_cache.obs_lookup_strain[ix_subject][ix_t_obs]
+            matches_ix = model_cache.obs_lookup_ix[ix_subject][ix_t_obs]
 
-            time_diff = time_diff_matrix[ix_t_obs, ix_t]
+            time_diff = sp.time_diff_matrix[ix_t_obs, ix_t]
             short_term_time_factor = max(0.0, 1.0 - params.omega_mult * time_diff)
             
             @turbo for i in eachindex(matches_strain)
                 ix_obs_strain = matches_strain[i]
                 ix_obs = matches_ix[i]
 
-                distance = dist_matrix[ix_t, ix_obs_strain]
+                distance = sp.antigenic_distances[ix_t, ix_obs_strain]
                 
                 long_term_dist = max(0.0, 1.0 - params.sigma_long_mult * distance)
                 short_term_dist = max(0.0, 1.0 - params.sigma_short_mult * distance)

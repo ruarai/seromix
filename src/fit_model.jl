@@ -17,8 +17,9 @@ proposal_function = proposal_original_corrected
 turing_model = waning_model_age_effect
 initial_params = make_initial_params_age(sp, obs_df, 8, rng)
 
-# turing_model = waning_model_kucharski
+turing_model = waning_model_kucharski
 # initial_params = make_initial_params_kucharski_data_study(sp, 4, model_data["initial_infections_manual"], rng)
+initial_params = make_initial_params_kucharski_sim_study(sp, obs_df, 8, rng)
 
 model = make_waning_model(
    sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
@@ -29,7 +30,7 @@ gibbs_sampler = make_gibbs_sampler(model, sp, proposal_function);
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, sp, rng;
-    n_sample = 20_000, n_thinning = 10, n_chain = 8
+    n_sample = 10_000, n_thinning = 5, n_chain = 8
     # n_sample = 100, n_thinning = 1, n_chain = 8
 );
 
