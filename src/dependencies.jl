@@ -44,8 +44,6 @@ include("likelihood_model/make_waning_model.jl")
 include("likelihood_model/kucharski_model.jl")
 
 include("likelihood_model/age_model.jl")
-include("likelihood_model/single_seniority_model.jl")
-include("likelihood_model/intercept_model.jl")
 include("likelihood_model/non_linear.jl")
 
 

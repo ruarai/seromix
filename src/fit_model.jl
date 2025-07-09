@@ -2,7 +2,7 @@ include("dependencies.jl")
 
 rng = Random.Xoshiro(1)
 
-run_dir = "runs/hanam_2018_age/"
+run_dir = "runs/sim_study_tiny_1/"
 model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
@@ -22,14 +22,14 @@ initial_params = make_initial_params_age(sp, obs_df, 8, rng)
 
 model = make_waning_model(
    sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
-mixture_importance_sampling = false
+   mixture_importance_sampling = false
 );
 
 gibbs_sampler = make_gibbs_sampler(model, sp, proposal_function);
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, sp, rng;
-    n_sample = 2_000, n_thinning = 1, n_chain = 8
+    n_sample = 20_000, n_thinning = 10, n_chain = 8
     # n_sample = 100, n_thinning = 1, n_chain = 8
 );
 

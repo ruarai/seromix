@@ -125,10 +125,6 @@ function select_initial_params(initial_params_name, n_chain, sp, model_data, obs
         return make_initial_params_broad(sp, n_chain, rng)
     elseif initial_params_name == "age_effect"
         return make_initial_params_age(sp, obs_df, n_chain, rng)
-    elseif initial_params_name == "age_effect_2"
-        return make_initial_params_age_2(sp, obs_df, n_chain, rng)
-    elseif initial_params_name == "intercept"
-        return make_initial_params_intercept(sp, obs_df, n_chain, rng)
     end
 
     error("Invalid initial params specified")
@@ -139,12 +135,6 @@ function select_turing_model(turing_model_name)
         return waning_model_kucharski
     elseif turing_model_name == "age_effect"
         return waning_model_age_effect
-    elseif turing_model_name == "age_effect_2"
-        return waning_model_age_effect_2
-    elseif turing_model_name == "single_seniority"
-        return waning_model_single_seniority
-    elseif turing_model_name == "intercept"
-        return waning_model_intercept
     elseif turing_model_name == "nonlinear"
         return waning_model_non_linear
     end
