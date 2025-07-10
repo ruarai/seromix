@@ -4,12 +4,15 @@
 # pt = JLD2.load("runs/hanam_2018/pt_$chain_name.jld2")["pt"]
 
 
-plot(pt.reduced_recorders.index_process[5], linewidth = 2)
+plot(pt.reduced_recorders.index_process, linewidth = 2)
+plot(pt.reduced_recorders.index_process[4], linewidth = 2)
+plot(pt.shared.tempering.communication_barriers.localbarrier)
+
 
 plot([
     maximum(pt.reduced_recorders.index_process[i]) -
     minimum(pt.reduced_recorders.index_process[i]) 
-    for i in 1:64
+    for i in 1:length(pt.reduced_recorders.index_process)
 ])
 
 chain = Chains(pt);
@@ -26,6 +29,10 @@ plot(chain, [:log_density], seriestype = :traceplot)
 
 
 heatmap(chain_infections_prob_2(chain, sp)')
+heatmap(rand(prior_infection_dist)')
+
+a = [rand(prior_infection_dist) for i in 1:50]
+heatmap([mean(a)[ix_t, ix_subject] for ix_t in 1:sp.n_t_steps, ix_subject in 1:sp.n_subjects]')
 # # heatmap(model_data["infections_matrix"]')
 
 n_inf = chain_sum_infections(chain, sp)
@@ -41,7 +48,6 @@ using StatsPlots
 @df pt.shared.reports.swap_prs StatsPlots.plot(:round, :mean, group = :first, legend = false)
 
 
-plot(pt.shared.tempering.communication_barriers.localbarrier)
 
 
 lpp = model_sum_mixIS(DataFrame(chain), sp, obs_df, model)

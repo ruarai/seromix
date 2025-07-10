@@ -40,7 +40,7 @@ sim_plot_data <- summary_sim |>
 
 
 
-sim_plot_data |> 
+p_sim <- sim_plot_data |> 
   filter(prior_name == "BetaBernoulli(1, 1)") |> 
   ggplot() +
   
@@ -67,7 +67,9 @@ sim_plot_data |>
         panel.grid.major.y = element_gridline,
         panel.background = element_facet_background,
         panel.spacing.x = unit(1, "cm"),
-        legend.position = "bottom")
+        legend.position = "none") +
+  
+  ggtitle("Simulation study")
 
 
 data_run_labels <- c(
@@ -85,7 +87,7 @@ plot_data <- summary_data |>
          name = factor(name, names(data_run_labels), data_run_labels))
 
 
-plot_data |> 
+p_data <- plot_data |> 
   ggplot() +
   
   geom_point(aes(x = median, y = name, colour = name),
@@ -107,6 +109,9 @@ plot_data |>
         panel.grid.major.y = element_gridline,
         panel.background = element_facet_background,
         panel.spacing.x = unit(1, "cm"),
-        legend.position = "bottom")
+        legend.position = "bottom") +
+  
+  ggtitle("Ha Nam study")
 
+p_sim / p_data
 

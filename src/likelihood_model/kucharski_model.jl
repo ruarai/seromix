@@ -9,18 +9,19 @@
     mixture_importance_sampling::Bool = false,
     use_corrected_titre::Bool = true
 )
-    mu_long ~ Uniform(0.0, 10.0)
-    mu_short ~ Uniform(0.0, 10.0)
+    mu_long ~ Uniform(0.0, 4.0)
+    mu_short ~ Uniform(0.0, 4.0)
 
 
-    omega ~ Uniform(0.0, 1.0)
+    omega ~ Uniform(0.5, 1.0)
 
-    sigma_long ~ Uniform(0.0, 10.0)
-    sigma_short ~ Uniform(0.0, 10.0)
+    # TODO revert changes
+    sigma_long ~ Uniform(0.0, 1.0)
+    sigma_short ~ Uniform(0.0, 1.0)
 
-    tau ~ Uniform(0.0, 10.0)
+    tau ~ Uniform(0.0, 1.0)
 
-    obs_sd ~ Uniform(1.0, 10.0)
+    obs_sd ~ Uniform(1.0, 3.0)
 
     params = (; mu_long, mu_short, omega, sigma_long, sigma_short, tau, obs_sd)
 

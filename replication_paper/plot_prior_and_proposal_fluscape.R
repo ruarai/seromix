@@ -9,7 +9,7 @@ summary <- tar_read(combined_summaries) |>
 
 name_order <- c(
   "kucharski_2018", 
-  "kucharski_2018_hanam", 
+  # "kucharski_2018_hanam", 
   "hay_2024",
   
   "Bernoulli_0.5_uncorrected",
@@ -19,8 +19,8 @@ name_order <- c(
 )
 
 name_labels <- c(
-  "Kucharski 2018 (fluscape)", 
-  "Kucharski 2018 (Ha Nam)", 
+  "Kucharski 2018", 
+  # "Kucharski 2018 (Ha Nam)", 
   "Hay 2024",
   "Bernoulli(0.5) (uncorrected)", 
   "Bernoulli(0.5) (corrected)", 
@@ -28,19 +28,19 @@ name_labels <- c(
   "BetaBernoulli(1,1) (corrected)"
 )
 
-summaries_previous_add <- summaries_previous |> 
-  bind_rows(
-    summaries_previous |> 
-      filter(run_name == "hanam_2018", name == "kucharski_2018") |> 
-      mutate(name = "kucharski_2018_hanam") |> 
-      select(-run_name) |> 
-      expand_grid(run_name = c("fluscape_2009_neuts", "fluscape_2009_HI"))
-  )
+# summaries_previous_add <- summaries_previous |> 
+#   bind_rows(
+#     summaries_previous |> 
+#       filter(run_name == "hanam_2018", name == "kucharski_2018") |> 
+#       mutate(name = "kucharski_2018_hanam") |> 
+#       select(-run_name) |> 
+#       expand_grid(run_name = c("fluscape_2009_neuts", "fluscape_2009_HI"))
+#   )
 
 plot_data <- summary |>
   mutate(name = str_c(prior_description, "_", proposal_name)) |> 
   filter(name %in% name_order) |> 
-  bind_rows(summaries_previous_add |> filter(str_detect(name, "kucharski_2018"))) |> 
+  bind_rows(summaries_previous |> filter(name == "kucharski_2018")) |> 
   filter(variable %in% unique(summary$variable), variable %in% names(var_labels),
          name %in% name_order,
          run_name %in% c("fluscape_2009_neuts", "fluscape_2009_HI")) |>
@@ -49,10 +49,10 @@ plot_data <- summary |>
 
 plot_data |> 
   filter(run_name == "fluscape_2009_HI",
-         name != name_labels[6]
+         name != name_labels[5]
          ) |> 
   ggplot() +
-  annotate("rect", ymin = 3.5, ymax = 5.5,
+  annotate("rect", ymin = 3.5, ymax = 4.5,
            xmin = -Inf, xmax = Inf, fill = ggokabeito::palette_okabe_ito(5), alpha = 0.1) +
   
   geom_point(aes(x = median, y = name),
@@ -81,10 +81,10 @@ plot_data |>
 
 plot_data |> 
   filter(run_name == "fluscape_2009_neuts",
-         name != name_labels[6]
+         name != name_labels[5]
   ) |> 
   ggplot() +
-  annotate("rect", ymin = 3.5, ymax = 5.5,
+  annotate("rect", ymin = 3.5, ymax = 4.5,
            xmin = -Inf, xmax = Inf, fill = ggokabeito::palette_okabe_ito(5), alpha = 0.1) +
   
   geom_point(aes(x = median, y = name),
