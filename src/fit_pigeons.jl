@@ -20,8 +20,8 @@ prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
 turing_model = waning_model_kucharski
 
 model = make_waning_model(
-   sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
-    mixture_importance_sampling = true
+   sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model#,
+    # mixture_importance_sampling = true
 );
 
 pt_target = TuringLogPotential(model)
@@ -46,12 +46,14 @@ end
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 pt = pigeons(
     target = pt_target,
-    n_rounds = 15, n_chains = 64, multithreaded = true,   
-    explorer = GibbsExplorer(proposal_original_corrected, [i for i in symbols_not_inf], sp),
+    # n_rounds = 15, n_chains = 64, multithreaded = true,   
+    n_rounds = 6, n_chains = 64, multithreaded = true,
+    explorer = GibbsExplorer3(proposal_original_corrected, [i for i in symbols_not_inf], 100, sp, 0.001),
     record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
 );
 
-
+pt = increment_n_rounds!(pt, 1)
+pt = pigeons(pt)
 
 
 chain_name = "pigeons_5_mixis"

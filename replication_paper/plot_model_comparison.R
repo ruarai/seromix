@@ -8,6 +8,7 @@ summary <- tar_read(combined_summaries) |>
   filter(exp_group == "model_comparison", mixture_importance_sampling)
 
 lp_mixis_summary <- tar_read(combined_lp_mixis) %>%
+  filter(exp_group == "model_comparison") |> 
   drop_na(lp_mixis) %>%
   mutate(variable = "mixis_lp", median = lp_mixis)
 
