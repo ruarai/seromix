@@ -13,8 +13,8 @@
 
     omega ~ Uniform(0.0, 1.0)
 
-    sigma_long ~ Uniform(0.0, 10.0)
-    sigma_short ~ Uniform(0.0, 10.0)
+    sigma_long ~ Uniform(0.0, 1.0)
+    sigma_short ~ Uniform(0.0, 1.0)
 
     beta ~ Uniform(0.0, 1.0)
     tau ~ Uniform(0.0, 1.0)
