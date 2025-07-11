@@ -1,7 +1,7 @@
 
-run_data <- read_delim("test2.txt", ";", col_names = c(".iteration", "pr_inf", "pr_param", "eps", "t", "t2")) |> 
+run_data <- read_delim("test.txt", ";", col_names = c(".iteration", "pr_inf", "pr_param", "eps", "t", "t2")) |> 
   mutate(pr_param = as.numeric(pr_param),
-         eps = as.numeric(eps),
+         eps = sqrt(as.numeric(eps)),
          .iteration = as.numeric(.iteration) * 2) 
 
 e <- new.env()
@@ -39,16 +39,7 @@ ggplot() +
   
   scale_y_log10() +
   
-  coord_cartesian(xlim = c(0, 500))
-
-ggplot() +
-  geom_line(aes(x = .iteration, y = eps, colour = "My code"),
-            run_data) +
-  
-  geom_line(aes(x = .iteration, y = eps, colour = "Original code"),
-            tibble(.iteration = (1:length(e$accept_rate_tab)) / 2, eps = e$eps_tab)) +
-  
-  scale_y_log10()
+  coord_cartesian(xlim = c(0, 1000))
 
 
 library(targets)

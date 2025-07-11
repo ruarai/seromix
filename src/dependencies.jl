@@ -40,7 +40,7 @@ using Printf
 using SliceSampling
 
 
-include("likelihood_model/make_waning_model.jl")
+include("likelihood_model/model_functions.jl")
 include("likelihood_model/kucharski_model.jl")
 
 include("likelihood_model/age_model.jl")
@@ -49,6 +49,7 @@ include("likelihood_model/non_linear.jl")
 
 import Turing.Inference: isgibbscomponent
 include("inference/mh_parameter_sampler.jl")
+include("inference/mh_parameter_sampler_original.jl")
 include("inference/mh_infection_sampler.jl")
 include("inference/sampling_functions.jl")
 include("inference/initial_params.jl")

@@ -1,6 +1,5 @@
 
-# The Kucharski (2018) model for waning immunity
-@model function waning_model_kucharski(
+@model function waning_model_kucharski_diff(
     sp::StaticModelParameters,
     prior_infection_dist::Distribution,
     observed_titre::Vector{Vector{Float64}},
@@ -33,16 +32,16 @@
 
         sp, model_cache, __context__,
 
-        individual_waning_kucharski!;
+        individual_waning_kucharski_diff!;
         use_corrected_titre = use_corrected_titre,
         mixture_importance_sampling = mixture_importance_sampling
     )
 end
 
-function individual_waning_kucharski!(
+function individual_waning_kucharski_diff!(
     params,
     infections::AbstractArray{Bool},
-    latent_titre::AbstractArray{Float64},
+    latent_titre,
     ix_subject::Int,
 
     sp::StaticModelParameters,
@@ -72,7 +71,7 @@ function individual_waning_kucharski!(
             time_diff = sp.time_diff_matrix[ix_t_obs, ix_t]
             short_term_time_factor = max(0.0, 1.0 - params.omega * time_diff)
             
-            @turbo for i in eachindex(matches_strain)
+            for i in eachindex(matches_strain)
                 ix_obs_strain = matches_strain[i]
                 ix_obs = matches_ix[i]
 
@@ -91,4 +90,4 @@ function individual_waning_kucharski!(
 end
 
 # Used by pointwise_likelihood()
-turing_function_to_waning_function(model_f::typeof(waning_model_kucharski)) = individual_waning_kucharski!
+turing_function_to_waning_function(model_f::typeof(waning_model_kucharski_diff)) = individual_waning_kucharski_diff!

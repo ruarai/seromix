@@ -78,7 +78,7 @@ end
 
 # A more direct translation of Kucharski
 # note the treatment of max
-function titre_logpdf_component_uncorrected(x::S, μ::T, σ::T, min::T, max::T) where {T <: Real, S <: Real}
+function titre_logpdf_component_uncorrected(x::S, μ::T, σ::T, min, max) where {T <: Real, S <: Real}
     if x <= min
         return normlogcdf(μ, σ, min + 1) # P(Y <= 1) for x <= min
     elseif x > max

@@ -85,7 +85,7 @@ function general_waning_likelihood(
 
     # Reduce the total memory allocation across the observed titre
     # by calculating across a single pre-allocated array.
-    latent_titre_buffer = Vector{Float64}(undef, model_cache.n_max_ind_obs)
+    latent_titre_buffer = Vector{typeof(params[1])}(undef, model_cache.n_max_ind_obs)
 
     # We calculate streaming logsumexp(-logp) to add to the likelihood
     # at the end if doing mixture importance sampling (otherwise, we add zero), see:
@@ -352,8 +352,8 @@ function model_ppd(
         
         waning_curve!(
             params, individual_waning_function,
-           sp.antigenic_distances,sp.time_diff_matrix,
-           sp.subject_birth_ix,
+            sp.antigenic_distances,sp.time_diff_matrix,
+            sp.subject_birth_ix,
             infections,
             obs_lookup_strain, obs_lookup_ix, obs_views,
             obs_val

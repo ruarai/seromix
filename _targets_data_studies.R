@@ -37,8 +37,11 @@ data_runs <- bind_rows(
     proposal_name = c("uncorrected", "corrected"),
     infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1),
     
-    # Filler variables to ensure column exists
+    sampler_name = "original",
+    use_corrected_titre = FALSE,
     initial_params_name = "kucharski_data_study",
+    
+    # Filler variables to ensure column exists
     mixture_importance_sampling = FALSE,
     fixed_params = list(NULL)
   ),
@@ -51,7 +54,10 @@ data_runs <- bind_rows(
     fixed_params = list(list(omega = 0.5, mu_short = 1e-10, sigma_short = 1e-10)),
     proposal_name = c("uncorrected", "corrected"),
     infection_prior = list(matrix_bernoulli_50, matrix_beta_bernoulli_1_1),
-    initial_params_name = "kucharski_data_study_fluscape"
+    initial_params_name = "kucharski_data_study_fluscape",
+    
+    sampler_name = "original",
+    use_corrected_titre = FALSE
   ),
   
   # Compare effect of age inclusion/exclusion

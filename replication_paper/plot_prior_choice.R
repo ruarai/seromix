@@ -34,9 +34,9 @@ name_labels <- c(
 plot_data <- summary |>
   mutate(name = prior_description) |> 
   filter(run_name == "hanam_2018",
-         variable %in% var_names) |>
+         variable %in% names(var_labels)) |>
   mutate(name = fct_rev(factor(name, name_order, name_labels)),
-         variable = factor(variable, var_names, var_labels))
+         variable = factor(variable, names(var_labels), var_labels))
 
 ggplot(plot_data) +
   

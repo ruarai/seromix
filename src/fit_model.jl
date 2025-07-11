@@ -16,7 +16,7 @@ birth_data = DataFrame(model_data["subject_birth_data"])
 prior_infection_dist = MatrixBernoulli(0.5, sp)
 proposal_function = proposal_original_uncorrected
 
-turing_model = waning_model_kucharski
+turing_model = waning_model_kucharski_diff
 initial_params = make_initial_params_kucharski_data_study(sp, 12, model_data["initial_infections_manual"], rng)
 
 model = make_waning_model(
@@ -25,18 +25,26 @@ model = make_waning_model(
    use_corrected_titre = false
 );
 
-include("inference/mh_parameter_sampler_original.jl")
-
 # gibbs_sampler = make_gibbs_sampler_original(model, sp, proposal_function);
 
-gibbs_sampler = make_gibbs_sampler(model, sp, proposal_function);
+# gibbs_sampler = make_gibbs_sampler(model, sp, proposal_function);
+
+# gibbs_sampler = make_gibbs_sampler_slice(model, sp, proposal_function)
+
+symbols_not_inf = model_symbols_apart_from(model, [:infections])
+
+gibbs_sampler = Gibbs(
+    :infections => make_mh_infection_sampler(sp, proposal_function; prop_sample = 1.0, n_repeats = 10),
+    symbols_not_inf => HMC(0.003, 10)
+)
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, sp, rng;
-    n_sample = 10000, n_thinning = 5, n_chain = 12
+    n_sample = 20000, n_thinning = 10, n_chain = 12
     # n_sample = 100, n_thinning = 1, n_chain = 1
 );
 
+chain[1000:end]
 
 
 set_lp!(model, chain)
@@ -61,8 +69,8 @@ heatmap(chain_infections_prob(chain[1800:2000], sp)')
     heatmap(chain_infections_prob(chain[i], sp)')
 end
 
-# chain_name = "nonlinear_test"
-# save_draws(chain, "$run_dir/chain_$chain_name.parquet")
+chain_name = "hmc_test"
+save_draws(chain, "$run_dir/chain_$chain_name.parquet")
 
 
 

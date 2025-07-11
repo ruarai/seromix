@@ -67,6 +67,8 @@ end
 function select_sampler(sampler_name, model, sp, proposal_function)
     if sampler_name == "default"
         return make_gibbs_sampler(model, sp, proposal_function)
+    elseif sampler_name == "original"
+        return make_gibbs_sampler_original(model, sp, proposal_function)
     elseif sampler_name == "slice_sampler"
         return make_gibbs_sampler_slice(model, sp, proposal_function)
     end
