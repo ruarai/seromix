@@ -95,6 +95,20 @@ data_runs <- bind_rows(
     n_chain = 4
   ),
   
+  # Compare sampler
+  tribble(
+    ~sampler_name, ~n_iterations, ~n_warmup,
+    "default", default_n_iterations, default_n_warmup,
+    "slice_sampler", 10000, 5000 
+  ) |> 
+    mutate(
+      exp_group = "sampler_comparison",
+      run_name = "hanam_2018",
+      infection_prior = list(matrix_beta_bernoulli_1_1),
+      initial_params_name = "kucharski_data_study",
+      n_chain = 4
+    ),
+  
   # Model comparison
   tribble(
     ~exp_name, ~initial_params_name, ~turing_model_name, ~fixed_params,
@@ -122,6 +136,7 @@ data_runs <- bind_rows(
     proposal_name = replace_na(proposal_name, "corrected"),
     turing_model_name = replace_na(turing_model_name, "kucharski"),
     mixture_importance_sampling = replace_na(mixture_importance_sampling, FALSE),
+    sampler_name = replace_na(sampler_name, "default"),
     
     n_iterations = replace_na(n_iterations, default_n_iterations),
     n_warmup = replace_na(n_warmup, default_n_warmup),
@@ -137,7 +152,9 @@ data_runs <- bind_rows(
 
 # Data which will be added to summarised outputs from each run
 data_runs_meta <- data_runs |>
-  select(name, exp_group, run_name, proposal_name, initial_params_name, use_corrected_titre, prior_description, turing_model_name, exp_name, mixture_importance_sampling)
+  select(name, exp_group, run_name, proposal_name, initial_params_name, 
+         use_corrected_titre, prior_description, turing_model_name, 
+         exp_name, mixture_importance_sampling, sampler_name)
 
 
 
@@ -153,6 +170,7 @@ data_chains <- tar_map(
       initial_params_name = initial_params_name,
       use_corrected_titre = use_corrected_titre,
       turing_model_name = turing_model_name,
+      sampler_name = sampler_name,
       
       mixture_importance_sampling = mixture_importance_sampling,
       

@@ -15,12 +15,13 @@
 
     omega ~ Uniform(0.0, 1.0)
 
+    # TODO revert
     # Note reduced priors here; assuming that antigenic distance
     # tends to be > 1.0
-    sigma_long ~ Uniform(0.0, 1.0)
-    sigma_short ~ Uniform(0.0, 1.0)
+    sigma_long ~ Uniform(0.0, 10.0)
+    sigma_short ~ Uniform(0.0, 10.0)
 
-    tau ~ Uniform(0.0, 1.0)
+    tau ~ Uniform(0.0, 10.0)
 
     obs_sd ~ Uniform(1.0, 10.0)
 

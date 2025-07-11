@@ -10,24 +10,9 @@
 # step. Here, we constrain parameters using the prior defined in the model itself.
 
 
-mutable struct MHParameterSampler <: AbstractMCMC.AbstractSampler
+mutable struct MHParameterSamplerOriginal <: AbstractMCMC.AbstractSampler
 
 end
-
-struct ParameterSamplerTransition{T, L <: Real}
-    θ::AbstractVector{T}
-    lp::L
-end
-
-struct ParameterSamplerState{P<:ParameterSamplerTransition, T}
-    transition::P
-    θ::AbstractVector{T}
-
-    sigma_covar::Float64
-    n_accepted::Int
-    n_rejected::Int
-end
-
 
 # Initial step for the sampler
 # If initial parameters are provided, use them. Otherwise, 
@@ -35,7 +20,7 @@ end
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
-    sampler::MHParameterSampler;
+    sampler::MHParameterSamplerOriginal;
     initial_params,
     kwargs...
 )
@@ -59,7 +44,7 @@ end
 function AbstractMCMC.step(
     rng::Random.AbstractRNG,
     model::AbstractMCMC.LogDensityModel,
-    sampler::MHParameterSampler,
+    sampler::MHParameterSamplerOriginal,
     state::ParameterSamplerState;
     kwargs...
 )
@@ -68,7 +53,7 @@ function AbstractMCMC.step(
 
     n_accepted = state.n_accepted
     n_rejected = state.n_rejected
-    n_steps = n_accepted + n_rejected
+    n_steps = (n_accepted + n_rejected)
 
     target_accept_rate = 0.234
     obs_accept_rate = target_accept_rate
@@ -86,15 +71,22 @@ function AbstractMCMC.step(
     logprob_previous = get_logp(theta_current, model)
 
     # Theta proposal
-    theta_new_dist = MvNormal(theta_current, sigma_covar_adapted * I)
-    theta_new = rand(rng, theta_new_dist)
+    log_theta_current = log.(theta_current)
+
+    log_theta_new_dist = MvNormal(log_theta_current, sigma_covar_adapted * I)
+    log_theta_new = rand(rng, log_theta_new_dist)
+    theta_new = exp.(log_theta_new)
 
     logprob_proposal = get_logp(theta_new, model)
 
-
-    # Note no correction for log-scale operations (as this is performed by Turing.jl)
     log_target_ratio = logprob_proposal - logprob_previous
-    if -Random.randexp(rng) <= log_target_ratio
+
+    # Correction term for log-normal proposals around theta
+    log_hastings_ratio = sum(log_theta_new) - sum(log_theta_current)
+    acceptance_ratio = log_target_ratio + log_hastings_ratio
+  
+
+    if -Random.randexp(rng) <= acceptance_ratio
         # Accept theta_new
         transition = ParameterSamplerTransition(theta_new, logprob_proposal)
         n_accepted += 1
@@ -111,13 +103,8 @@ end
 # Below is necessary framework for use in Turing
 
 # Puts the sampler into an external sampler for use in Turing
-function make_mh_parameter_sampler()
-    return externalsampler(MHParameterSampler(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=true)
+function make_mh_parameter_sampler_original()
+    return externalsampler(MHParameterSamplerOriginal(), adtype=Turing.DEFAULT_ADTYPE, unconstrained=false)
 end
 
-isgibbscomponent(::MHParameterSampler) = true
-
-AbstractMCMC.getparams(state::ParameterSamplerState) = state.θ
-function AbstractMCMC.setparams!!(state::ParameterSamplerState, θ)
-    return ParameterSamplerState(ParameterSamplerTransition(θ, state.transition.lp), θ, state.sigma_covar, state.n_accepted, state.n_rejected)
-end
+isgibbscomponent(::MHParameterSamplerOriginal) = true

@@ -2,7 +2,7 @@ include("dependencies.jl")
 
 rng = Random.Xoshiro(1)
 
-run_dir = "runs/fluscape_2009_neuts/"
+run_dir = "runs/hanam_2018/"
 model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
@@ -11,28 +11,33 @@ sp = read_fixed_parameters(model_data)
 
 birth_data = DataFrame(model_data["subject_birth_data"])
 
-prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
-proposal_function = proposal_original_corrected
-
-# turing_model = waning_model_age_effect
-# initial_params = make_initial_params_age(sp, obs_df, 8, rng)
+# prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
+# proposal_function = proposal_original_corrected
+prior_infection_dist = MatrixBernoulli(0.5, sp)
+proposal_function = proposal_original_uncorrected
 
 turing_model = waning_model_kucharski
-# initial_params = make_initial_params_kucharski_data_study(sp, 4, model_data["initial_infections_manual"], rng)
-initial_params = make_initial_params_kucharski_sim_study(sp, obs_df, 8, rng)
+initial_params = make_initial_params_kucharski_data_study(sp, 12, model_data["initial_infections_manual"], rng)
 
 model = make_waning_model(
    sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
-   mixture_importance_sampling = false
+   mixture_importance_sampling = false,
+   use_corrected_titre = false
 );
+
+include("inference/mh_parameter_sampler_original.jl")
+
+# gibbs_sampler = make_gibbs_sampler_original(model, sp, proposal_function);
 
 gibbs_sampler = make_gibbs_sampler(model, sp, proposal_function);
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, sp, rng;
-    n_sample = 20_000, n_thinning = 10, n_chain = 8
-    # n_sample = 100, n_thinning = 1, n_chain = 8
+    n_sample = 10000, n_thinning = 5, n_chain = 12
+    # n_sample = 100, n_thinning = 1, n_chain = 1
 );
+
+
 
 set_lp!(model, chain)
 
@@ -44,7 +49,7 @@ plot(chain_sum_infections(chain, sp))
 plot(chain[ix_start:end], [:sigma_long, :sigma_short], seriestype = :traceplot)
 plot(chain[ix_start:end], [:obs_sd], seriestype = :traceplot)
 plot(chain[ix_start:end], [:omega], seriestype = :traceplot)
-plot(chain[ix_start:end], [:tau, :beta, :intercept], seriestype = :traceplot)
+plot(chain[ix_start:end], [:tau], seriestype = :traceplot)
 
 plot(chain[ix_start:end], [:lp], seriestype = :traceplot)
 
@@ -62,5 +67,5 @@ end
 
 
 
-chain_df = DataFrame(chain[1500:end])
+chain_df = DataFrame(chain[1000:end])
 lpp = model_sum_mixIS(chain_df, sp, obs_df, model)

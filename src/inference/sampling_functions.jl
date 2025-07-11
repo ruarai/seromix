@@ -48,6 +48,29 @@ function make_gibbs_sampler(model, sp, proposal_function)
     return gibbs_sampler
 end
 
+function make_gibbs_sampler_original(model, sp, proposal_function)
+    symbols_not_inf = model_symbols_apart_from(model, [:infections])
+    
+    gibbs_sampler = Gibbs(
+        :infections => make_mh_infection_sampler(sp, proposal_function),
+        symbols_not_inf => make_mh_parameter_sampler_original()
+    )
+    
+    return gibbs_sampler
+end
+
+
+function make_gibbs_sampler_slice(model, sp, proposal_function)
+    symbols_not_inf = model_symbols_apart_from(model, [:infections])
+
+    gibbs_sampler = Gibbs(
+        :infections => make_mh_infection_sampler(sp, proposal_function; prop_sample = 1.0, n_repeats = 10),
+        symbols_not_inf => externalsampler(RandPermGibbs(SliceSteppingOut(2.0)))
+    )
+    
+    return gibbs_sampler
+end
+
 
 function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
     if iteration % 50 == 0
@@ -57,17 +80,24 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
             param_state = state.states[2].state
 
             pr_accept_inf = inf_state.n_accepted / (inf_state.n_accepted + inf_state.n_rejected)
-            pr_accept_param = param_state.n_accepted / (param_state.n_accepted + param_state.n_rejected)
+            pr_accept_param = if param_state isa ParameterSamplerState
+                param_state.n_accepted / (param_state.n_accepted + param_state.n_rejected)
+            else
+                0.0
+            end
 
-            sample_time = (inf_state.time_B - inf_state.time_A) * 1000
+            # I'm not sure why this needs to be doubled.
+            sample_time = (inf_state.time_B - inf_state.time_A) * 1000 * 2.0
 
             # Time per 10,000 samples
             sampling_rate = sample_time / 6
 
             @printf(
-                "%6d; %6.2f; %6.2f; %7.2fms/sample;%7.2fmin/10,000 samples\n", 
+                "%6d; %6.2f; %6.3f; %10.8f; %7.2fms/sample;%7.2fmin/10,000 samples\n", 
                 iteration, 
-                pr_accept_inf, pr_accept_param, 
+                pr_accept_inf, 
+                pr_accept_param, 
+                param_state.sigma_covar,
                 sample_time, sampling_rate
             )
         else

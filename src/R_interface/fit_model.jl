@@ -27,7 +27,7 @@ function fit_model(
 
     obs_df = DataFrame(model_data["observations"])
 
-   sp = read_fixed_parameters(model_data)
+    sp = read_fixed_parameters(model_data)
 
     prior_infection_dist = select_infection_prior(infection_prior, sp)
     proposal_function = select_proposal_function(proposal_name)
@@ -65,20 +65,10 @@ function fit_model(
 end
 
 function select_sampler(sampler_name, model, sp, proposal_function)
-    symbols_not_inf = model_symbols_apart_from(model, [:infections])
-
     if sampler_name == "default"
-        return Gibbs(
-            :infections => make_mh_infection_sampler(sp, proposal_function),
-            symbols_not_inf => make_mh_parameter_sampler()
-        )
+        return make_gibbs_sampler(model, sp, proposal_function)
     elseif sampler_name == "slice_sampler"
-        slice_sampler = RandPermGibbs(SliceSteppingOut(1.))
-
-        return Gibbs(
-            :infections => make_mh_infection_sampler(sp, proposal_function),
-            symbols_not_inf => externalsampler(slice_sampler)
-        )
+        return make_gibbs_sampler_slice(model, sp, proposal_function)
     end
 
     error("Invalid sampler specified")
