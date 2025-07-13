@@ -14,7 +14,7 @@ function simulate_hanam_2018(
 
     # As template for amount of data available + age data
     real_model_data = load("runs/hanam_2018_age/model_data.hdf5")
-   sp = read_fixed_parameters(real_model_data)
+   sp = read_static_parameters(real_model_data)
 
     attack_rates = vcat(
         rand(rng, LogitNormal(logit(pandemic_mean_ar), sd_ar)),

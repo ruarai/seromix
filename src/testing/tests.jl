@@ -82,7 +82,7 @@ end
 @testset "Inference model" begin
     model_data = load("runs/hanam_2018/model_data.hdf5")
     obs_df = DataFrame(model_data["observations"])
-   sp = read_fixed_parameters(model_data)
+   sp = read_static_parameters(model_data)
 
     prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0,sp.n_t_steps,sp.n_subjects)
 
@@ -100,7 +100,7 @@ end
 
 
 model_data = load("runs/hanam_2018/model_data.hdf5")
-sp = read_fixed_parameters(model_data)
+sp = read_static_parameters(model_data)
 model_params, sp, infections = make_test_data(StableRNG(1),sp.n_t_steps,sp.n_subjects)
 
 obs_df = DataFrame(model_data["observations"])

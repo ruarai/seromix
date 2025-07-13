@@ -9,7 +9,7 @@ function pointwise_likelihood(
 
     obs_df = DataFrame(model_data["observations"])
 
-   sp = read_fixed_parameters(model_data)
+   sp = read_static_parameters(model_data)
 
     prior_infection_dist = select_infection_prior(infection_prior, sp)
 

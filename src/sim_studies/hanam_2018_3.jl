@@ -8,7 +8,7 @@ mkpath(run_dir)
 
 real_model_data = load("runs/hanam_2018/model_data.hdf5")
 
-p = read_fixed_parameters(real_model_data)
+p = read_static_parameters(real_model_data)
 
 p.subject_birth_ix .= 0
 

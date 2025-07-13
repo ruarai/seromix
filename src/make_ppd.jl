@@ -10,7 +10,7 @@ run_dir = "runs/$(data_code)/"
 
 model_data = load("$run_dir/model_data.hdf5")
 
-sp = read_fixed_parameters(model_data)
+sp = read_static_parameters(model_data)
 
 chain_name = "nonlinear_test"
 

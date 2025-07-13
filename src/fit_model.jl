@@ -7,7 +7,7 @@ model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
 
-sp = read_fixed_parameters(model_data)
+sp = read_static_parameters(model_data)
 
 birth_data = DataFrame(model_data["subject_birth_data"])
 

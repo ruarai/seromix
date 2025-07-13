@@ -1,7 +1,7 @@
 
 
 real_model_data = load("runs/hanam_2018_age/model_data.hdf5")
-sp = read_fixed_parameters(real_model_data)
+sp = read_static_parameters(real_model_data)
 
 sim_scenarios = expand_grid(
     ix_sim = 1:3,

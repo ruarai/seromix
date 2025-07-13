@@ -13,7 +13,7 @@ model_data = load("$run_dir/model_data.hdf5")
 
 obs_df = DataFrame(model_data["observations"])
 
-sp = read_fixed_parameters(model_data)
+sp = read_static_parameters(model_data)
 
 # prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
 prior_infection_dist = MatrixBetaBernoulliTimeVarying(1.3, 8.0, sp)

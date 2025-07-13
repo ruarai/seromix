@@ -106,7 +106,7 @@ function ntuple_to_matrix(nt, n_t_steps, n_subjects)
 end
 
 
-function read_fixed_parameters(dict)
+function read_static_parameters(dict)
     antigenic_distances = dict["antigenic_distances"]
     modelled_years = dict["modelled_years"]
     subject_birth_ix::Vector{Int64} = DataFrame(dict["subject_birth_data"]).ix_t_birth
