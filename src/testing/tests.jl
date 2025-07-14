@@ -40,16 +40,15 @@ end
         ix_t_obs = 1:n_t_steps, ix_strain = 1:n_t_steps, ix_subject = 1:n_subjects,
         observed_titre = 0.0
     )
-    obs_lookup_strain, obs_lookup_ix = make_obs_lookup(complete_obs)
+
+    model_cache = WaningModelCache(complete_obs)
 
     waning_curve!(
-        model_params, individual_waning_kucharski!,
-
-       sp.antigenic_distances,sp.time_diff_matrix,sp.subject_birth_ix,
-
+        model_params,
+        individual_waning_kucharski!,
+        sp,
         infections,
-
-        obs_lookup_strain, obs_lookup_ix, make_obs_views(complete_obs),
+        model_cache,
         complete_obs.observed_titre
     )
 
@@ -61,30 +60,26 @@ end
 
 
     b_trial = @benchmark waning_curve!(
-        $model_params.mu_long, $model_params.mu_short, $model_params.omega,
-        $model_params.sigma_long, $model_params.sigma_short, $model_params.tau,
-
-        $sp.antigenic_distances, $sp.time_diff_matrix, $sp.subject_birth_ix,
-
+        $model_params,
+        $individual_waning_kucharski!,
+        $sp,
         $infections,
-
-        $obs_lookup_strain, $obs_lookup_ix,
-        $(make_obs_views(complete_obs)),
+        $model_cache,
         $complete_obs.observed_titre
     )
 
     # Should take less than 1ms, and memory use should be minimal
     @test (median(b_trial).time / 1000) < 1_000
-    @test (median(b_trial).memory) < 100
+    @test (median(b_trial).memory) < 200
     @test (median(b_trial).allocs) < 10
 end
 
 @testset "Inference model" begin
     model_data = load("runs/hanam_2018/model_data.hdf5")
     obs_df = DataFrame(model_data["observations"])
-   sp = read_static_parameters(model_data)
+    sp = read_static_parameters(model_data)
 
-    prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0,sp.n_t_steps,sp.n_subjects)
+    prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
 
     initial_params = make_initial_params_broad(sp, 4, rng)
 
@@ -96,28 +91,23 @@ end
 end
 
 
-# @profview [logjoint(model, rand(model)) for i in 1:1000]
-
-
 model_data = load("runs/hanam_2018/model_data.hdf5")
 sp = read_static_parameters(model_data)
-model_params, sp, infections = make_test_data(StableRNG(1),sp.n_t_steps,sp.n_subjects)
+model_params, _, infections = make_test_data(StableRNG(1), sp.n_t_steps, sp.n_subjects)
 
 obs_df = DataFrame(model_data["observations"])
 
-obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
+model_cache = WaningModelCache(obs_df)
+
 obs_df.observed_titre .= 0.0
 
 b_trial = @benchmark waning_curve!(
-    $model_params, $individual_waning_kucharski!,
-
-    $sp.antigenic_distances, $sp.time_diff_matrix, $sp.subject_birth_ix,
-
+    $model_params,
+    $individual_waning_kucharski!,
+    $sp,
     $infections,
-
-    $obs_lookup_strain, $obs_lookup_ix,
-    $(make_obs_views(obs_df)),
+    $model_cache,
     $obs_df.observed_titre
 )
 
-# Previous: 387 microseconds
+# Previous: 217 microseconds

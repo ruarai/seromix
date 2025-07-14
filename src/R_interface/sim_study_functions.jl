@@ -24,20 +24,15 @@ function simulate_latent_titre(continuous_params, sp, infections; individual_wan
         ix_subject = 1:sp.n_subjects,
         observed_titre = 0.0
     )
-
-    obs_lookup_strain, obs_lookup_ix = make_obs_lookup(complete_obs)
+    
+    model_cache = WaningModelCache(complete_obs)
 
     waning_curve!(
         continuous_params,
         individual_waning_function,
-
-       sp.antigenic_distances,
-       sp.time_diff_matrix,
-       sp.subject_birth_ix,
-
+        sp,
         infections,
-        obs_lookup_strain, obs_lookup_ix, make_obs_views(complete_obs),
-
+        model_cache,
         complete_obs.observed_titre
     )
 

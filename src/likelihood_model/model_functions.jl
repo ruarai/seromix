@@ -22,6 +22,19 @@ struct WaningModelCache
     n_max_ind_obs::Int
 end
 
+function WaningModelCache(obs_df)
+    obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
+    n_max_ind_obs = maximum(length.(obs_views))
+
+    model_cache = WaningModelCache(
+        obs_lookup_strain, obs_lookup_ix,
+        obs_views,
+        n_max_ind_obs
+    )
+    
+    return model_cache
+end
+
 function make_waning_model(
     sp::StaticModelParameters,
     obs_df::DataFrame;
@@ -36,14 +49,7 @@ function make_waning_model(
 
     individual_titre_obs = [obs_df.observed_titre[v] for v in obs_views]
 
-    obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
-    n_max_ind_obs = maximum(length.(obs_views))
-
-    model_cache = WaningModelCache(
-        obs_lookup_strain, obs_lookup_ix,
-        obs_views,
-        n_max_ind_obs
-    )
+    model_cache = WaningModelCache(obs_df)
     
     return turing_model(
         sp,
@@ -185,32 +191,24 @@ function general_waning_likelihood(
 end
 
 function waning_curve!(
-    params, individual_waning_function,
-    dist_matrix::Matrix{Float64},
-    time_diff_matrix::Matrix{Float64},
-    subject_birth_ix::Vector{Int},
+    params,
+    individual_waning_function,
+    sp::StaticModelParameters,
     infections::Matrix{Bool},
-    obs_lookup_strain,
-    obs_lookup_ix,
-    obs_views::Vector{UnitRange{Int}},
-    y::AbstractArray{T}
+    model_cache::WaningModelCache,
+    latent_titre::AbstractArray{T}
 ) where T <: Real
     for ix_subject in axes(infections, 2)
         individual_waning_function(
             params,
-
-            dist_matrix, time_diff_matrix,
-            subject_birth_ix[ix_subject],
-
             view(infections, :, ix_subject),
-            obs_lookup_strain[ix_subject],
-            obs_lookup_ix[ix_subject],
+            latent_titre,
+            ix_subject,
 
-            view(y, obs_views[ix_subject])
+            sp,
+            model_cache
         )
     end
-    
-    return y
 end
 
 
@@ -223,10 +221,7 @@ function model_pointwise_likelihood(
     col_names = names(chain_df)
     ix_infections = findall(s -> startswith(s, "infections"), col_names)
 
-    obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
-    obs_views = make_obs_views(obs_df)
-
-    model_cache = WaningModelCache(obs_lookup_strain, obs_lookup_ix, obs_views, maximum([length(v) for v in obs_views]))
+    model_cache = WaningModelCache(obs_df)
 
     logp = zeros(nrow(chain_df), nrow(obs_df))
 
@@ -255,7 +250,6 @@ function model_pointwise_likelihood(
             fill!(latent_titre, 0.0)
 
             individual_waning_function(
-
                 params,
                 AbstractArray{Bool}(view(infections, :, ix_subject)),
                 latent_titre,
@@ -332,8 +326,8 @@ function model_ppd(
         obs_sample = complete_obs_grouped[(ix_sample = ix_sample, )]
 
 
-        obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_sample)
-        obs_views = make_obs_views(obs_sample)
+        model_cache = WaningModelCache(obs_sample)
+
 
         draw = chain_df[samples_indices[ix_sample], :]
 
@@ -351,11 +345,11 @@ function model_ppd(
         obs_val = zeros(nrow(obs_sample))
         
         waning_curve!(
-            params, individual_waning_function,
-            sp.antigenic_distances,sp.time_diff_matrix,
-            sp.subject_birth_ix,
+            params,
+            individual_waning_function,
+            sp,
             infections,
-            obs_lookup_strain, obs_lookup_ix, obs_views,
+            model_cache,
             obs_val
         )
 
