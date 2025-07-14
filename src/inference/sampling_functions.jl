@@ -158,7 +158,7 @@ function logjoint_threaded(model::Model, chain::AbstractMCMC.AbstractChains)
     var_info = VarInfo(model) # extract variables info from the model
     logp = zeros(size(chain, 1), size(chain, 3))
 
-    Threads.@threads for iteration_idx in 1:size(chain, 1)
+    @showprogress Threads.@threads for iteration_idx in 1:size(chain, 1)
         for chain_idx in 1:size(chain, 3)
             argvals_dict = OrderedDict(
                 vn_parent =>

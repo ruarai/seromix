@@ -127,8 +127,6 @@ function select_turing_model(turing_model_name)
         return waning_model_kucharski
     elseif turing_model_name == "age_effect"
         return waning_model_age_effect
-    elseif turing_model_name == "nonlinear"
-        return waning_model_non_linear
     end
     error("Invalid turing model specified")
 end

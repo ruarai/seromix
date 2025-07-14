@@ -26,9 +26,9 @@ function make_initial_params_broad(sp, n_chain, rng)
         sigma_long = rand(rng, Uniform(0.0, 0.5)),
         sigma_short = rand(rng, Uniform(0.0, 0.5)), 
         tau = rand(rng, Uniform(0.0, 0.2)), 
-        obs_sd = rand(rng, Uniform(1.0, 2.5)), 
+        obs_sd = rand(rng, Uniform(3.0, 5.0)), 
 
-        infections = rand(Bernoulli(0.5), sp.n_t_steps, sp.n_subjects)
+        infections = rand(rng, MatrixBetaBernoulli(1.0, 1.0, sp))
     ) for i in 1:n_chain]
 end
 
@@ -109,31 +109,6 @@ function make_initial_params_age(sp, n_chain, rng, obs_df)
         tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
         intercept = 0.0 + rand(rng, Uniform(-0.1, 0.1)), 
         obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
-
-        infections = initial_infections_matrix(sp, obs_df, rng)
-    ) for i in 1:n_chain]
-end
-
-function make_initial_params_non_linear(sp, n_chain, rng, obs_df)
-    return [(
-        mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
-        mu_long_mult = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
-        
-        mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
-        mu_short_mult = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
-
-        omega = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
-        omega_mult = 0.8 + rand(rng, Uniform(-0.05, 0.05)), 
-        
-        sigma_long = 0.1 + rand(rng, Uniform(-0.02, 0.02)),
-        sigma_long_mult = 0.1 + rand(rng, Uniform(-0.02, 0.02)),
-
-        sigma_short = 0.05 + rand(rng, Uniform(-0.005, 0.005)), 
-        sigma_short_mult = 0.02 + rand(rng, Uniform(-0.005, 0.005)), 
-        tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
-        beta =  0.02 + rand(rng, Uniform(-0.01, 0.01)),
-        obs_sd = 1.5 + rand(rng, Uniform(-0.1, 0.1)), 
-        intercept = 0.0 + rand(rng, Uniform(-0.1, 0.1)), 
 
         infections = initial_infections_matrix(sp, obs_df, rng)
     ) for i in 1:n_chain]

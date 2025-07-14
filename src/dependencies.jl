@@ -44,7 +44,6 @@ include("likelihood_model/model_functions.jl")
 include("likelihood_model/kucharski_model.jl")
 
 include("likelihood_model/age_model.jl")
-include("likelihood_model/non_linear.jl")
 
 
 import Turing.Inference: isgibbscomponent

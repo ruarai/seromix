@@ -24,6 +24,7 @@ end
 
 function WaningModelCache(obs_df)
     obs_lookup_strain, obs_lookup_ix = make_obs_lookup(obs_df)
+    obs_views = make_obs_views(obs_df)
     n_max_ind_obs = maximum(length.(obs_views))
 
     model_cache = WaningModelCache(
