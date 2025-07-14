@@ -108,15 +108,15 @@ end
 
 function select_initial_params(initial_params_name, n_chain, sp, model_data, obs_df, rng)
     if initial_params_name == "kucharski_sim_study"
-        return make_initial_params_kucharski_sim_study(sp, obs_df, n_chain, rng)
+        return make_initial_params_kucharski_sim_study(sp, n_chain, rng, obs_df)
     elseif initial_params_name == "kucharski_data_study"
-        return make_initial_params_kucharski_data_study(sp, n_chain, model_data["initial_infections_manual"], rng)
+        return make_initial_params_kucharski_data_study(sp, n_chain, rng, model_data["initial_infections_manual"])
     elseif initial_params_name == "kucharski_data_study_fluscape"
-        return make_initial_params_kucharski_data_study_fluscape(sp, obs_df, n_chain, rng)
+        return make_initial_params_kucharski_data_study_fluscape(sp, n_chain, rng, obs_df)
     elseif initial_params_name == "broad"
         return make_initial_params_broad(sp, n_chain, rng)
     elseif initial_params_name == "age_effect"
-        return make_initial_params_age(sp, obs_df, n_chain, rng)
+        return make_initial_params_age(sp, n_chain, rng, obs_df)
     end
 
     error("Invalid initial params specified")

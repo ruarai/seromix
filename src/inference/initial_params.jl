@@ -1,8 +1,8 @@
 
 
-function make_initial_params_kucharski_data_study(sp, n_chain, init_matrix, rng)
+function make_initial_params_kucharski_data_study(sp, n_chain, rng, init_matrix)
     init_matrix_masked = copy(init_matrix)
-    mask_infections_birth_year!(init_matrix_masked,sp.subject_birth_ix)
+    mask_infections_birth_year!(init_matrix_masked, sp.subject_birth_ix)
 
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
@@ -28,11 +28,11 @@ function make_initial_params_broad(sp, n_chain, rng)
         tau = rand(rng, Uniform(0.0, 0.2)), 
         obs_sd = rand(rng, Uniform(1.0, 2.5)), 
 
-        infections = rand(Bernoulli(0.5),sp.n_t_steps,sp.n_subjects)
+        infections = rand(Bernoulli(0.5), sp.n_t_steps, sp.n_subjects)
     ) for i in 1:n_chain]
 end
 
-function make_initial_params_kucharski_sim_study(sp, obs_df, n_chain, rng)
+function make_initial_params_kucharski_sim_study(sp, n_chain, rng, obs_df)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -47,7 +47,7 @@ function make_initial_params_kucharski_sim_study(sp, obs_df, n_chain, rng)
 end
 
 
-function make_initial_params_kucharski_data_study_fluscape(sp, obs_df, n_chain, rng)
+function make_initial_params_kucharski_data_study_fluscape(sp, n_chain, rng, obs_df)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         tau = 0.05 + rand(rng, Uniform(-0.01, 0.01)), 
@@ -98,7 +98,7 @@ function initial_infections_matrix(sp, obs_df, rng)
 end
 
 
-function make_initial_params_age(sp, obs_df, n_chain, rng)
+function make_initial_params_age(sp, n_chain, rng, obs_df)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_short = 2.5 + rand(rng, Uniform(-0.2, 0.2)), 
@@ -114,7 +114,7 @@ function make_initial_params_age(sp, obs_df, n_chain, rng)
     ) for i in 1:n_chain]
 end
 
-function make_initial_params_non_linear(sp, obs_df, n_chain, rng)
+function make_initial_params_non_linear(sp, n_chain, rng, obs_df)
     return [(
         mu_long = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
         mu_long_mult = 2.0 + rand(rng, Uniform(-0.2, 0.2)),
