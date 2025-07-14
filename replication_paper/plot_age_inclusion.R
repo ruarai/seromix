@@ -1,6 +1,7 @@
 
 
 library(targets)
+library(patchwork)
 tar_source()
 
 source("replication_paper/common.R")

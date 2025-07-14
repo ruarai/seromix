@@ -77,16 +77,16 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
         if length(sampler.alg.samplers) > 1
 
             inf_state = state.states[1].state
-            # param_state = state.states[2].state
+            param_state = state.states[2].state
 
             pr_accept_inf = inf_state.n_accepted / (inf_state.n_accepted + inf_state.n_rejected)
             pr_accept_param = 0.0
 
             sigma_covar = 0.0
-            # if param_state isa ParameterSamplerState
-            #     pr_accept_param = param_state.n_accepted / (param_state.n_accepted + param_state.n_rejected)
-            #     sigma_covar = param_state.sigma_covar
-            # end
+            if param_state isa ParameterSamplerState
+                pr_accept_param = param_state.n_accepted / (param_state.n_accepted + param_state.n_rejected)
+                sigma_covar = param_state.sigma_covar
+            end
 
             # I'm not sure why this needs to be doubled.
             sample_time = (inf_state.time_B - inf_state.time_A) * 1000 * 2.0
