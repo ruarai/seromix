@@ -16,13 +16,11 @@ obs_df = DataFrame(model_data["observations"])
 sp = read_static_parameters(model_data)
 
 prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
-# prior_infection_dist = MatrixBetaBernoulliTimeVarying(1.3, 8.0, sp)
 
 turing_model = waning_model_kucharski
 
 model = make_waning_model(
-   sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model#,
-    # mixture_importance_sampling = true
+   sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model
 );
 
 pt_target = TuringLogPotential(model)
@@ -53,18 +51,15 @@ sum([(7560/4096) * 2^i for i in 1:15]) / (60 * 60)
 
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
 
-for i in 1:2
-    println("Run $i")
-    pt = pigeons(
-        target = pt_target,
-        seed = i,
-        n_rounds = 12, n_chains = 64, multithreaded = true,
-        explorer = GibbsExplorer4(proposal_original_corrected, [i for i in symbols_not_inf], 5, sp),
-        record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
-    );
+pt = pigeons(
+    target = pt_target,
+    seed = 1,
+    n_rounds = 15, n_chains = 64, multithreaded = true,
+    explorer = GibbsExplorer4(proposal_original_corrected, [i for i in symbols_not_inf], 5, sp),
+    record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
+);
 
-    chain_name = "pigeons_6_$i"
-    chain = Chains(pt);
-    save_draws(chain, "$run_dir/chain_$chain_name.parquet")
-    JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))
-end
+chain_name = "pigeons_7"
+chain = Chains(pt);
+save_draws(chain, "$run_dir/chain_$chain_name.parquet")
+JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))

@@ -1,7 +1,7 @@
 
 
-chain_name = "pigeons_6_2"
-pt = JLD2.load("runs/hanam_2018/pt_$chain_name.jld2")["pt"]
+# chain_name = "pigeons_6_2"
+# pt = JLD2.load("runs/hanam_2018/pt_$chain_name.jld2")["pt"]
 
 
 plot(pt.reduced_recorders.index_process, linewidth = 1, size = (1200, 1200))
