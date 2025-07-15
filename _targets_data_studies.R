@@ -88,6 +88,22 @@ data_runs <- bind_rows(
     initial_params_name = "kucharski_data_study"
   ),
   
+  # Initial params
+  expand_grid(
+    exp_group = "initial_params",
+    
+    run_name = "hanam_2018",
+    infection_prior = list(matrix_beta_bernoulli_1_1),
+    initial_params_name = c("kucharski_data_study", "broad")
+  ) |> 
+    expand_grid(
+      tribble(
+        ~sampler_name, ~n_iterations, ~n_warmup,
+        "default", default_n_iterations, default_n_warmup,
+        "slice_sampler", 20000, 10000 
+      )
+    ),
+  
   # Baseline MixIS score
   expand_grid(
     exp_group = "baseline_mixis",
@@ -105,7 +121,7 @@ data_runs <- bind_rows(
   tribble(
     ~sampler_name, ~n_iterations, ~n_warmup,
     "default", default_n_iterations, default_n_warmup,
-    "slice_sampler", 10000, 5000 
+    "slice_sampler", 20000, 10000 
   ) |> 
     mutate(
       exp_group = "sampler_comparison",

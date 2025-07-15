@@ -6,11 +6,11 @@ library(crew)
 suppressMessages(tar_source())
 
 tar_option_set(
-  controller = crew_controller_local(workers = 8)
+  controller = crew_controller_local(workers = 12)
 )
 
-default_n_iterations <- 75000
-default_n_warmup <- 50000
+default_n_iterations <- 200000
+default_n_warmup <- 150000
 default_n_chain <- 4
 
 

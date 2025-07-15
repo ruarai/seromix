@@ -1,11 +1,13 @@
 
 
-# chain_name = "pigeons_5_mixis"
-# pt = JLD2.load("runs/hanam_2018/pt_$chain_name.jld2")["pt"]
+chain_name = "pigeons_6_2"
+pt = JLD2.load("runs/hanam_2018/pt_$chain_name.jld2")["pt"]
 
 
-plot(pt.reduced_recorders.index_process, linewidth = 2)
+plot(pt.reduced_recorders.index_process, linewidth = 1, size = (1200, 1200))
 plot(pt.reduced_recorders.index_process[4], linewidth = 2)
+plot(pt.shared.tempering.communication_barriers.localbarrier)
+
 plot(pt.shared.tempering.communication_barriers.localbarrier)
 
 
@@ -27,6 +29,11 @@ plot(chain, [:tau], seriestype = :traceplot)
 plot(chain, [:log_density], seriestype = :traceplot)
 
 
+
+
+# @gif for i in 1:64
+#     heatmap(chain_infections_prob_2(chain[:,:,i], sp)', clim = (0, 1))
+# end fps = 8
 
 heatmap(chain_infections_prob_2(chain, sp)')
 heatmap(rand(prior_infection_dist)')

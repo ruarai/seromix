@@ -19,9 +19,12 @@ proposal_function = proposal_original_corrected
 
 
 turing_model = waning_model_kucharski
-# initial_params = make_initial_params_kucharski_data_study(sp, 6, model_data["initial_infections_manual"], rng)
+# initial_params = make_initial_params_kucharski_data_study(sp, 4, rng, model_data["initial_infections_manual"])
+# initial_params = make_initial_params_broad(sp, 4, rng)
+initial_params = make_initial_params_kucharski_sim_study(sp, 4, rng, obs_df)
 
-initial_params = make_initial_params_broad(sp, 16, rng)
+# turing_model = waning_model_age_effect
+# initial_params = make_initial_params_age(sp, 16, rng, obs_df)
 
 model = make_waning_model(
    sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
@@ -30,20 +33,27 @@ model = make_waning_model(
 
 gibbs_sampler = make_gibbs_sampler(model, sp, proposal_function);
 # gibbs_sampler = make_gibbs_sampler_original(model, sp, proposal_function);
-# gibbs_sampler = make_gibbs_sampler_slice(model, sp, proposal_function)
+# gibbs_sampler = make_gibbs_sampler_slice(model, sp, proposal_function);
+
+# symbols_not_inf = model_symbols_apart_from(model, [:infections])
+
+# gibbs_sampler = Gibbs(
+#     :infections => make_mh_infection_sampler(sp, proposal_function; prop_sample = 1.0, n_repeats = 5),
+#     symbols_not_inf => NUTS(100, 0.65)
+# )
 
 chain = sample_chain(
     model, initial_params, gibbs_sampler, sp, rng;
-    n_sample = 2000, n_thinning = 1, n_chain = 16
+    n_sample = 20000, n_thinning = 10, n_chain = 4
 );
-
-chain[1000:end]
 
 
 set_lp!(model, chain)
 
+chain = chain[:,:,15]
+
 using Plots
-ix_start = 1000
+ix_start = 1
 plot(chain[ix_start:end], [:mu_long, :mu_short], seriestype = :traceplot)
 plot(chain_sum_infections(chain, sp))
 
@@ -53,7 +63,6 @@ plot(chain[ix_start:end], [:omega], seriestype = :traceplot)
 plot(chain[ix_start:end], [:tau], seriestype = :traceplot)
 
 plot(chain[ix_start:end], [:lp], seriestype = :traceplot)
-
 
 heatmap(chain_infections_prob(chain[1800:2000], sp)')
 
@@ -70,3 +79,6 @@ end
 
 # chain_df = DataFrame(chain[1000:end])
 # lpp = model_sum_mixIS(chain_df, sp, obs_df, model)
+
+
+

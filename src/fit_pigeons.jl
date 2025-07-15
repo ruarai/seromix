@@ -5,7 +5,7 @@ using Plots
 
 include("pigeons/explorer.jl")
 
-data_code = "hanam_2018_age" # NOTE USING AGE here
+data_code = "hanam_2018"
 rng = Random.Xoshiro(1)
 
 run_dir = "runs/$(data_code)/"
@@ -15,8 +15,8 @@ obs_df = DataFrame(model_data["observations"])
 
 sp = read_static_parameters(model_data)
 
-# prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
-prior_infection_dist = MatrixBetaBernoulliTimeVarying(1.3, 8.0, sp)
+prior_infection_dist = MatrixBetaBernoulli(1.0, 1.0, sp)
+# prior_infection_dist = MatrixBetaBernoulliTimeVarying(1.3, 8.0, sp)
 
 turing_model = waning_model_kucharski
 
@@ -49,22 +49,22 @@ end
 
 
 # Approx timing
-sum([2.0 * 2^i for i in 1:11]) / (60 * 60)
+sum([(7560/4096) * 2^i for i in 1:15]) / (60 * 60)
 
 symbols_not_inf = model_symbols_apart_from(model, [:infections])
-pt = pigeons(
-    target = pt_target,
-    # n_rounds = 15, n_chains = 64, multithreaded = true,   
-    n_rounds = 7, n_chains = 64, multithreaded = true,
-    explorer = GibbsExplorer4(proposal_original_corrected, [i for i in symbols_not_inf], 5, sp),
-    record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
-);
 
-pt = increment_n_rounds!(pt, 1)
-pt = pigeons(pt)
+for i in 1:2
+    println("Run $i")
+    pt = pigeons(
+        target = pt_target,
+        seed = i,
+        n_rounds = 12, n_chains = 64, multithreaded = true,
+        explorer = GibbsExplorer4(proposal_original_corrected, [i for i in symbols_not_inf], 5, sp),
+        record = [traces, round_trip, Pigeons.timing_extrema, Pigeons.allocation_extrema, index_process]
+    );
 
-
-chain_name = "pigeons_5_mixis"
-chain = Chains(pt);
-save_draws(chain, "$run_dir/chain_$chain_name.parquet")
-JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))
+    chain_name = "pigeons_6_$i"
+    chain = Chains(pt);
+    save_draws(chain, "$run_dir/chain_$chain_name.parquet")
+    JLD2.save("$run_dir/pt_$chain_name.jld2", Dict("pt" => pt))
+end
