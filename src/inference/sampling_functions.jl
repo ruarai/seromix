@@ -27,13 +27,17 @@ function sample_chain(
     return chain
 end
 
-function model_symbols_apart_from(model, syms)
+function model_symbols_apart_from(model, syms; as_vector = false)
     symbols = DynamicPPL.syms(DynamicPPL.VarInfo(model))
     for s in syms
         symbols = symbols[findall(symbols .!= s)]
     end
-    
-    return symbols
+
+    if as_vector
+        return [i for i in symbols]
+    else
+        return symbols
+    end
 end
 
 
@@ -88,7 +92,7 @@ function log_callback(rng, model, sampler, sample, state, iteration; kwargs...)
             #     sigma_covar = param_state.sigma_covar
             # end
 
-            # I'm not sure why this needs to be doubled.
+            # Multiply by two to account for gibbs sampling
             sample_time = (inf_state.time_B - inf_state.time_A) * 1000 * 2.0
 
             # Time per 10,000 samples

@@ -13,30 +13,27 @@ summarise_chain <- function(chain, drop_iterations, model_data, by_chain = TRUE,
     clean_chain() |>
     filter(.iteration > drop_iterations) |>
     add_total_infections(model_data) |> 
-    select(-starts_with("infections")) |>
-    
-    pivot_longer(-c(.iteration, .chain, .draw),
-                 names_to = "variable")
+    select(-starts_with("infections"))
   
   if(by_chain) {
     chain_long <- chain_long |> 
-      group_by(.chain, variable)
+      group_by(.chain)
   } else {
     chain_long <- chain_long |> 
-      group_by(variable)
+      ungroup()
   }
   
-  summ_chain <- chain_long |> 
-    
-    summarise(
-      mean = mean(value),
-      median = median(value),
-      sd = sd(value),
-      q95_lower = quantile(value, 0.05 / 2),
-      q95_upper = quantile(value, 1 - 0.05 / 2),
-      ess_bulk = posterior::ess_bulk(value),
-      ess_bulk = posterior::ess_tail(value)
-    )
+  summ_chain <- chain_long  |> 
+    tidybayes::summarise_draws(
+      mean = mean,
+      median = median,
+      var = distributional::variance,
+      ~quantile(., 0.05 / 2, na.rm = TRUE),
+      ~quantile(., 1 - 0.05 / 2, na.rm = TRUE),
+      "rhat", "ess_bulk", "ess_tail"
+    ) |> 
+    rename("q95_lower" = `2.5%`,
+           "q95_upper" = `97.5%`)
   
   if(is.null(add_name)) {
     return(summ_chain)
@@ -63,6 +60,7 @@ reformat_pigeons_chain <- function(chain_pigeons, model_data) {
   
   col_names <- colnames(chain_pigeons)
   col_names[str_detect(col_names, "infections")] <- inf_columns_new
+  col_names[col_names == "log_density"] <- "lp"
   
   colnames(chain_pigeons) <- col_names
   

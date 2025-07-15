@@ -19,12 +19,12 @@ proposal_function = proposal_original_corrected
 
 
 turing_model = waning_model_kucharski
-# initial_params = make_initial_params_kucharski_data_study(sp, 4, rng, model_data["initial_infections_manual"])
-# initial_params = make_initial_params_broad(sp, 4, rng)
-initial_params = make_initial_params_kucharski_sim_study(sp, 4, rng, obs_df)
+initial_params = make_initial_params_kucharski_data_study(sp, 4, rng, model_data["initial_infections_manual"])
+# initial_params = make_initial_params_broad(sp, 16, rng)
+# initial_params = make_initial_params_kucharski_sim_study(sp, 4, rng, obs_df)
 
 # turing_model = waning_model_age_effect
-# initial_params = make_initial_params_age(sp, 16, rng, obs_df)
+# initial_params = make_initial_params_age(sp, 4, rng, obs_df)
 
 model = make_waning_model(
    sp, obs_df; prior_infection_dist = prior_infection_dist, turing_model = turing_model,
@@ -60,7 +60,8 @@ plot(chain_sum_infections(chain, sp))
 plot(chain[ix_start:end], [:sigma_long, :sigma_short], seriestype = :traceplot)
 plot(chain[ix_start:end], [:obs_sd], seriestype = :traceplot)
 plot(chain[ix_start:end], [:omega], seriestype = :traceplot)
-plot(chain[ix_start:end], [:tau], seriestype = :traceplot)
+plot(chain[ix_start:end], [:tau, :tau_cutoff], seriestype = :traceplot)
+plot(chain[ix_start:end], [:beta, :intercept], seriestype = :traceplot)
 
 plot(chain[ix_start:end], [:lp], seriestype = :traceplot)
 
@@ -80,5 +81,12 @@ end
 # chain_df = DataFrame(chain[1000:end])
 # lpp = model_sum_mixIS(chain_df, sp, obs_df, model)
 
+import CairoMakie
+using PairPlots
+
+chain = read_parquet(DataFrame, "_targets/objects/chain_initial_params_hanam_2018_4")
+chain_filt = chain[chain.iteration .> 10000, :]
+chain_filt = chain_filt[chain_filt.chain .!= 1, :]
 
 
+pairplot(chain_filt[:,model_symbols_apart_from(model, [:infections]; as_vector = true)]  => (PairPlots.Scatter(),))

@@ -19,11 +19,13 @@
     beta ~ Uniform(0.0, 1.0)
     tau ~ Uniform(0.0, 1.0)
 
+    tau_cutoff ~ Uniform(0.0, 1.0)
+
     intercept ~ Uniform(-5.0, 1.0)
 
     obs_sd ~ Uniform(1.0, 10.0)
 
-    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, beta, tau, intercept, obs_sd)
+    params = (; mu_long, mu_short, omega, sigma_long, sigma_short, beta, tau, tau_cutoff, intercept, obs_sd)
 
     infections ~ prior_infection_dist
 
@@ -63,7 +65,9 @@ function individual_waning_age_effect!(
         age = ix_t - subject_birth_ix
         
         age_effect = max(0.0, 1.0 - age * params.beta)
-        seniority = max(0.0, 1.0 - params.tau * prior_infections)
+
+        # Increase 10 here?
+        seniority = max(1 - params.tau * (params.tau_cutoff * 15), 1.0 - params.tau * prior_infections)
 
         prior_infections += 1.0
 

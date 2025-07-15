@@ -116,3 +116,10 @@ p_data <- plot_data |>
 
 p_sim / p_data
 
+
+ggsave(
+  "replication_paper/results/age_inclusion.png",
+  device = png,
+  width = 12,
+  height = 8, bg = "white"
+)

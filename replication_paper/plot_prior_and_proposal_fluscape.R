@@ -76,7 +76,7 @@ plot_data |>
         panel.background = element_facet_background,
         panel.grid.major.y = element_gridline) +
   
-  ggtitle("Fluscape study inference results")
+  ggtitle("Fluscape (HI) study inference results")
 
 
 plot_data |> 
