@@ -129,11 +129,11 @@ function df_to_tuple(df)
 end
 
 
-function mask_infections_birth_year!(infections, subject_birth_ix)
+function mask_infections_birth_year!(infections, subject_birth_ix; mask_val = false)
     n_subjects = length(subject_birth_ix)
     for ix_subject in 1:n_subjects
         if subject_birth_ix[ix_subject] > 1
-            infections[1:(subject_birth_ix[ix_subject] - 1), ix_subject] .= false
+            infections[1:(subject_birth_ix[ix_subject] - 1), ix_subject] .= mask_val
         end
     end
 end
